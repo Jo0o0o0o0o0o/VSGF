@@ -1,0 +1,74 @@
+2.5 
+Test.json failed, can't stop loading.
+going to draw figma now
+------------------------------
+spotify api is not avaible because they are maintaining
+fuck
+------------------------------
+Had a good idea about dogs
+------------------------------
+Complete figma drawing
+------------------------------
+Complete one api
+------------------------------
+Another api key is always unavaliable??
+------------------------------
+Complete 2 apis
+Building whitelist for all features.To compare and combine
+-----------------------------
+abandon whitelist
+abandon Thedogs api(useless)
+scrape Ninjas api and save json now
+Thanks Havard Woie Alstadheim, good idea
+-----------------------------
+ front end function are in a mess, rebuild the logic
+-------------I should delete api keys--------------------
+API COMPLETE  
+tommorrow plan: try d3 to draw plots, see how long gonna take to complete this project
+
+
+2.6
+Complete Router, App, seted up d3, image, label
+---------------------------------------------------
+ 
+2.7
+d3 svg sb
+fixed 
+---------------------------------------------------
+2.8 Sunday
+nothing, played game, go boxing
+---------------------------------------------------
+2.9
+Detailed plots:
+Traitlinechart: add average line
+fixed text issue
+ScatterPlot:
+Add data as r
+Add filter
+---------------------------------------------------
+Fixed interface: card list
+---------------------------------------------------
+I should change the data: good with.... to another, and use rader instead
+(I should add dimensions to ScatterPlot (yes))
+I should make the plots reactive (yes)
+I can shrink the Traitlinechart and add redarplot/compare human plot
+highlight up
+Can we scarpe TheDogApiJson?   
+
+2.10
+Made ScatterPlot reactive: hover, select, 
+added label
+
+card bottom should align with chart bottom
+
+ 
+2.13
+Compareslots completed
+
+i-1 as a object of slots might have problems
+-------------------------------------------------
+RadarChart, Axis Selector completed
+RadarChart reactive completed
+-------------------------------------------------
+
+I should add a linechart for lifespan and size to compare
