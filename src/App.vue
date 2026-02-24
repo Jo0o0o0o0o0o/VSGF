@@ -40,6 +40,7 @@ onUnmounted(() => {
 
       <nav class="nav">
         <RouterLink class="link" to="/home">Overview</RouterLink>
+        <RouterLink class="link" to="/grouping">Grouping</RouterLink>
         <RouterLink class="link compareLink" to="/compare">
           Comparison
           <span v-if="compareCount > 0" class="badge">{{ compareCount }}</span>

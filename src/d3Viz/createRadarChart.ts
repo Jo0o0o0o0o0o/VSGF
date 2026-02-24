@@ -1,32 +1,32 @@
 import * as d3 from "d3";
 
 export type RadarKey =
-  | "good_with_children"
-  | "good_with_other_dogs"
-  | "good_with_strangers"
-  | "playfulness"
-  | "protectiveness"
-  | "trainability"
-  | "energy"
-  | "barking"
-  | "shedding"
-  | "grooming"
-  | "drooling"
-  | "coat_length";
+  | "information_visualization"
+  | "statistical"
+  | "mathematics"
+  | "drawing_and_artistic"
+  | "computer_usage"
+  | "programming"
+  | "computer_graphics_programming"
+  | "human_computer_interaction_programming"
+  | "user_experience_evaluation"
+  | "communication"
+  | "collaboration"
+  | "code_repository";
 
 export const RADAR_AXES: AxisItem[] = [
-  { key: "good_with_children", label: "Children" },
-  { key: "good_with_other_dogs", label: "Other dogs" },
-  { key: "good_with_strangers", label: "Strangers" },
-  { key: "playfulness", label: "Playfulness" },
-  { key: "protectiveness", label: "Protect" },
-  { key: "trainability", label: "Train" },
-  { key: "energy", label: "Energy" },
-  { key: "barking", label: "Barking" },
-  { key: "shedding", label: "Shedding" },
-  { key: "grooming", label: "Grooming" },
-  { key: "drooling", label: "Drooling" },
-  { key: "coat_length", label: "Coat length" },
+  { key: "information_visualization", label: "Info Viz" },
+  { key: "statistical", label: "Statistical" },
+  { key: "mathematics", label: "Mathematics" },
+  { key: "drawing_and_artistic", label: "Drawing/Art" },
+  { key: "computer_usage", label: "Computer Usage" },
+  { key: "programming", label: "Programming" },
+  { key: "computer_graphics_programming", label: "CG Programming" },
+  { key: "human_computer_interaction_programming", label: "HCI Programming" },
+  { key: "user_experience_evaluation", label: "UX Evaluation" },
+  { key: "communication", label: "Communication" },
+  { key: "collaboration", label: "Collaboration" },
+  { key: "code_repository", label: "Code Repository" },
 ];
 
 export type RadarDog = {

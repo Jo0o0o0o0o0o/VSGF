@@ -112,8 +112,8 @@ function resizeAndDraw() {
     width: w,
     height: h,
     min: 0,
-    max: 5,
-    levels: 5,
+    max: 10,
+    levels: 10,
     axes: props.axes,
     focusIndex: props.focusIndex ?? null,
   });
