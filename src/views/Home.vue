@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, reactive, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import ScatterPlot from "@/components/ScatterPlot.vue";
 import dogsJson from "@/data/dogs_ninjas_raw.json";
+import ivisRecordsJson from "@/data/IVIS23_final.json";
 import type { DogBreed } from "@/types/dogBreed";
-import type { ScatterDatum } from "@/types/viz";
 import TraitLineChart from "@/components/TraitLineChart.vue";
-import HeightCompareChart from "@/components/HeightCompareChart.vue";
-import { computeAverageTraits } from "@/utils/computeAverageTraits";
+import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
 import { traitLabels } from "@/utils/traitFilter";
 import theDogApiBreeds from "@/data/dogs_thedogapi_breeds.json";
@@ -18,13 +16,11 @@ import WorldPlot from "@/components/WorldPlot.vue";
 import type { DogApiBreed } from "@/types/dogApiBreed";
 import { buildDogOriginPoints } from "@/utils/buildDogOriginPoints";
 import type { WorldPoint } from "@/d3Viz/createWorldPlot";
+import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 
 import {
   TRAIT_KEYS,
   type TraitKey,
-  createDefaultTraitEnabled,
-  filterDogsBySelectedTraits,
-  
 } from "@/utils/traitFilter";
 
 
@@ -38,24 +34,9 @@ const dogSelectRoot = ref<HTMLElement | null>(null);
 const dogSearchInput = ref<HTMLInputElement | null>(null);
 const beeswarmSectionRef = ref<HTMLElement | null>(null);
 const selectedBeeswarmBreedGroup = ref<string | null>(null);
-
-const avgTraits = ref(computeAverageTraits([] as DogBreed[]));
+const ivisRecords = ivisRecordsJson as IvisRecord[];
 
 const selectedDog = computed(() => dogs.value.find((d) => d.name === selectedName.value) ?? null);
-
-const scatterData = computed<ScatterDatum[]>(() =>
-  filteredDogs.value.map((d) => ({
-    id: d.name,
-    label: d.name,
-    breedGroup: findBreedGroupByName(
-      d.name,
-      theDogApiBreeds as { name: string; breed_group?: string | null }[],
-    ),
-    x: Math.round(((d.max_height_male + d.max_height_female) / 2) * 2.54),
-    y: Math.round(((d.max_weight_male + d.max_weight_female) / 2) * 0.45359237),
-    size: d.max_life_expectancy,
-  })),
-);
 
 const highlightId = computed(() => selectedDog.value?.name ?? null);
 const selectedBreedGroup = computed(() => {
@@ -70,40 +51,7 @@ const selectedBreedGroupStyle = computed(() =>
   selectedBreedGroup.value ? getBreedGroupTagStyle(selectedBreedGroup.value) : null,
 );
 
-const filterEnabled = ref(false);
-const breedGroupFilterEnabled = ref(false);
-const traitEnabled = reactive<Record<TraitKey, boolean>>(createDefaultTraitEnabled());
-
-function toggleTrait(k: TraitKey, v: boolean) {
-  traitEnabled[k] = v;
-}
-
-const filteredDogs = computed(() => {
-  const traitFiltered = filterDogsBySelectedTraits(
-    dogs.value,
-    selectedDog.value,
-    filterEnabled.value,
-    traitEnabled,
-  );
-
-  if (!filterEnabled.value || !breedGroupFilterEnabled.value || !selectedDog.value) {
-    return traitFiltered;
-  }
-
-  const selectedGroup = findBreedGroupByName(
-    selectedDog.value.name,
-    theDogApiBreeds as { name: string; breed_group?: string | null }[],
-  );
-
-  return traitFiltered.filter((d) => {
-    const group = findBreedGroupByName(
-      d.name,
-      theDogApiBreeds as { name: string; breed_group?: string | null }[],
-    );
-    if (!selectedGroup) return !group;
-    return group === selectedGroup;
-  });
-});
+const filteredDogs = computed(() => dogs.value);
 
 const filteredCount = computed(() => filteredDogs.value.length);
 const totalCount = computed(() => dogs.value.length);
@@ -303,8 +251,7 @@ function sendToCompare() {
 }
 
 const beeswarmTraits = computed<TraitKey[]>(() => {
-  const enabled = TRAIT_KEYS.filter((k) => traitEnabled[k]);
-  return enabled.length ? enabled : [...TRAIT_KEYS];
+  return [...TRAIT_KEYS];
 });
 
 watch(
@@ -333,7 +280,6 @@ watch(
 
 onMounted(() => {
   dogs.value = dogsJson as DogBreed[];
-  avgTraits.value = computeAverageTraits(dogs.value);
 
   const first = dogs.value[0];
   if (first) selectedName.value = first.name;
@@ -407,17 +353,10 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="card mid">
-        <div class="title">Dog vs human height</div>
-        <div class="midBody">
-          <HeightCompareChart class="midChart" :dog="selectedDog" />
-        </div>
-      </div>
-
       <div class="card right">
         <div class="title">Temperament traits</div>
         <div class="traitArea">
-          <TraitLineChart :dog="selectedDog" :avgTraits="avgTraits" />
+          <TraitLineChart />
         </div>
       </div>
     </section>
@@ -428,21 +367,7 @@ onBeforeUnmount(() => {
         <div class="title">Dogs overview</div>
 
         <div class="plotArea">
-          <ScatterPlot
-            :data="scatterData"
-            :highlightId="highlightId"
-
-            :filterEnabled="filterEnabled"
-            :breedGroupFilterEnabled="breedGroupFilterEnabled"
-            :traitEnabled="traitEnabled"
-            :hasSelectedDog="!!selectedDog"
-            :filteredCount="filteredCount"
-            :totalCount="totalCount"
-            @update:filterEnabled="filterEnabled = $event"
-            @update:breedGroupFilterEnabled="breedGroupFilterEnabled = $event"
-            @toggleTrait="toggleTrait"
-            @selectDog="onSelectDog"
-          />
+          <HeatedMap :records="ivisRecords" :ratingKeys="IVIS_RATING_KEYS" />
         </div>
       </div>
 
@@ -550,7 +475,7 @@ onBeforeUnmount(() => {
 
 .top {
   display: grid;
-  grid-template-columns: auto 1fr 2fr; /* left=内容宽，mid 左侧对齐 left 右侧，mid 更宽 */
+  grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: stretch;
   height: fit-content;
@@ -570,32 +495,12 @@ onBeforeUnmount(() => {
   padding: 12px;
 }
 
-.card.mid .title {
-  flex: 0 0 auto;
-  margin-bottom: 8px;
-}
-.card.mid {
-  display: grid;
-  flex-direction: column;
-}
-
 .card.right {
   display: grid;
   flex-direction: column;
 }
 .card.scatter {
   background: #f6f6f600;
-}
-
-.midBody {
-  flex: 1 1 auto;
-  min-height: 0; /* 重要：防止 flex 子项计算高度出问题*/
-  position: relative;
-}
-
-/* [ADDED] 让组件自身高度 100%，它的 bottom:0 才会贴到 midBody 底部 */
-.midChart {
-  height: 100%;
 }
 
 .card.left {
@@ -981,4 +886,3 @@ onBeforeUnmount(() => {
   min-height: 780px;
 }
 </style>
-

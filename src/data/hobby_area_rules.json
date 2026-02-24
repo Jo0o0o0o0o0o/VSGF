@@ -1,0 +1,147 @@
+[
+  {
+    "hobby_area": "sports_outdoors",
+    "keywords": [
+      "badminton",
+      "basketball",
+      "bike",
+      "bouldering",
+      "climb",
+      "climbing",
+      "cycling",
+      "dance",
+      "fitness",
+      "football",
+      "gym",
+      "handball",
+      "hike",
+      "hiking",
+      "jogging",
+      "kendo",
+      "run",
+      "running",
+      "sailing",
+      "skate",
+      "ski",
+      "skiing",
+      "soccer",
+      "sport",
+      "swim",
+      "swimming",
+      "tennis",
+      "workout",
+      "yoga"
+    ]
+  },
+  {
+    "hobby_area": "arts_media",
+    "keywords": [
+      "anime",
+      "art",
+      "band",
+      "choir",
+      "cinema",
+      "design",
+      "draw",
+      "drawing",
+      "film",
+      "guitar",
+      "illustration",
+      "movie",
+      "movies",
+      "music",
+      "paint",
+      "painting",
+      "photo",
+      "photography",
+      "piano",
+      "series",
+      "sing",
+      "singing",
+      "sketch",
+      "ukulele"
+    ]
+  },
+  {
+    "hobby_area": "games",
+    "keywords": [
+      "boardgame",
+      "chess",
+      "counterstrike",
+      "dnd",
+      "game",
+      "gaming",
+      "pokemon",
+      "videogame"
+    ]
+  },
+  {
+    "hobby_area": "tech_making",
+    "keywords": [
+      "3d",
+      "3dmodeling",
+      "3dprinting",
+      "blender",
+      "code",
+      "coding",
+      "dataanalysis",
+      "electronics",
+      "maker",
+      "program",
+      "programming",
+      "rendering",
+      "robot",
+      "rust",
+      "unity",
+      "wasm"
+    ]
+  },
+  {
+    "hobby_area": "reading_writing",
+    "keywords": [
+      "book",
+      "books",
+      "fiction",
+      "literature",
+      "novel",
+      "poem",
+      "poetry",
+      "read",
+      "reading",
+      "write",
+      "writing"
+    ]
+  },
+  {
+    "hobby_area": "travel",
+    "keywords": [
+      "travel",
+      "trip"
+    ]
+  },
+  {
+    "hobby_area": "food",
+    "keywords": [
+      "bake",
+      "baking",
+      "bartending",
+      "beer",
+      "cocktail",
+      "coffee",
+      "cook",
+      "cooking",
+      "food",
+      "tea"
+    ]
+  },
+  {
+    "hobby_area": "languages_culture",
+    "keywords": [
+      "culture",
+      "japanese",
+      "language",
+      "languages",
+      "swedish"
+    ]
+  }
+]

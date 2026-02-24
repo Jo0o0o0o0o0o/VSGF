@@ -1,0 +1,79 @@
+{
+  "fitness": [
+    "gym",
+    "workout",
+    "working out",
+    "lifting",
+    "exercise",
+    "training"
+  ],
+  "photography": [
+    "photo",
+    "photos",
+    "photography",
+    "taking photos"
+  ],
+  "gaming": [
+    "videogames",
+    "video games",
+    "gaming",
+    "games"
+  ],
+  "movies": [
+    "movies",
+    "movie",
+    "films",
+    "film",
+    "cinema"
+  ],
+  "music": [
+    "music",
+    "listening to music",
+    "listening music"
+  ],
+  "drawing": [
+    "drawing",
+    "sketching",
+    "illustration",
+    "painting",
+    "digital painting"
+  ],
+  "reading": [
+    "reading",
+    "books",
+    "book"
+  ],
+  "cooking": [
+    "cooking",
+    "baking",
+    "cook",
+    "bake"
+  ],
+  "travel": [
+    "travel",
+    "traveling",
+    "travelling",
+    "hiking",
+    "outdoors"
+  ],
+  "sports": [
+    "sports",
+    "football",
+    "basketball",
+    "soccer",
+    "skiing",
+    "kendo"
+  ],
+  "coding": [
+    "programming",
+    "coding",
+    "software engineering",
+    "data analysis"
+  ],
+  "3d_modeling": [
+    "3d modelling",
+    "3d modeling",
+    "3d printing",
+    "3d modelling printing"
+  ]
+}

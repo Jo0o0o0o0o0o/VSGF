@@ -1,0 +1,38 @@
+[
+  {
+    "hobby_area": "arts_media",
+    "count": 26
+  },
+  {
+    "hobby_area": "sports_outdoors",
+    "count": 21
+  },
+  {
+    "hobby_area": "games",
+    "count": 18
+  },
+  {
+    "hobby_area": "tech_making",
+    "count": 12
+  },
+  {
+    "hobby_area": "reading_writing",
+    "count": 7
+  },
+  {
+    "hobby_area": "food",
+    "count": 6
+  },
+  {
+    "hobby_area": "languages_culture",
+    "count": 5
+  },
+  {
+    "hobby_area": "travel",
+    "count": 4
+  },
+  {
+    "hobby_area": "other",
+    "count": 2
+  }
+]
