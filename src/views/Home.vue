@@ -35,6 +35,109 @@ const dogSearchInput = ref<HTMLInputElement | null>(null);
 const beeswarmSectionRef = ref<HTMLElement | null>(null);
 const selectedBeeswarmBreedGroup = ref<string | null>(null);
 const ivisRecords = ivisRecordsJson as IvisRecord[];
+const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
+const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
+
+type StoredGrouping = {
+  version: 1;
+  groups: Array<{
+    id: number;
+    memberIds: Array<number | null>;
+  }>;
+};
+
+function buildGroupSlotSizes(totalStudents: number): number[] {
+  if (totalStudents <= 0) return [5];
+  if (totalStudents <= 5) return [totalStudents];
+
+  const groupCount = Math.ceil(totalStudents / 5);
+  const totalMaxSlots = groupCount * 5;
+  const slotsToRemove = totalMaxSlots - totalStudents;
+  const sizes = Array(groupCount).fill(5);
+
+  for (let i = 0; i < slotsToRemove; i += 1) {
+    sizes[i] = 4;
+  }
+
+  return sizes;
+}
+
+function buildDefaultGrouping(totalStudents: number): StoredGrouping {
+  const slotSizes = buildGroupSlotSizes(totalStudents);
+  let cursor = 0;
+
+  return {
+    version: 1,
+    groups: slotSizes.map((size, index) => {
+      const memberIds = ivisRecords
+        .slice(cursor, cursor + size)
+        .map((r) => r.id);
+      cursor += size;
+      return { id: index + 1, memberIds };
+    }),
+  };
+}
+
+function readStoredGrouping(): StoredGrouping {
+  try {
+    const raw = localStorage.getItem(GROUPING_STORAGE_KEY);
+    if (!raw) return buildDefaultGrouping(ivisRecords.length);
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return buildDefaultGrouping(ivisRecords.length);
+    const maybe = parsed as Partial<StoredGrouping>;
+    if (maybe.version !== 1 || !Array.isArray(maybe.groups)) {
+      return buildDefaultGrouping(ivisRecords.length);
+    }
+    return {
+      version: 1,
+      groups: maybe.groups
+        .filter((g) => g && typeof g.id === "number" && Array.isArray(g.memberIds))
+        .map((g) => ({
+          id: g.id,
+          memberIds: g.memberIds.map((id) => (typeof id === "number" ? id : null)),
+        })),
+    };
+  } catch {
+    return buildDefaultGrouping(ivisRecords.length);
+  }
+}
+
+const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
+
+const heatmapRecords = computed<IvisRecord[]>(() => {
+  const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
+  const usedMemberIds = new Set<number>();
+  const grouped: IvisRecord[] = [];
+
+  for (const group of storedGrouping.value.groups) {
+    const members: IvisRecord[] = [];
+    for (const id of group.memberIds) {
+      if (typeof id !== "number" || usedMemberIds.has(id)) continue;
+      const member = byId.get(id);
+      if (!member) continue;
+      usedMemberIds.add(id);
+      members.push(member);
+    }
+    if (!members.length) continue;
+
+    const summedRatings = IVIS_RATING_KEYS.reduce((acc, key) => {
+      acc[key] = members.reduce((sum, member) => sum + Number(member.ratings[key] ?? 0), 0);
+      return acc;
+    }, {} as IvisRecord["ratings"]);
+
+    grouped.push({
+      id: group.id,
+      alias: `Group ${group.id} (${members.length})`,
+      time_year: "grouped",
+      hobby_raw: "",
+      hobby: [],
+      hobby_area: [],
+      ratings: summedRatings,
+    });
+  }
+
+  return grouped.length ? grouped : ivisRecords;
+});
 
 const selectedDog = computed(() => dogs.value.find((d) => d.name === selectedName.value) ?? null);
 
@@ -285,11 +388,20 @@ onMounted(() => {
   if (first) selectedName.value = first.name;
 
   document.addEventListener("mousedown", onDocClick);
+  storedGrouping.value = readStoredGrouping();
+  window.addEventListener("storage", onGroupingStorageChanged);
+  window.addEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onDocClick);
+  window.removeEventListener("storage", onGroupingStorageChanged);
+  window.removeEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
 });
+
+function onGroupingStorageChanged() {
+  storedGrouping.value = readStoredGrouping();
+}
 </script>
 
 <template>
@@ -367,7 +479,7 @@ onBeforeUnmount(() => {
         <div class="title">Dogs overview</div>
 
         <div class="plotArea">
-          <HeatedMap :records="ivisRecords" :ratingKeys="IVIS_RATING_KEYS" />
+          <HeatedMap :records="heatmapRecords" :ratingKeys="IVIS_RATING_KEYS" />
         </div>
       </div>
 

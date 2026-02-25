@@ -1,5 +1,172 @@
 <script setup lang="ts">
-const groups = [{ id: 1, showChips: true, plusIndex: -1 }];
+import { computed, onMounted, ref, watch } from "vue";
+import studentsRaw from "../data/IVIS23_final.json";
+
+type Student = {
+  id: number;
+  alias: string;
+};
+
+type Group = {
+  id: number;
+  showChips: boolean;
+  members: Array<Student | null>;
+};
+
+type StoredGrouping = {
+  version: 1;
+  groups: Array<{
+    id: number;
+    memberIds: Array<number | null>;
+  }>;
+};
+
+const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
+const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
+
+const students = (studentsRaw as Student[]).map((student) => ({
+  id: student.id,
+  alias: student.alias,
+}));
+
+function buildGroupSlotSizes(totalStudents: number): number[] {
+  if (totalStudents <= 0) return [5];
+  if (totalStudents <= 5) return [totalStudents];
+
+  const groupCount = Math.ceil(totalStudents / 5);
+  const totalMaxSlots = groupCount * 5;
+  const slotsToRemove = totalMaxSlots - totalStudents;
+  const sizes = Array(groupCount).fill(5);
+
+  for (let i = 0; i < slotsToRemove; i += 1) {
+    sizes[i] = 4;
+  }
+
+  return sizes;
+}
+
+const groups = ref<Group[]>(
+  buildGroupSlotSizes(students.length).map((size, index) => ({
+    id: index + 1,
+    showChips: true,
+    members: Array(size).fill(null),
+  }))
+);
+
+const activeTip = ref<{ groupId: number; slotIndex: number } | null>(null);
+
+const usedStudentIds = computed(() => {
+  const ids = new Set<number>();
+  groups.value.forEach((group) => {
+    group.members.forEach((member) => {
+      if (member) {
+        ids.add(member.id);
+      }
+    });
+  });
+  return ids;
+});
+
+const availableStudents = computed(() =>
+  students.filter((student) => !usedStudentIds.value.has(student.id))
+);
+
+function toggleTip(groupId: number, slotIndex: number) {
+  if (
+    activeTip.value?.groupId === groupId &&
+    activeTip.value.slotIndex === slotIndex
+  ) {
+    activeTip.value = null;
+    return;
+  }
+  activeTip.value = { groupId, slotIndex };
+}
+
+function addMember(groupId: number, slotIndex: number, student: Student) {
+  const group = groups.value.find((item) => item.id === groupId);
+  if (!group) return;
+  group.members[slotIndex] = student;
+  activeTip.value = null;
+}
+
+function removeMember(groupId: number, slotIndex: number) {
+  const group = groups.value.find((item) => item.id === groupId);
+  if (!group) return;
+  group.members[slotIndex] = null;
+}
+
+function readStoredGrouping(): StoredGrouping | null {
+  try {
+    const raw = localStorage.getItem(GROUPING_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const maybe = parsed as Partial<StoredGrouping>;
+    if (maybe.version !== 1 || !Array.isArray(maybe.groups)) return null;
+    return {
+      version: 1,
+      groups: maybe.groups
+        .filter((g) => g && typeof g.id === "number" && Array.isArray(g.memberIds))
+        .map((g) => ({
+          id: g.id,
+          memberIds: g.memberIds.map((id) => (typeof id === "number" ? id : null)),
+        })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function applyStoredGrouping(stored: StoredGrouping) {
+  const byId = new Map(students.map((s) => [s.id, s] as const));
+  const used = new Set<number>();
+
+  groups.value.forEach((group) => {
+    const saved = stored.groups.find((g) => g.id === group.id);
+    if (!saved) return;
+
+    for (let i = 0; i < group.members.length; i += 1) {
+      const memberId = saved.memberIds[i];
+      if (typeof memberId !== "number" || used.has(memberId)) continue;
+      const student = byId.get(memberId);
+      if (!student) continue;
+      group.members[i] = student;
+      used.add(memberId);
+    }
+  });
+}
+
+function persistGrouping() {
+  try {
+    const payload: StoredGrouping = {
+      version: 1,
+      groups: groups.value.map((group) => ({
+        id: group.id,
+        memberIds: group.members.map((member) => member?.id ?? null),
+      })),
+    };
+    localStorage.setItem(GROUPING_STORAGE_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new Event(GROUPING_UPDATED_EVENT));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+onMounted(() => {
+  const stored = readStoredGrouping();
+  if (stored) {
+    applyStoredGrouping(stored);
+  }
+  persistGrouping();
+});
+
+watch(
+  groups,
+  () => {
+    persistGrouping();
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -14,9 +181,50 @@ const groups = [{ id: 1, showChips: true, plusIndex: -1 }];
         </div>
       </div>
 
-      <div class="slotRow">
-        <div v-for="n in 5" :key="n" class="slotCard">
-          <span v-if="group.plusIndex === n - 1" class="plusMark">+</span>
+      <div class="slotRow" :style="{ '--slot-count': group.members.length }">
+        <div
+          v-for="(member, slotIndex) in group.members"
+          :key="slotIndex"
+          class="slotCardWrap"
+        >
+          <button
+            class="slotCard"
+            type="button"
+            @click="toggleTip(group.id, slotIndex)"
+          >
+            <span v-if="member" class="memberAlias">{{ member.alias }}</span>
+            <span v-else class="plusMark">+</span>
+          </button>
+
+          <button
+            v-if="member"
+            class="removeBtn"
+            type="button"
+            aria-label="remove member"
+            @click.stop="removeMember(group.id, slotIndex)"
+          >
+            x
+          </button>
+
+          <div
+            v-if="
+              activeTip?.groupId === group.id && activeTip.slotIndex === slotIndex
+            "
+            class="topTip"
+          >
+            <div v-if="availableStudents.length" class="tipList">
+              <button
+                v-for="student in availableStudents"
+                :key="student.id"
+                class="tipItem"
+                type="button"
+                @click="addMember(group.id, slotIndex, student)"
+              >
+                {{ student.alias }}
+              </button>
+            </div>
+            <p v-else class="tipEmpty">No student left</p>
+          </div>
         </div>
         <button class="nextBtn" type="button" aria-label="next group">&#8594;</button>
       </div>
@@ -71,16 +279,33 @@ const groups = [{ id: 1, showChips: true, plusIndex: -1 }];
 
 .slotRow {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr)) 36px;
+  grid-template-columns: repeat(var(--slot-count), minmax(120px, 1fr)) 36px;
   gap: 16px;
   align-items: stretch;
 }
 
+.slotCardWrap {
+  position: relative;
+}
+
 .slotCard {
+  width: 100%;
+  border: none;
+  cursor: pointer;
   aspect-ratio: 1 / 1;
   background: #d2d2d4;
   display: grid;
   place-items: center;
+}
+
+.memberAlias {
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.2;
+  color: #111;
+  font-weight: 600;
+  padding: 10px;
+  text-align: center;
+  word-break: break-word;
 }
 
 .plusMark {
@@ -88,6 +313,62 @@ const groups = [{ id: 1, showChips: true, plusIndex: -1 }];
   line-height: 1;
   color: #000;
   font-weight: 300;
+}
+
+.removeBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topTip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: min(220px, 94vw);
+  max-height: 220px;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #bfc3ca;
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+  z-index: 30;
+  padding: 8px;
+}
+
+.tipList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tipItem {
+  border: none;
+  background: #eceef2;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tipItem:hover {
+  background: #dfe3ea;
+}
+
+.tipEmpty {
+  margin: 2px 0;
+  font-size: 13px;
+  color: #666;
 }
 
 .nextBtn {

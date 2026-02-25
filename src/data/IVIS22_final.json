@@ -1,0 +1,1375 @@
+[
+  {
+    "id": 1,
+    "alias": "Gandabldore",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 4.75,
+    "hobby_raw": "Video Games, Nature, Basketball, Design, UX",
+    "hobby": [
+      "videogame",
+      "basketball",
+      "design"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 3,
+      "mathematics": 2,
+      "drawing_and_artistic": 5,
+      "computer_usage": 7,
+      "programming": 5,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 8,
+      "communication": 9,
+      "collaboration": 6,
+      "code_repository": 3
+    }
+  },
+  {
+    "id": 2,
+    "alias": "Appa",
+    "time_year": "2022",
+    "major": "Computer Science, Human-Computer Interaction, Media Technology",
+    "average": 5.83,
+    "hobby_raw": "I like to play games, watch movies, TV series and learning in general.",
+    "hobby": [
+      "game",
+      "movie",
+      "series"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 4,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 4,
+      "computer_usage": 6,
+      "programming": 7,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 2,
+      "user_experience_evaluation": 8,
+      "communication": 10,
+      "collaboration": 10,
+      "code_repository": 7
+    }
+  },
+  {
+    "id": 3,
+    "alias": "Ravagers",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.75,
+    "hobby_raw": "I love to workout, and I have played handball almost all my life, until work made it hard to keep on going. I work as a bartender besides studying, so late nights and weekends make it hard to be able to play handball. Besides that I like going to the gym, playing video games and hanging out with friends and family. ",
+    "hobby": [
+      "workout",
+      "handball",
+      "gym",
+      "videogame"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 4,
+      "statistical": 4,
+      "mathematics": 6,
+      "drawing_and_artistic": 2,
+      "computer_usage": 7,
+      "programming": 5,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 7,
+      "communication": 10,
+      "collaboration": 9,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 4,
+    "alias": "Senjougahara",
+    "time_year": "2022",
+    "major": "Computer Science, Media Technology",
+    "average": 5.92,
+    "hobby_raw": "Playing guitar, photography, playing games and game development",
+    "hobby": [
+      "guitar",
+      "photography",
+      "game"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 4,
+      "statistical": 5,
+      "mathematics": 5,
+      "drawing_and_artistic": 6,
+      "computer_usage": 7,
+      "programming": 7,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 7,
+      "user_experience_evaluation": 2,
+      "communication": 8,
+      "collaboration": 8,
+      "code_repository": 9
+    }
+  },
+  {
+    "id": 5,
+    "alias": "Björky",
+    "time_year": "2022",
+    "major": "Computer Science, Human-Computer Interaction, Media Technology",
+    "average": 6.58,
+    "hobby_raw": "I like sports and music.",
+    "hobby": [
+      "sport",
+      "music"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 6,
+      "statistical": 8,
+      "mathematics": 8,
+      "drawing_and_artistic": 4,
+      "computer_usage": 7,
+      "programming": 7,
+      "computer_graphics_programming": 6,
+      "human_computer_interaction_programming": 6,
+      "user_experience_evaluation": 7,
+      "communication": 6,
+      "collaboration": 8,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 6,
+    "alias": "Sthlm",
+    "time_year": "2022",
+    "major": "Human-Computer Interaction, Media Technology",
+    "average": 3.92,
+    "hobby_raw": "Football, Working out, TV-Series and Movies, The stock market",
+    "hobby": [
+      "football",
+      "workout",
+      "series",
+      "movie"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 3,
+      "drawing_and_artistic": 2,
+      "computer_usage": 6,
+      "programming": 2,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 9,
+      "collaboration": 8,
+      "code_repository": 3
+    }
+  },
+  {
+    "id": 7,
+    "alias": "Baby Yoda (Grogu)",
+    "time_year": "2022",
+    "major": "Human-Computer Interaction",
+    "average": 6,
+    "hobby_raw": "3D printing and designing, any Adobe program (creative), basketball, tennis and golf",
+    "hobby": [
+      "3dprinting",
+      "program",
+      "basketball",
+      "tennis"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "tech_making"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 6,
+      "mathematics": 7,
+      "drawing_and_artistic": 6,
+      "computer_usage": 9,
+      "programming": 5,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 4,
+      "communication": 9,
+      "collaboration": 10,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 8,
+    "alias": "dorp",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.58,
+    "hobby_raw": "Music, gaming",
+    "hobby": [
+      "music",
+      "gaming"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 3,
+      "mathematics": 4,
+      "drawing_and_artistic": 3,
+      "computer_usage": 7,
+      "programming": 5,
+      "computer_graphics_programming": 6,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 2,
+      "communication": 8,
+      "collaboration": 8,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 9,
+    "alias": "tigerShark",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 6,
+    "hobby_raw": "Videogames, music, tech, working out...",
+    "hobby": [
+      "videogame",
+      "music",
+      "workout"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 6,
+      "mathematics": 5,
+      "drawing_and_artistic": 5,
+      "computer_usage": 8,
+      "programming": 6,
+      "computer_graphics_programming": 7,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 4,
+      "communication": 8,
+      "collaboration": 6,
+      "code_repository": 7
+    }
+  },
+  {
+    "id": 10,
+    "alias": "PorcupineLover1337",
+    "time_year": "2022",
+    "major": "Computer Science, Media Technology",
+    "average": 4.08,
+    "hobby_raw": "Painting, cats, plants, perhaps graphs",
+    "hobby": [
+      "painting"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 6,
+      "mathematics": 1,
+      "drawing_and_artistic": 7,
+      "computer_usage": 5,
+      "programming": 2,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 2,
+      "user_experience_evaluation": 4,
+      "communication": 8,
+      "collaboration": 7,
+      "code_repository": 3
+    }
+  },
+  {
+    "id": 11,
+    "alias": "Neko27",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 4.5,
+    "hobby_raw": "",
+    "hobby": [],
+    "hobby_area": [
+      "other"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 7,
+      "computer_usage": 7,
+      "programming": 3,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 7,
+      "communication": 4,
+      "collaboration": 5,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 12,
+    "alias": "Manama Jeff",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.75,
+    "hobby_raw": "I like playing guitar and video games",
+    "hobby": [
+      "guitar",
+      "videogame"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 3,
+      "drawing_and_artistic": 6,
+      "computer_usage": 9,
+      "programming": 5,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 8,
+      "collaboration": 8,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 13,
+    "alias": "wagame",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.08,
+    "hobby_raw": "I enjoy playing the piano, going to bars with friends and a having a good sleep-in on the weekends. Also, I play a lot of Minecraft and scroll Twitter as obsessed.",
+    "hobby": [
+      "piano"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 2,
+      "mathematics": 5,
+      "drawing_and_artistic": 7,
+      "computer_usage": 5,
+      "programming": 4,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 2,
+      "user_experience_evaluation": 8,
+      "communication": 9,
+      "collaboration": 8,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 14,
+    "alias": "loooh",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.5,
+    "hobby_raw": "Main interest is VR and things that go along with it such as full body tracking, virtual avatars, display technology, etc. Hobbies would mainly be gaming with friends, working out, reading and playing music.",
+    "hobby": [
+      "gaming",
+      "workout",
+      "reading",
+      "music"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 4,
+      "mathematics": 7,
+      "drawing_and_artistic": 2,
+      "computer_usage": 7,
+      "programming": 6,
+      "computer_graphics_programming": 4,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 2,
+      "communication": 5,
+      "collaboration": 5,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 15,
+    "alias": "Xiao",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 6.33,
+    "hobby_raw": "I love video games and sports. For example, swimming and going to the gym.",
+    "hobby": [
+      "videogame",
+      "sport",
+      "swimming",
+      "gym"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 8,
+      "mathematics": 8,
+      "drawing_and_artistic": 3,
+      "computer_usage": 8,
+      "programming": 5,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 6,
+      "user_experience_evaluation": 5,
+      "communication": 7,
+      "collaboration": 7,
+      "code_repository": 9
+    }
+  },
+  {
+    "id": 16,
+    "alias": "C3I2",
+    "time_year": "2022",
+    "major": "Business Administration, Finance, Law, Economics and Business Administration",
+    "average": 6.83,
+    "hobby_raw": "Wargaming",
+    "hobby": [],
+    "hobby_area": [
+      "other"
+    ],
+    "ratings": {
+      "information_visualization": 8,
+      "statistical": 9,
+      "mathematics": 7,
+      "drawing_and_artistic": 5,
+      "computer_usage": 9,
+      "programming": 7,
+      "computer_graphics_programming": 6,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 6,
+      "communication": 7,
+      "collaboration": 6,
+      "code_repository": 7
+    }
+  },
+  {
+    "id": 17,
+    "alias": "Anchovy",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.42,
+    "hobby_raw": "I can say for sure that I am interested in painting and in studying art. I'm also interested in web development, language learning, yoga, coffee brewing. I like to study technical structured disciplines, however, I would qualify myself more as a creative person",
+    "hobby": [
+      "painting",
+      "art",
+      "language",
+      "yoga",
+      "coffee"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "food",
+      "languages_culture"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 8,
+      "computer_usage": 4,
+      "programming": 7,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 4,
+      "communication": 8,
+      "collaboration": 7,
+      "code_repository": 7
+    }
+  },
+  {
+    "id": 18,
+    "alias": "Jaskier",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 6.08,
+    "hobby_raw": "I have too many interests. Running, reading, knitting, yoga, video games, drawing",
+    "hobby": [
+      "running",
+      "reading",
+      "yoga",
+      "videogame",
+      "drawing"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 6,
+      "drawing_and_artistic": 8,
+      "computer_usage": 8,
+      "programming": 5,
+      "computer_graphics_programming": 7,
+      "human_computer_interaction_programming": 6,
+      "user_experience_evaluation": 5,
+      "communication": 9,
+      "collaboration": 9,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 19,
+    "alias": "SuperstitiousOtter",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 6.08,
+    "hobby_raw": "I spend most of my spare time playing music, being outdoors or cooking.",
+    "hobby": [
+      "music",
+      "cooking"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "food"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 7,
+      "mathematics": 6,
+      "drawing_and_artistic": 4,
+      "computer_usage": 8,
+      "programming": 9,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 6,
+      "user_experience_evaluation": 3,
+      "communication": 5,
+      "collaboration": 7,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 20,
+    "alias": "Chock",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 6.25,
+    "hobby_raw": "Music, friends and trying new things",
+    "hobby": [
+      "music"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 7,
+      "mathematics": 6,
+      "drawing_and_artistic": 1,
+      "computer_usage": 8,
+      "programming": 7,
+      "computer_graphics_programming": 7,
+      "human_computer_interaction_programming": 7,
+      "user_experience_evaluation": 7,
+      "communication": 5,
+      "collaboration": 7,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 21,
+    "alias": "Moony04",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 7,
+    "hobby_raw": "Programming, cats, photography, politics and sports",
+    "hobby": [
+      "programming",
+      "photography",
+      "sport"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "tech_making"
+    ],
+    "ratings": {
+      "information_visualization": 6,
+      "statistical": 6,
+      "mathematics": 7,
+      "drawing_and_artistic": 8,
+      "computer_usage": 8,
+      "programming": 6,
+      "computer_graphics_programming": 6,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 5,
+      "communication": 10,
+      "collaboration": 9,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 22,
+    "alias": "sentient_polyhedron",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 5.58,
+    "hobby_raw": "board games, dancing, ultimate frisbee, artificial intelligence, meeting friends, video games, ...",
+    "hobby": [
+      "boardgame",
+      "videogame"
+    ],
+    "hobby_area": [
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 7,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 2,
+      "computer_usage": 9,
+      "programming": 8,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 3,
+      "communication": 7,
+      "collaboration": 6,
+      "code_repository": 9
+    }
+  },
+  {
+    "id": 23,
+    "alias": "Rani",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 3,
+    "hobby_raw": "I play video games and pen-and-paper role playing games. I also help out in church with the projector, for lyrics. I am particularly interested in video games, and hope to make my own one day. (A very unique aspiration, I know)",
+    "hobby": [
+      "videogame"
+    ],
+    "hobby_area": [
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 1,
+      "mathematics": 6,
+      "drawing_and_artistic": 3,
+      "computer_usage": 3,
+      "programming": 6,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 1,
+      "user_experience_evaluation": 1,
+      "communication": 4,
+      "collaboration": 4,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 24,
+    "alias": "glas444",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 3.92,
+    "hobby_raw": "I like technology and computer interaction. My hobbies are computer games, skiing and sailing. ",
+    "hobby": [
+      "game",
+      "skiing",
+      "sailing"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 4,
+      "computer_usage": 9,
+      "programming": 3,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 2,
+      "user_experience_evaluation": 2,
+      "communication": 5,
+      "collaboration": 7,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 25,
+    "alias": "fvmlrvgj",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.33,
+    "hobby_raw": "kayaking, windsurfing, hiking",
+    "hobby": [
+      "hiking"
+    ],
+    "hobby_area": [
+      "sports_outdoors"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 6,
+      "mathematics": 5,
+      "drawing_and_artistic": 1,
+      "computer_usage": 7,
+      "programming": 6,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 5,
+      "communication": 8,
+      "collaboration": 7,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 26,
+    "alias": "Supporter24",
+    "time_year": "2022",
+    "major": "Computer Science, Computer Engineering",
+    "average": 5.58,
+    "hobby_raw": "Academically I am interested in computer graphics, most especially for animation and video games. My hobbies include playing piano, board games, and ultimate frisbee.",
+    "hobby": [
+      "videogame",
+      "piano",
+      "boardgame"
+    ],
+    "hobby_area": [
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 3,
+      "mathematics": 7,
+      "drawing_and_artistic": 3,
+      "computer_usage": 8,
+      "programming": 8,
+      "computer_graphics_programming": 7,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 7,
+      "collaboration": 8,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 27,
+    "alias": "Frog",
+    "time_year": "2022",
+    "major": "Computer Science, Media Technology",
+    "average": 4.25,
+    "hobby_raw": "Mostly I just watch Youtube and play games.",
+    "hobby": [
+      "game"
+    ],
+    "hobby_area": [
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 4,
+      "computer_usage": 7,
+      "programming": 5,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 4,
+      "collaboration": 5,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 28,
+    "alias": "ztekzpaden1",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.75,
+    "hobby_raw": "My hobbies are music, art and photography",
+    "hobby": [
+      "music",
+      "art",
+      "photography"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 3,
+      "mathematics": 7,
+      "drawing_and_artistic": 10,
+      "computer_usage": 6,
+      "programming": 1,
+      "computer_graphics_programming": 4,
+      "human_computer_interaction_programming": 2,
+      "user_experience_evaluation": 3,
+      "communication": 7,
+      "collaboration": 8,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 29,
+    "alias": "Aiya12",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.42,
+    "hobby_raw": "Reading",
+    "hobby": [
+      "reading"
+    ],
+    "hobby_area": [
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 3,
+      "mathematics": 5,
+      "drawing_and_artistic": 2,
+      "computer_usage": 7,
+      "programming": 4,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 1,
+      "user_experience_evaluation": 3,
+      "communication": 10,
+      "collaboration": 8,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 30,
+    "alias": "RedMouse",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.17,
+    "hobby_raw": "I am interested in photography and illustrations.",
+    "hobby": [
+      "photography"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 4,
+      "mathematics": 4,
+      "drawing_and_artistic": 10,
+      "computer_usage": 10,
+      "programming": 2,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 6,
+      "communication": 8,
+      "collaboration": 10,
+      "code_repository": 2
+    }
+  },
+  {
+    "id": 31,
+    "alias": "Rouy Saila",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 5.75,
+    "hobby_raw": "CS:GO, Friends, YouTube, Programming (often games).",
+    "hobby": [
+      "programming",
+      "game"
+    ],
+    "hobby_area": [
+      "games",
+      "tech_making"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 3,
+      "mathematics": 8,
+      "drawing_and_artistic": 3,
+      "computer_usage": 9,
+      "programming": 8,
+      "computer_graphics_programming": 5,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 2,
+      "communication": 9,
+      "collaboration": 5,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 32,
+    "alias": "KusinVitamin",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.83,
+    "hobby_raw": "art, gardening, skiing, reading, swimming and just generally trying to figure stuff out",
+    "hobby": [
+      "art",
+      "skiing",
+      "reading",
+      "swimming"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 3,
+      "mathematics": 8,
+      "drawing_and_artistic": 8,
+      "computer_usage": 8,
+      "programming": 7,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 5,
+      "communication": 8,
+      "collaboration": 7,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 33,
+    "alias": "Kpmsd",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.58,
+    "hobby_raw": "My main hobbies are playing the guitar, badminton and video games. ",
+    "hobby": [
+      "guitar",
+      "badminton",
+      "videogame"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 3,
+      "mathematics": 7,
+      "drawing_and_artistic": 2,
+      "computer_usage": 8,
+      "programming": 6,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 3,
+      "communication": 5,
+      "collaboration": 6,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 34,
+    "alias": "Oliver Queen",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 3.75,
+    "hobby_raw": "Board games, video games, game development",
+    "hobby": [
+      "boardgame",
+      "videogame"
+    ],
+    "hobby_area": [
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 1,
+      "mathematics": 5,
+      "drawing_and_artistic": 2,
+      "computer_usage": 7,
+      "programming": 4,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 5,
+      "collaboration": 5,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 35,
+    "alias": "dez2pacito",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 5.08,
+    "hobby_raw": "I like kayaking, running, developing games and traveling. ",
+    "hobby": [
+      "running",
+      "game",
+      "travel"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "games",
+      "travel"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 5,
+      "drawing_and_artistic": 5,
+      "computer_usage": 8,
+      "programming": 6,
+      "computer_graphics_programming": 7,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 3,
+      "communication": 6,
+      "collaboration": 6,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 36,
+    "alias": "Snowflake",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 5.17,
+    "hobby_raw": "I love cooking and baking. Also like to hike and all types of crafting e.g., knitting. ",
+    "hobby": [
+      "cooking",
+      "baking",
+      "hike"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "food"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 6,
+      "mathematics": 7,
+      "drawing_and_artistic": 5,
+      "computer_usage": 7,
+      "programming": 5,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 3,
+      "communication": 8,
+      "collaboration": 8,
+      "code_repository": 3
+    }
+  },
+  {
+    "id": 37,
+    "alias": "CrispyChicken",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 5.17,
+    "hobby_raw": "My hobbies are playing games, programming and gardening.",
+    "hobby": [
+      "game",
+      "programming"
+    ],
+    "hobby_area": [
+      "games",
+      "tech_making"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 4,
+      "drawing_and_artistic": 8,
+      "computer_usage": 7,
+      "programming": 8,
+      "computer_graphics_programming": 8,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 1,
+      "communication": 5,
+      "collaboration": 5,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 38,
+    "alias": "_no_one_",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 4,
+    "hobby_raw": "Photography, Design, Travelling & Hiking",
+    "hobby": [
+      "photography",
+      "design",
+      "travel",
+      "hiking"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "travel"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 1,
+      "mathematics": 1,
+      "drawing_and_artistic": 5,
+      "computer_usage": 8,
+      "programming": 4,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 3,
+      "communication": 5,
+      "collaboration": 7,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 39,
+    "alias": "gherkin",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 4.75,
+    "hobby_raw": "I'm interested in slowing down and appreciating the details. I'm interested in beautiful and evocative visuals and ideas. Here are some hobbies enumerated: Painting, Reading, Cooking, Programming, Climbing, Games.",
+    "hobby": [
+      "painting",
+      "reading",
+      "cooking",
+      "programming",
+      "climbing",
+      "game"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "games",
+      "tech_making",
+      "reading_writing",
+      "food"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 3,
+      "mathematics": 4,
+      "drawing_and_artistic": 8,
+      "computer_usage": 8,
+      "programming": 5,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 3,
+      "communication": 5,
+      "collaboration": 6,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 40,
+    "alias": "XÆA12",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 6.17,
+    "hobby_raw": "I enjoy reading, playing sports, listening/creating music.",
+    "hobby": [
+      "reading",
+      "sport",
+      "music"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 1,
+      "statistical": 5,
+      "mathematics": 5,
+      "drawing_and_artistic": 9,
+      "computer_usage": 9,
+      "programming": 6,
+      "computer_graphics_programming": 1,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 9,
+      "communication": 10,
+      "collaboration": 10,
+      "code_repository": 6
+    }
+  },
+  {
+    "id": 41,
+    "alias": "sofi",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 5.67,
+    "hobby_raw": "I like software development, creating apps, processing massive data :) . My hobbies are reading, playing valorant,lol and other videogames.",
+    "hobby": [
+      "reading",
+      "videogame"
+    ],
+    "hobby_area": [
+      "games",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 2,
+      "mathematics": 5,
+      "drawing_and_artistic": 7,
+      "computer_usage": 8,
+      "programming": 8,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 6,
+      "communication": 6,
+      "collaboration": 8,
+      "code_repository": 8
+    }
+  },
+  {
+    "id": 42,
+    "alias": "Nier1.2247",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 4.17,
+    "hobby_raw": "",
+    "hobby": [],
+    "hobby_area": [
+      "other"
+    ],
+    "ratings": {
+      "information_visualization": 2,
+      "statistical": 4,
+      "mathematics": 6,
+      "drawing_and_artistic": 7,
+      "computer_usage": 5,
+      "programming": 4,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 4,
+      "user_experience_evaluation": 4,
+      "communication": 3,
+      "collaboration": 3,
+      "code_repository": 5
+    }
+  },
+  {
+    "id": 43,
+    "alias": "Arceus",
+    "time_year": "2022",
+    "major": "Human-Computer Interaction, Media Technology, Graphic Design, Marketing",
+    "average": 6,
+    "hobby_raw": "VR games and skiing",
+    "hobby": [
+      "game",
+      "skiing"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "games"
+    ],
+    "ratings": {
+      "information_visualization": 4,
+      "statistical": 4,
+      "mathematics": 6,
+      "drawing_and_artistic": 7,
+      "computer_usage": 5,
+      "programming": 5,
+      "computer_graphics_programming": 6,
+      "human_computer_interaction_programming": 6,
+      "user_experience_evaluation": 8,
+      "communication": 8,
+      "collaboration": 9,
+      "code_repository": 4
+    }
+  },
+  {
+    "id": 44,
+    "alias": "Baar",
+    "time_year": "2022",
+    "major": "Media Technology",
+    "average": 4.75,
+    "hobby_raw": "Music. Cartoon",
+    "hobby": [
+      "music"
+    ],
+    "hobby_area": [
+      "arts_media"
+    ],
+    "ratings": {
+      "information_visualization": 3,
+      "statistical": 4,
+      "mathematics": 5,
+      "drawing_and_artistic": 10,
+      "computer_usage": 8,
+      "programming": 2,
+      "computer_graphics_programming": 2,
+      "human_computer_interaction_programming": 3,
+      "user_experience_evaluation": 8,
+      "communication": 6,
+      "collaboration": 4,
+      "code_repository": 2
+    }
+  },
+  {
+    "id": 45,
+    "alias": "sofi",
+    "time_year": "2022",
+    "major": "Computer Science",
+    "average": 6.5,
+    "hobby_raw": "I'm interested in software development an qa. I like reading, watching series, doing sport.",
+    "hobby": [
+      "reading",
+      "series",
+      "sport"
+    ],
+    "hobby_area": [
+      "sports_outdoors",
+      "arts_media",
+      "reading_writing"
+    ],
+    "ratings": {
+      "information_visualization": 5,
+      "statistical": 3,
+      "mathematics": 7,
+      "drawing_and_artistic": 7,
+      "computer_usage": 8,
+      "programming": 8,
+      "computer_graphics_programming": 3,
+      "human_computer_interaction_programming": 5,
+      "user_experience_evaluation": 6,
+      "communication": 9,
+      "collaboration": 9,
+      "code_repository": 8
+    }
+  }
+]

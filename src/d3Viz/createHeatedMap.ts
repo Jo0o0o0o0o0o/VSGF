@@ -29,7 +29,7 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
   function update(records: IvisRecord[], opt: HeatedMapOptions) {
     svg.attr("viewBox", `0 0 ${opt.width} ${opt.height}`).attr("preserveAspectRatio", "none");
 
-    const rowLabels = records.map((r) => `${r.id}. ${r.alias}`);
+    const rowLabels = records.map((r) => r.alias);
     const margin = {
       top: 18,
       right: 18,
@@ -55,15 +55,15 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
       .paddingInner(0.06)
       .paddingOuter(0.03);
 
-    const color = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 10]);
-
     const cells: HeatedCell[] = records.flatMap((r) =>
       opt.ratingKeys.map((key) => ({
-        rowLabel: `${r.id}. ${r.alias}`,
+        rowLabel: r.alias,
         ratingKey: key,
         value: Number(r.ratings[key]),
       })),
     );
+    const maxValue = d3.max(cells, (d) => (Number.isFinite(d.value) ? d.value : 0)) ?? 0;
+    const color = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, Math.max(1, maxValue)]);
 
     gx.attr("transform", `translate(0,${innerH})`).call(d3.axisBottom(x));
     gx.selectAll("path,line").attr("stroke", "#94a3b8");
