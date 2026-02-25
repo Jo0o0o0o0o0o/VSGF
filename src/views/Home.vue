@@ -12,10 +12,6 @@ import theDogApiBreeds from "@/data/dogs_thedogapi_breeds.json";
 import { findBreedGroupByName, getBreedGroupTagStyle } from "@/utils/fuzzyBreedGroup";
 import { fuzzyFilter } from "@/utils/fuzzySearch";
 
-import WorldPlot from "@/components/WorldPlot.vue";
-import type { DogApiBreed } from "@/types/dogApiBreed";
-import { buildDogOriginPoints } from "@/utils/buildDogOriginPoints";
-import type { WorldPoint } from "@/d3Viz/createWorldPlot";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 
 import {
@@ -167,98 +163,6 @@ const dogSelectOptions = computed(() => {
   return [sel, ...matched];
 });
 
-const apiBreeds = computed(() => theDogApiBreeds as DogApiBreed[]);
-
-const worldPoints = computed<WorldPoint[]>(() =>
-  buildDogOriginPoints(dogs.value, apiBreeds.value),
-);
-
-const UNKNOWN_BREED_GROUP_KEY = "__UNKNOWN_BREED_GROUP__";
-const selectedWorldBreedGroup = ref<string | null>(null);
-
-const worldBreedGroupTags = computed(() => {
-  const groups = new Set<string>();
-
-  for (const d of dogs.value) {
-    const group = findBreedGroupByName(
-      d.name,
-      theDogApiBreeds as { name: string; breed_group?: string | null }[],
-    );
-
-    if (group) {
-      groups.add(group);
-      continue;
-    }
-
-  }
-
-  const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
-  const tags = sortedGroups.map((g) => ({ key: g, label: g, style: getBreedGroupTagStyle(g) }));
-
-
-  return tags;
-});
-
-const worldDisplayPoints = computed<WorldPoint[]>(() => {
-  const selectedGroup = selectedWorldBreedGroup.value;
-  if (!selectedGroup) return worldPoints.value;
-
-  return worldPoints.value.filter((p) => {
-    const dogName = p.dogName ?? p.label ?? p.id;
-    const group = findBreedGroupByName(
-      dogName,
-      theDogApiBreeds as { name: string; breed_group?: string | null }[],
-    );
-
-    if (selectedGroup === UNKNOWN_BREED_GROUP_KEY) {
-      return !group;
-    }
-
-    return group === selectedGroup;
-  });
-});
-const worldPointColor = computed(() => {
-  const key = selectedWorldBreedGroup.value;
-  if (!key) return "#f97316";
-  const tag = worldBreedGroupTags.value.find((t) => t.key === key);
-  return (tag?.style?.backgroundColor as string | undefined) ?? "#f97316";
-});
-
-const selectedCountryCode = ref<string | null>(null);
-const selectedDogCountryCode = computed(() => {
-  const sel = selectedDog.value;
-  if (!sel) return null;
-
-  const point = worldPoints.value.find((p) => (p.dogName ?? p.label ?? p.id) === sel.name);
-  return point?.countryCode?.toUpperCase() ?? null;
-});
-const countryListCountryCode = computed(() => selectedCountryCode.value ?? selectedDogCountryCode.value);
-const countryDogList = computed(() => {
-  const cc = countryListCountryCode.value;
-  if (!cc) return [] as DogBreed[];
-
-  const names = Array.from(
-    new Set(
-      worldPoints.value
-        .filter((p) => (p.countryCode ?? "").toUpperCase() === cc)
-        .map((p) => p.dogName ?? p.label ?? p.id),
-    ),
-  );
-
-  const inCountry = names
-    .map((name) => dogs.value.find((d) => d.name === name))
-    .filter((d): d is DogBreed => Boolean(d));
-
-  const sel = selectedDog.value;
-  if (!sel) return inCountry;
-
-  if (!inCountry.some((d) => d.name === sel.name)) {
-    return inCountry;
-  }
-
-  return [sel, ...inCountry.filter((d) => d.name !== sel.name)];
-});
-
 function focusDogSearch() {
   nextTick(() => {
     dogSearchInput.value?.focus();
@@ -318,15 +222,6 @@ function onSelectDog(id: string | number) {
   selectedName.value = String(id);
 }
 
-function onSelectCountry(countryCode: string) {
-  selectedCountryCode.value = countryCode.toUpperCase();
-}
-
-function toggleWorldBreedGroup(groupKey: string) {
-  selectedWorldBreedGroup.value = selectedWorldBreedGroup.value === groupKey ? null : groupKey;
-  selectedCountryCode.value = null;
-}
-
 function sendToCompare() {
   const dog = selectedDog.value;
   if (!dog) return;
@@ -361,7 +256,6 @@ watch(
   () => selectedName.value,
   (next, prev) => {
     if (!next || next === prev) return;
-    selectedCountryCode.value = null;
   },
 );
 
@@ -507,59 +401,6 @@ function onGroupingStorageChanged() {
         </div>
       </div>
     </section>
-    <div class="card mapCard">
-      <div class="title">Breed origins</div>
-      <div class="worldLayout">
-        <div class="countryDogs">
-          <div class="listHeader">
-            <div class="title">Dogs list</div>
-            <div class="subtitle">
-              {{ countryListCountryCode ?? "Select a dog or click a country" }}
-            </div>
-          </div>
-
-          <div class="groupTags">
-            <button
-              v-for="tag in worldBreedGroupTags"
-              :key="`group-${tag.key}`"
-              class="groupTag"
-              :style="tag.style"
-              :class="{ active: selectedWorldBreedGroup === tag.key }"
-              @click="toggleWorldBreedGroup(tag.key)"
-            >
-              {{ tag.label }}
-            </button>
-          </div>
-
-          <div class="countryBody">
-            <button
-              v-for="d in countryDogList"
-              :key="`country-${d.name}`"
-              class="row"
-              :class="{ active: d.name === selectedName }"
-              @click="selectedName = d.name"
-            >
-              <img :src="d.image_link" :alt="d.name" />
-              <div class="name">{{ d.name }}</div>
-            </button>
-            <div v-if="countryDogList.length === 0" class="empty">
-              Select a dog or click a country to show dogs from that country.
-            </div>
-          </div>
-        </div>
-
-        <div class="mapArea">
-          <WorldPlot
-            :points="worldDisplayPoints"
-            :highlightId="highlightId"
-            :pointColor="worldPointColor"
-            :activeCountryCode="selectedCountryCode"
-            @selectCountry="onSelectCountry"
-          />
-        </div>
-      </div>
-      <div class="hint">Showing {{ worldDisplayPoints.length }} breeds with country info.</div>
-    </div>
     <section id="beeswarm-section" ref="beeswarmSectionRef" class="beeswarmSection">
       <div class="card beeswarm">
 
@@ -900,88 +741,6 @@ function onGroupingStorageChanged() {
   border-radius: 10px;
   background: #eef2ff;
   color: #6b7280;
-}
-
-.worldLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 18px;
-  height: 520px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.countryDogs {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.groupTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.groupTag {
-  border: 1px solid transparent;
-  background: #ffffff;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.groupTag:hover {
-  background: #fff8e5;
-}
-
-.groupTag.active {
-  border-color: #facc15;
-  font-weight: 700;
-  border: 2px solid;
-}
-
-.countryBody {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-right: 6px;
-  padding-bottom: 4px;
-}
-
-.countryBody::-webkit-scrollbar {
-  width: 6px;
-}
-
-.countryBody::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.countryBody::-webkit-scrollbar-thumb {
-  background: rgba(206, 214, 225, 0.6);
-  border-radius: 999px;
-}
-
-.countryBody::-webkit-scrollbar-thumb:hover {
-  background: rgba(71, 85, 105, 0.85);
-}
-
-.mapArea {
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-.hint {
-  margin-top: 8px;
-  font-size: 12px;
-  opacity: 0.75;
 }
 .beeswarmSection {
   height: 860px;
