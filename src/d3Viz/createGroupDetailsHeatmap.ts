@@ -14,6 +14,7 @@ export type GroupDetailsHeatCell = {
   axisKey: RadarKey;
   axisLabel: string;
   value: number;
+  isAverage?: boolean;
 };
 
 export type GroupDetailsHeatmapHandlers = {
@@ -41,7 +42,7 @@ export function createGroupDetailsHeatmap(
   function update(dogs: RadarDog[], opt: GroupDetailsHeatmapOptions) {
     svg.attr("viewBox", `0 0 ${opt.width} ${opt.height}`).attr("preserveAspectRatio", "none");
 
-    const rowLabels = dogs.map((d) => d.name);
+    const rowLabels = [...dogs.map((d) => d.name), "Average"];
     const margin = {
       top: 16,
       right: 18,
@@ -67,7 +68,7 @@ export function createGroupDetailsHeatmap(
       .paddingInner(0.08)
       .paddingOuter(0.03);
 
-    const cells: GroupDetailsHeatCell[] = dogs.flatMap((dog, rowIndex) =>
+    const personCells: GroupDetailsHeatCell[] = dogs.flatMap((dog, rowIndex) =>
       opt.axes.map((axis) => ({
         rowIndex,
         rowLabel: dog.name,
@@ -76,6 +77,19 @@ export function createGroupDetailsHeatmap(
         value: clampToRating(Number(dog[axis.key])),
       })),
     );
+    const averageCells: GroupDetailsHeatCell[] = opt.axes.map((axis) => {
+      const sum = dogs.reduce((acc, dog) => acc + clampToRating(Number(dog[axis.key])), 0);
+      const avg = dogs.length ? sum / dogs.length : 0;
+      return {
+        rowIndex: -1,
+        rowLabel: "Average",
+        axisKey: axis.key,
+        axisLabel: axis.label,
+        value: Number(avg.toFixed(2)),
+        isAverage: true,
+      };
+    });
+    const cells: GroupDetailsHeatCell[] = [...personCells, ...averageCells];
 
     const maxValue = d3.max(cells, (d) => d.value) ?? 0;
     const color = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, Math.max(1, maxValue)]);
@@ -95,6 +109,9 @@ export function createGroupDetailsHeatmap(
     gy.call(d3.axisLeft(y).tickSize(0));
     gy.select("path").attr("stroke", "#9ca3af");
     gy.selectAll("text").attr("fill", "#374151").style("font-size", "11px");
+    gy
+      .selectAll<SVGTextElement, string>("text")
+      .style("font-weight", (label) => (label === "Average" ? "700" : "400"));
 
     const focused = opt.focusIndex ?? null;
 
@@ -114,12 +131,16 @@ export function createGroupDetailsHeatmap(
       .attr("rx", 2)
       .attr("fill", (d) => color(d.value))
       .attr("fill-opacity", (d) =>
-        focused === null || focused === d.rowIndex ? 0.95 : 0.45,
+        d.isAverage ? 1 : focused === null || focused === d.rowIndex ? 0.95 : 0.45,
       )
       .attr("stroke", (d) =>
-        focused !== null && focused === d.rowIndex ? "#111827" : "rgba(255,255,255,0.7)",
+        focused !== null && focused === d.rowIndex && !d.isAverage
+          ? "#111827"
+          : "rgba(255,255,255,0.7)",
       )
-      .attr("stroke-width", (d) => (focused !== null && focused === d.rowIndex ? 1.2 : 1))
+      .attr("stroke-width", (d) =>
+        focused !== null && focused === d.rowIndex && !d.isAverage ? 1.2 : 1,
+      )
       .style("cursor", "pointer")
       .on("pointerenter", function (event, d) {
         d3.select(this).attr("stroke", "#111827").attr("stroke-width", 1.2);
@@ -129,13 +150,14 @@ export function createGroupDetailsHeatmap(
         handlers.onMove?.(d, event as PointerEvent);
       })
       .on("pointerleave", function (event, d) {
-        const isFocused = focused !== null && focused === d.rowIndex;
+        const isFocused = focused !== null && focused === d.rowIndex && !d.isAverage;
         d3.select(this)
           .attr("stroke", isFocused ? "#111827" : "rgba(255,255,255,0.7)")
           .attr("stroke-width", isFocused ? 1.2 : 1);
         handlers.onLeave?.(event as PointerEvent);
       })
       .on("click", function (event, d) {
+        if (d.isAverage) return;
         handlers.onClick?.(d.rowIndex, event as PointerEvent);
       });
   }

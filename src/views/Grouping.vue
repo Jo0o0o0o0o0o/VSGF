@@ -3,12 +3,12 @@ import { computed, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
 import studentsRaw from "../data/IVIS23_final.json";
 import type { IvisRecord } from "@/types/ivis23";
+import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 
 type Student = IvisRecord;
 
 type Group = {
   id: number;
-  showChips: boolean;
   members: Array<Student | null>;
 };
 
@@ -44,7 +44,6 @@ function buildGroupSlotSizes(totalStudents: number): number[] {
 const groups = ref<Group[]>(
   buildGroupSlotSizes(students.length).map((size, index) => ({
     id: index + 1,
-    showChips: true,
     members: Array(size).fill(null),
   }))
 );
@@ -104,6 +103,22 @@ const selectedGroupMembers = computed<IvisRecord[]>(() =>
     ? (selectedGroup.value.members.filter((member) => Boolean(member)) as IvisRecord[])
     : [],
 );
+
+const groupHobbiesMap = computed(() => {
+  const byGroupId = new Map<number, string[]>();
+  groups.value.forEach((group) => {
+    const hobbies = new Set<string>();
+    group.members.forEach((member) => {
+      if (!member) return;
+      member.hobby.forEach((hobby) => {
+        const key = hobby.trim().toLowerCase();
+        if (key) hobbies.add(key);
+      });
+    });
+    byGroupId.set(group.id, Array.from(hobbies).sort((a, b) => a.localeCompare(b)));
+  });
+  return byGroupId;
+});
 
 function openGroupDetails(groupId: number) {
   detailsGroupId.value = groupId;
@@ -194,10 +209,18 @@ watch(
     <section v-for="group in groups" :key="group.id" class="groupRow">
       <div class="groupHeader">
         <span class="groupId">{{ group.id }}</span>
-        <div v-if="group.showChips" class="chipRow">
-          <span class="chip"></span>
-          <span class="chip"></span>
-          <span class="chip"></span>
+        <div class="chipRow">
+          <span
+            v-for="hobby in groupHobbiesMap.get(group.id) ?? []"
+            :key="`group-${group.id}-${hobby}`"
+            class="chip"
+            :style="getHobbyTagStyle(hobby)"
+          >
+            {{ formatHobbyLabel(hobby) }}
+          </span>
+          <span v-if="(groupHobbiesMap.get(group.id)?.length ?? 0) === 0" class="chip chipEmpty">
+            No hobbies yet
+          </span>
         </div>
       </div>
 
@@ -308,14 +331,28 @@ watch(
 .chipRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .chip {
-  width: 90px;
-  height: 28px;
+  min-height: 28px;
   border-radius: 999px;
   background: #d2d2d4;
+  border: 1px solid transparent;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.chipEmpty {
+  color: #666;
+  background: #ececec;
+  border-color: #d3d3d3;
 }
 
 .slotRow {
