@@ -335,4 +335,3 @@ function filteredList(currentIndex: number) {
   opacity: 0.7;
 }
 </style>
-

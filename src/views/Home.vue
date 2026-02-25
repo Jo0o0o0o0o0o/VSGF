@@ -13,6 +13,7 @@ import { findBreedGroupByName, getBreedGroupTagStyle } from "@/utils/fuzzyBreedG
 import { fuzzyFilter } from "@/utils/fuzzySearch";
 
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
+import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
 import {
   TRAIT_KEYS,
@@ -100,6 +101,7 @@ function readStoredGrouping(): StoredGrouping {
 
 const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
 const selectedGroupId = ref<number | null>(null);
+const selectedComparePersonId = ref<number | null>(null);
 
 const groupedMembersById = computed(() => {
   const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
@@ -254,6 +256,11 @@ function onSelectHeatGroup(groupId: number) {
   selectedGroupId.value = groupId;
 }
 
+function onChooseGroupMember(memberId: number) {
+  selectedComparePersonId.value = memberId;
+  writeComparePersonId(memberId);
+}
+
 function sendToCompare() {
   const dog = selectedDog.value;
   if (!dog) return;
@@ -315,18 +322,26 @@ onMounted(() => {
 
   document.addEventListener("mousedown", onDocClick);
   storedGrouping.value = readStoredGrouping();
+  selectedComparePersonId.value = readComparePersonId();
   window.addEventListener("storage", onGroupingStorageChanged);
   window.addEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
+  window.addEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onDocClick);
   window.removeEventListener("storage", onGroupingStorageChanged);
   window.removeEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
+  window.removeEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
 });
 
 function onGroupingStorageChanged() {
   storedGrouping.value = readStoredGrouping();
+  selectedComparePersonId.value = readComparePersonId();
+}
+
+function onCompareSelectionChanged() {
+  selectedComparePersonId.value = readComparePersonId();
 }
 </script>
 
@@ -363,7 +378,12 @@ function onGroupingStorageChanged() {
         </div>
 
         <div class="listBody">
-          <div v-for="member in selectedGroupMembers" :key="member.id" class="row memberRow">
+          <div
+            v-for="member in selectedGroupMembers"
+            :key="member.id"
+            class="row memberRow"
+            @click="onChooseGroupMember(member.id)"
+          >
             <div class="name">{{ member.alias }}</div>
             <div class="memberMeta">{{ member.hobby_area.join(", ") || "No hobby area" }}</div>
           </div>

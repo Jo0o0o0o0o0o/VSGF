@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import CompareSlotsBar from "@/components/CompareSlotsBar.vue";
 import RadarChart from "@/components/RadarChart.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
@@ -8,9 +8,11 @@ import {
   type RadarDog,
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
+import ivisRecordsJson from "@/data/IVIS23_final.json";
 import type { IvisRecord } from "@/types/ivis23";
+import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
-const MAX = 5;
+const MAX = 1;
 const allAxes = RADAR_AXES;
 const reducedDefaultKeys = new Set<RadarKey>([
   "computer_graphics_programming",
@@ -22,6 +24,7 @@ const activeAxes = ref(allAxes.filter((a) => !reducedDefaultKeys.has(a.key)));
 
 const focusIndex = ref<number | null>(null);
 const slots = ref<(IvisRecord | null)[]>(Array.from({ length: MAX }, () => null));
+const peopleById = new Map((ivisRecordsJson as IvisRecord[]).map((p) => [p.id, p] as const));
 
 function toggleFocus(i: number) {
   focusIndex.value = focusIndex.value === i ? null : i;
@@ -29,6 +32,9 @@ function toggleFocus(i: number) {
 
 function setSlot(i: number, person: IvisRecord | null) {
   slots.value[i] = person;
+  if (i === 0) {
+    writeComparePersonId(person?.id ?? null);
+  }
 }
 
 function setActiveAxes(v: { key: RadarKey; label: string }[]) {
@@ -54,6 +60,27 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
     code_repository: p.ratings.code_repository,
   })),
 );
+
+function syncFromStoredSelection() {
+  const selectedId = readComparePersonId();
+  if (selectedId === null) {
+    slots.value[0] = null;
+    focusIndex.value = null;
+    return;
+  }
+  slots.value[0] = peopleById.get(selectedId) ?? null;
+}
+
+onMounted(() => {
+  syncFromStoredSelection();
+  window.addEventListener("storage", syncFromStoredSelection);
+  window.addEventListener(COMPARE_PERSON_EVENT, syncFromStoredSelection);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("storage", syncFromStoredSelection);
+  window.removeEventListener(COMPARE_PERSON_EVENT, syncFromStoredSelection);
+});
 </script>
 
 <template>
