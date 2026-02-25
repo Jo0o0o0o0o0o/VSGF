@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import CompareSlotsBar from "@/components/CompareSlotsBar.vue";
 import RadarChart from "@/components/RadarChart.vue";
 import GroupDetailsHeatmap from "@/components/GroupDetailsHeatmap.vue";
@@ -10,6 +10,19 @@ import {
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
 import type { IvisRecord } from "@/types/ivis23";
+
+const props = withDefaults(
+  defineProps<{
+    groupMembers?: IvisRecord[];
+    panelTitle?: string;
+    compact?: boolean;
+  }>(),
+  {
+    groupMembers: () => [],
+    panelTitle: "Group Details",
+    compact: false,
+  },
+);
 
 const MAX = 5;
 const allAxes = RADAR_AXES;
@@ -36,7 +49,11 @@ function setActiveAxes(v: { key: RadarKey; label: string }[]) {
   activeAxes.value = v;
 }
 
-const selectedPeople = computed(() => slots.value.filter(Boolean) as IvisRecord[]);
+const isBoundGroupMode = computed(() => props.groupMembers.length > 0);
+
+const selectedPeople = computed(() =>
+  isBoundGroupMode.value ? props.groupMembers : (slots.value.filter(Boolean) as IvisRecord[]),
+);
 
 const selectedRadarPeople = computed<RadarDog[]>(() =>
   selectedPeople.value.map((p) => ({
@@ -55,11 +72,23 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
     code_repository: p.ratings.code_repository,
   })),
 );
+
+watch(
+  () => selectedPeople.value.length,
+  (len) => {
+    if (focusIndex.value !== null && (focusIndex.value < 0 || focusIndex.value >= len)) {
+      focusIndex.value = null;
+    }
+  },
+);
 </script>
 
 <template>
-  <main class="comparePage">
+  <main class="comparePage" :class="{ compact: compact }">
+    <h2 class="detailsTitle">{{ panelTitle }}</h2>
+
     <CompareSlotsBar
+      v-if="!isBoundGroupMode"
       :slots="slots"
       :max="MAX"
       :focusIndex="focusIndex"
@@ -103,10 +132,17 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
 
 <style scoped>
 .comparePage {
-  padding: 16px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.detailsTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
 }
 
 .grid {
@@ -145,5 +181,9 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
 
 .panel.narrow {
   min-height: 0;
+}
+
+.comparePage.compact .grid {
+  grid-template-columns: 1fr;
 }
 </style>

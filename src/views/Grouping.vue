@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import GroupDetails from "@/views/GroupDetails.vue";
 import studentsRaw from "../data/IVIS23_final.json";
+import type { IvisRecord } from "@/types/ivis23";
 
-type Student = {
-  id: number;
-  alias: string;
-};
+type Student = IvisRecord;
 
 type Group = {
   id: number;
@@ -24,10 +23,7 @@ type StoredGrouping = {
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
 const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
 
-const students = (studentsRaw as Student[]).map((student) => ({
-  id: student.id,
-  alias: student.alias,
-}));
+const students = studentsRaw as Student[];
 
 function buildGroupSlotSizes(totalStudents: number): number[] {
   if (totalStudents <= 0) return [5];
@@ -54,6 +50,8 @@ const groups = ref<Group[]>(
 );
 
 const activeTip = ref<{ groupId: number; slotIndex: number } | null>(null);
+const detailsGroupId = ref<number | null>(null);
+const detailsOpen = ref(false);
 
 const usedStudentIds = computed(() => {
   const ids = new Set<number>();
@@ -93,6 +91,28 @@ function removeMember(groupId: number, slotIndex: number) {
   const group = groups.value.find((item) => item.id === groupId);
   if (!group) return;
   group.members[slotIndex] = null;
+}
+
+const selectedGroup = computed(() =>
+  detailsGroupId.value === null
+    ? null
+    : groups.value.find((group) => group.id === detailsGroupId.value) ?? null,
+);
+
+const selectedGroupMembers = computed<IvisRecord[]>(() =>
+  selectedGroup.value
+    ? (selectedGroup.value.members.filter((member) => Boolean(member)) as IvisRecord[])
+    : [],
+);
+
+function openGroupDetails(groupId: number) {
+  detailsGroupId.value = groupId;
+  detailsOpen.value = true;
+  activeTip.value = null;
+}
+
+function closeGroupDetails() {
+  detailsOpen.value = false;
 }
 
 function readStoredGrouping(): StoredGrouping | null {
@@ -226,11 +246,32 @@ watch(
             <p v-else class="tipEmpty">No student left</p>
           </div>
         </div>
-        <button class="nextBtn" type="button" aria-label="next group">&#8594;</button>
+        <button
+          class="nextBtn"
+          type="button"
+          aria-label="open group details"
+          @click="openGroupDetails(group.id)"
+        >
+          &#8594;
+        </button>
       </div>
 
       <div class="footerBar"></div>
     </section>
+
+    <div v-if="detailsOpen" class="drawerBackdrop" @click="closeGroupDetails"></div>
+    <aside class="detailsDrawer" :class="{ open: detailsOpen }">
+      <button class="drawerClose" type="button" aria-label="close details" @click="closeGroupDetails">
+        ×
+      </button>
+
+      <GroupDetails
+        v-if="selectedGroup"
+        compact
+        :panelTitle="`Group ${selectedGroup.id} Details`"
+        :groupMembers="selectedGroupMembers"
+      />
+    </aside>
   </main>
 </template>
 
@@ -379,6 +420,50 @@ watch(
   cursor: pointer;
 }
 
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 35;
+}
+
+.detailsDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(70vw, 1000px);
+  background: #f7f7f7;
+  border-left: 1px solid #d1d5db;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 40;
+  overflow: auto;
+  padding: 16px 16px 24px;
+}
+
+.detailsDrawer.open {
+  transform: translateX(0);
+}
+
+.drawerClose {
+  position: sticky;
+  top: 8px;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+}
+
 .footerBar {
   height: 44px;
   background: #d2d2d4;
@@ -391,6 +476,11 @@ watch(
 
   .nextBtn {
     min-height: 90px;
+  }
+
+  .detailsDrawer {
+    width: 100vw;
+    padding: 12px 10px 16px;
   }
 }
 </style>
