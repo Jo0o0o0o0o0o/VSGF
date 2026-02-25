@@ -7,6 +7,9 @@ const props = defineProps<{
   records: IvisRecord[];
   ratingKeys: readonly IvisRatingKey[];
 }>();
+const emit = defineEmits<{
+  (e: "selectRow", rowId: number): void;
+}>();
 
 const wrapRef = ref<HTMLDivElement | null>(null);
 const areaRef = ref<HTMLDivElement | null>(null);
@@ -48,6 +51,9 @@ onMounted(() => {
     onLeave: () => {
       hovered.value = null;
       tip.value.show = false;
+    },
+    onClick: (cell) => {
+      emit("selectRow", cell.rowId);
     },
   });
 

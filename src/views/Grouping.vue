@@ -110,7 +110,7 @@ const groupHobbiesMap = computed(() => {
     const hobbies = new Set<string>();
     group.members.forEach((member) => {
       if (!member) return;
-      member.hobby.forEach((hobby) => {
+      member.hobby_area.forEach((hobby) => {
         const key = hobby.trim().toLowerCase();
         if (key) hobbies.add(key);
       });

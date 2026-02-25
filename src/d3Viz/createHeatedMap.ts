@@ -8,6 +8,7 @@ export type HeatedMapOptions = {
 };
 
 export type HeatedCell = {
+  rowId: number;
   rowLabel: string;
   ratingKey: IvisRatingKey;
   value: number;
@@ -17,6 +18,7 @@ export type HeatedMapHandlers = {
   onHover?: (cell: HeatedCell, ev: PointerEvent) => void;
   onMove?: (cell: HeatedCell, ev: PointerEvent) => void;
   onLeave?: (cell: HeatedCell, ev: PointerEvent) => void;
+  onClick?: (cell: HeatedCell, ev: PointerEvent) => void;
 };
 
 export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandlers = {}) {
@@ -57,6 +59,7 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
 
     const cells: HeatedCell[] = records.flatMap((r) =>
       opt.ratingKeys.map((key) => ({
+        rowId: r.id,
         rowLabel: r.alias,
         ratingKey: key,
         value: Number(r.ratings[key]),
@@ -106,6 +109,9 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
       .on("pointerleave", function (event, d) {
         d3.select(this).attr("stroke", "rgba(255,255,255,0.7)").attr("stroke-width", null);
         handlers.onLeave?.(d, event as PointerEvent);
+      })
+      .on("click", function (event, d) {
+        handlers.onClick?.(d, event as PointerEvent);
       });
   }
 

@@ -99,11 +99,12 @@ function readStoredGrouping(): StoredGrouping {
 }
 
 const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
+const selectedGroupId = ref<number | null>(null);
 
-const heatmapRecords = computed<IvisRecord[]>(() => {
+const groupedMembersById = computed(() => {
   const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
   const usedMemberIds = new Set<number>();
-  const grouped: IvisRecord[] = [];
+  const grouped = new Map<number, IvisRecord[]>();
 
   for (const group of storedGrouping.value.groups) {
     const members: IvisRecord[] = [];
@@ -114,6 +115,17 @@ const heatmapRecords = computed<IvisRecord[]>(() => {
       usedMemberIds.add(id);
       members.push(member);
     }
+    grouped.set(group.id, members);
+  }
+
+  return grouped;
+});
+
+const heatmapRecords = computed<IvisRecord[]>(() => {
+  const grouped: IvisRecord[] = [];
+
+  for (const group of storedGrouping.value.groups) {
+    const members = groupedMembersById.value.get(group.id) ?? [];
     if (!members.length) continue;
 
     const summedRatings = IVIS_RATING_KEYS.reduce((acc, key) => {
@@ -134,6 +146,31 @@ const heatmapRecords = computed<IvisRecord[]>(() => {
 
   return grouped.length ? grouped : ivisRecords;
 });
+
+const selectedGroupMembers = computed<IvisRecord[]>(() => {
+  if (selectedGroupId.value === null) return [];
+  return groupedMembersById.value.get(selectedGroupId.value) ?? [];
+});
+
+const selectedGroupLabel = computed(() => {
+  if (selectedGroupId.value === null) return "Group";
+  const group = heatmapRecords.value.find((item) => item.id === selectedGroupId.value);
+  return group?.alias ?? `Group ${selectedGroupId.value}`;
+});
+
+watch(
+  heatmapRecords,
+  (records) => {
+    if (!records.length) {
+      selectedGroupId.value = null;
+      return;
+    }
+    if (selectedGroupId.value === null || !records.some((r) => r.id === selectedGroupId.value)) {
+      selectedGroupId.value = records[0]?.id ?? null;
+    }
+  },
+  { immediate: true },
+);
 
 const selectedDog = computed(() => dogs.value.find((d) => d.name === selectedName.value) ?? null);
 
@@ -209,17 +246,12 @@ async function focusBeeswarmByBreedGroup(group: string | null) {
     hash: "#beeswarm-section",
   });
 }
-
-const listDogs = computed(() => {
-  const list = filteredDogs.value.slice(); // 当前筛选结�?= scatterplot 的数据源
-  const sel = selectedDog.value;
-  if (!sel) return list;
-  const withoutSel = list.filter((d) => d.name !== sel.name);
-  return [sel, ...withoutSel];
-});
-
 function onSelectDog(id: string | number) {
   selectedName.value = String(id);
+}
+
+function onSelectHeatGroup(groupId: number) {
+  selectedGroupId.value = groupId;
 }
 
 function sendToCompare() {
@@ -228,7 +260,7 @@ function sendToCompare() {
   const name = dog.name;
 
   try {
-    // fallback：如果由 query 丢了，Compare 页面还能从 localStorage 接到
+    // fallback锛氬鏋滅敱 query 涓簡锛孋ompare 椤甸潰杩樿兘锟?localStorage 鎺ュ埌
     const queueKey = "compare_add_queue";
     const rawQueue = localStorage.getItem(queueKey);
     const queue = rawQueue ? (JSON.parse(rawQueue) as unknown) : [];
@@ -245,7 +277,7 @@ function sendToCompare() {
     // ignore storage failures
   }
 
-  // 通过 query 把名字带到 Compare
+  // 閫氳繃 query 鎶婂悕瀛楀甫锟?Compare
 }
 
 const beeswarmTraits = computed<TraitKey[]>(() => {
@@ -300,65 +332,8 @@ function onGroupingStorageChanged() {
 
 <template>
   <div class="home">
-    <!-- 上面三块卡片�?-->
+    <!-- 涓婇潰涓夊潡鍗＄墖锟?-->
     <section class="top">
-      <div class="card left">
-        <div class="title">Select a dog</div>
-
-        <div class="dogSelect" ref="dogSelectRoot">
-          <button class="select selectTrigger" type="button" @click="toggleDogSelect">
-            <span class="selectValue">{{ selectedDog?.name ?? "Select a breed" }}</span>
-            <span class="selectCaret">{{ dogSelectOpen ? "^" : "v" }}</span>
-          </button>
-
-          <div v-if="dogSelectOpen" class="dogSelectPanel">
-            <div class="dogSelectSearchWrap">
-              <input
-                ref="dogSearchInput"
-                v-model="dogSearchQuery"
-                class="dogSelectSearch"
-                type="text"
-                placeholder="Search dogs"
-              />
-            </div>
-
-            <div class="dogSelectList">
-              <button
-                v-for="d in dogSelectOptions"
-                :key="d.name"
-                class="dogSelectRow"
-                :class="{ active: d.name === selectedName }"
-                type="button"
-                @click="pickDogFromDropdown(d.name)"
-              >
-                {{ d.name }}
-              </button>
-
-              <div v-if="dogSelectOptions.length === 0" class="dogSelectEmpty">No matching dogs</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="imgBox">
-          <img v-if="selectedDog" :src="selectedDog.image_link" :alt="selectedDog.name" />
-          <div v-else class="placeholder">狗的 image</div>
-        </div>
-
-        <button
-          v-if="selectedBreedGroup"
-          class="breedGroupTag"
-          :style="selectedBreedGroupStyle"
-          type="button"
-          @click="focusBeeswarmByBreedGroup(selectedBreedGroup)"
-        >
-          {{ selectedBreedGroup }}
-        </button>
-
-         <button class="compareBtn" :disabled="!selectedDog" @click="sendToCompare">
-          Compare
-        </button>
-      </div>
-
       <div class="card right">
         <div class="title">Temperament traits</div>
         <div class="traitArea">
@@ -367,36 +342,34 @@ function onGroupingStorageChanged() {
       </div>
     </section>
 
-    <!-- 下方：大 scatter + 右侧列表 -->
+    <!-- 涓嬫柟锛氬ぇ scatter + 鍙充晶鍒楄〃 -->
     <section class="bottom">
       <div class="card scatter">
         <div class="title">Dogs overview</div>
 
         <div class="plotArea">
-          <HeatedMap :records="heatmapRecords" :ratingKeys="IVIS_RATING_KEYS" />
+          <HeatedMap
+            :records="heatmapRecords"
+            :ratingKeys="IVIS_RATING_KEYS"
+            @selectRow="onSelectHeatGroup"
+          />
         </div>
       </div>
 
       <div class="card list">
         <div class="listHeader">
-          <div class="title">Dog list</div>
-          <div class="subtitle">{{ filteredCount }} / {{ totalCount }} breeds</div>
+          <div class="title">{{ selectedGroupLabel }}</div>
+          <div class="subtitle">{{ selectedGroupMembers.length }} members</div>
         </div>
 
         <div class="listBody">
-          <button
-            v-for="d in listDogs"
-            :key="d.name"
-            class="row"
-            :class="{ active: d.name === selectedName }"
-            @click="selectedName = d.name"
-          >
-            <img :src="d.image_link" :alt="d.name" />
-            <div class="name">{{ d.name }}</div>
-          </button>
+          <div v-for="member in selectedGroupMembers" :key="member.id" class="row memberRow">
+            <div class="name">{{ member.alias }}</div>
+            <div class="memberMeta">{{ member.hobby_area.join(", ") || "No hobby area" }}</div>
+          </div>
 
-          <div v-if="listDogs.length === 0" class="empty">
-            No matching dogs. Try adjusting the trait filters.
+          <div v-if="selectedGroupMembers.length === 0" class="empty">
+            Click a group row in the heatmap to see members.
           </div>
         </div>
       </div>
@@ -428,7 +401,7 @@ function onGroupingStorageChanged() {
 
 .top {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   align-items: stretch;
   height: fit-content;
@@ -616,7 +589,7 @@ function onGroupingStorageChanged() {
 }
 
 .traitArea {
-  height: 260px;
+  height: 420px;
   width: 100%;
 }
 .scatter .plotArea {
@@ -624,7 +597,7 @@ function onGroupingStorageChanged() {
 }
 
 .card.list {
-  height: 660px; /* 高度固定不变 */
+  height: 660px; /* 楂樺害鍥哄畾涓嶅彉 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -648,7 +621,7 @@ function onGroupingStorageChanged() {
 
 .listBody {
   flex: 1 1 auto;
-  overflow-y: auto; /* 下拉滚动 */
+  overflow-y: auto; /* 涓嬫媺婊氬姩 */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -706,54 +679,29 @@ function onGroupingStorageChanged() {
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
 }
 
-/* 选中高亮 */
+/* 閫変腑楂樹寒 */
 .row.active {
   background: #ffdf5d;
 }
 
-/* 可选：让选中的更“像选中”一样*/
-.row.active .name {
-  font-weight: 700;
+.memberRow {
+  grid-template-columns: 1fr;
+  border-radius: 14px;
+  cursor: default;
 }
 
-.row img {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
+.memberRow::after {
+  content: none;
 }
 
-.name {
-  text-align: left;
-  font-size: 13px;
-  color: #111827;
+.memberMeta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 12px; /* 为右侧箭头留出空间*/
 }
 
-.empty {
-  opacity: 0.8;
-  font-size: 12px;
-  padding: 10px;
-  border-radius: 10px;
-  background: #eef2ff;
-  color: #6b7280;
-}
-.beeswarmSection {
-  height: 860px;
-}
 
-.card.beeswarm {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.beeswarmArea {
-  flex: 1 1 auto;
-  min-height: 780px;
-}
 </style>

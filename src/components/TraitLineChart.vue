@@ -56,7 +56,7 @@ function draw() {
   const width = Math.max(640, Math.floor(rect.width));
   const height = Math.max(260, Math.floor(rect.height));
 
-  const margin = { top: 70, right: 16, bottom: 80, left: 46 };
+  const margin = { top: 42, right: 16, bottom: 80, left: 46 };
   const innerW = Math.max(10, width - margin.left - margin.right);
   const innerH = Math.max(10, height - margin.top - margin.bottom);
 
@@ -143,25 +143,8 @@ function draw() {
 
   root
     .append("text")
-    .attr("x", 0)
-    .attr("y", -44)
-    .attr("fill", "#0f172a")
-    .style("font-size", "14px")
-    .style("font-weight", "700")
-    .text("IVIS23 ratings (all data, axis 0-10)");
-
-  root
-    .append("text")
-    .attr("x", 0)
-    .attr("y", -26)
-    .attr("fill", "#475569")
-    .style("font-size", "10px")
-    .text(`rating fields: ${IVIS_RATING_KEYS.join(", ")}`);
-
-  root
-    .append("text")
     .attr("x", innerW)
-    .attr("y", -44)
+    .attr("y", -20)
     .attr("text-anchor", "end")
     .attr("fill", "#475569")
     .style("font-size", "10px")
