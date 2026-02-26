@@ -1,13 +1,13 @@
 import * as d3 from "d3";
-import type { TraitKey } from "@/utils/traitFilter";
 import type { BeeswarmNode } from "@/components/BeeWarmPlot.vue";
+import type { IvisRatingKey } from "@/types/ivis23";
 
 export type BeeswarmOptions = {
   width: number;
   height: number;
-  traits: TraitKey[];
+  traits: IvisRatingKey[];
   traitLabels: Record<string, string>;
-  highlightId?: string | null;
+  highlightId?: number | null;
   pointColor?: string;
 };
 
@@ -31,12 +31,12 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
   let lastOpt: BeeswarmOptions | null = null;
 
-  function applyBaseStyle(
+function applyBaseStyle(
     sel: d3.Selection<SVGCircleElement, BeeswarmNode, any, any>,
     n: BeeswarmNode,
   ) {
-    const hasHL = !!lastOpt?.highlightId;
-    const isHL = !!(lastOpt?.highlightId && n.dogId === lastOpt.highlightId);
+    const hasHL = lastOpt?.highlightId !== null && lastOpt?.highlightId !== undefined;
+    const isHL = !!(lastOpt?.highlightId !== null && lastOpt?.highlightId !== undefined && n.personId === lastOpt.highlightId);
     const baseColor = lastOpt?.pointColor ?? "orange";
 
     sel
@@ -69,7 +69,7 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
     root.attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // ✅ X = 维度
+    // 鉁?X = 缁村害
     const xBand = d3
       .scaleBand<string>()
       .domain(traits)
@@ -77,11 +77,11 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
       .paddingInner(0.25)
       .paddingOuter(0.08);
 
-    // ✅ Y = 0..5
+    // 鉁?Y = 0..5
     const r = 4;
     const yTopPad = r + 12;
     const yBottomPad = r + 2;
-    const yDomainTop = 5.15;
+    const yDomainTop = 10;
 
     const yScale = d3
       .scaleLinear()
@@ -90,16 +90,16 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
     // axes
     gx.attr("transform", `translate(0,${innerH})`)
-      .call(d3.axisBottom(xBand).tickFormat(() => "")); // 标签我们自己画（更可控）
+      .call(d3.axisBottom(xBand).tickFormat(() => "")); // 鏍囩鎴戜滑鑷繁鐢伙紙鏇村彲鎺э級
 
     gy.call(
       d3
         .axisLeft(yScale)
-        .tickValues([0, 1, 2, 3, 4, 5])
+        .tickValues([0, 2, 4, 6, 8, 10])
         .tickFormat(d3.format(".0f")),
     );
 
-    // X labels（维度标签，太长就旋转）
+    // X labels锛堢淮搴︽爣绛撅紝澶暱灏辨棆杞級
     const xLabels = xLabelsLayer.selectAll<SVGTextElement, string>("text").data(traits, (d) => d);
     xLabels.exit().remove();
 
@@ -145,7 +145,7 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
     const circles = pointsLayer
       .selectAll<SVGCircleElement, BeeswarmNode>("circle")
-      .data(nodes, (d: any) => `${d.trait}__${d.dogId}`);
+      .data(nodes, (d: any) => `${d.trait}__${d.personId}`);
 
     circles.exit().remove();
 
@@ -160,7 +160,7 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
     merged
       .on("pointerenter", function (event, d) {
-        d3.select(this).attr("opacity", 1).raise(); // hover 不要 stroke，只稍微加强
+        d3.select(this).attr("opacity", 1).raise(); // hover 涓嶈 stroke锛屽彧绋嶅井鍔犲己
         handlers.onHover?.(d, event as PointerEvent);
       })
       .on("pointermove", function (event, d) {
@@ -181,3 +181,6 @@ export function createBeeswarmPlot(svgEl: SVGSVGElement, handlers: BeeswarmHandl
 
   return { update, destroy };
 }
+
+
+

@@ -1,0 +1,617 @@
+{
+  "model": "Xenova/bge-small-en-v1.5",
+  "source_field": "hobby",
+  "input_rows": 39,
+  "embedding_dims": 384,
+  "k": 6,
+  "generated_at": "2026-02-26T14:43:18.304Z",
+  "clusters": [
+    {
+      "cluster_id": 3,
+      "size": 16,
+      "top_terms": [
+        {
+          "term": "sport",
+          "count": 6
+        },
+        {
+          "term": "videogame",
+          "count": 4
+        },
+        {
+          "term": "movie",
+          "count": 3
+        },
+        {
+          "term": "game",
+          "count": 3
+        },
+        {
+          "term": "painting",
+          "count": 2
+        },
+        {
+          "term": "basketball",
+          "count": 2
+        },
+        {
+          "term": "series",
+          "count": 2
+        },
+        {
+          "term": "art",
+          "count": 2
+        }
+      ],
+      "members": [
+        {
+          "id": 2,
+          "alias": "vq",
+          "hobby": [
+            "sport",
+            "kendo",
+            "dataanalysis",
+            "painting"
+          ]
+        },
+        {
+          "id": 3,
+          "alias": "jjettas",
+          "hobby": [
+            "sport"
+          ]
+        },
+        {
+          "id": 4,
+          "alias": "SunnyStockholm",
+          "hobby": [
+            "football",
+            "skiing"
+          ]
+        },
+        {
+          "id": 6,
+          "alias": "pringles",
+          "hobby": [
+            "basketball",
+            "series",
+            "movie"
+          ]
+        },
+        {
+          "id": 8,
+          "alias": "Rizzlord",
+          "hobby": [
+            "swedish",
+            "basketball",
+            "guitar",
+            "art"
+          ]
+        },
+        {
+          "id": 9,
+          "alias": "Koronesuki",
+          "hobby": [
+            "japanese",
+            "culture",
+            "food",
+            "anime",
+            "jogging",
+            "videogame",
+            "programming",
+            "3dmodeling",
+            "drawing"
+          ]
+        },
+        {
+          "id": 14,
+          "alias": "Horse123",
+          "hobby": [
+            "videogame",
+            "bartending"
+          ]
+        },
+        {
+          "id": 15,
+          "alias": "Rebin",
+          "hobby": [
+            "film",
+            "movie",
+            "game",
+            "reading"
+          ]
+        },
+        {
+          "id": 19,
+          "alias": "Aloy",
+          "hobby": [
+            "draw",
+            "paint",
+            "videogame",
+            "sport"
+          ]
+        },
+        {
+          "id": 21,
+          "alias": "kanelbullar13",
+          "hobby": [
+            "art"
+          ]
+        },
+        {
+          "id": 28,
+          "alias": "Santa86",
+          "hobby": [
+            "painting",
+            "sport",
+            "design"
+          ]
+        },
+        {
+          "id": 29,
+          "alias": "mercury",
+          "hobby": [
+            "sport",
+            "handball",
+            "movie",
+            "series"
+          ]
+        },
+        {
+          "id": 33,
+          "alias": "unpwu",
+          "hobby": [
+            "chess",
+            "tennis",
+            "cycling",
+            "sport"
+          ]
+        },
+        {
+          "id": 35,
+          "alias": "ChaCharizard",
+          "hobby": [
+            "game"
+          ]
+        },
+        {
+          "id": 39,
+          "alias": "Rufstufsan",
+          "hobby": [
+            "videogame"
+          ]
+        },
+        {
+          "id": 41,
+          "alias": "Bempis2",
+          "hobby": [
+            "music",
+            "singing",
+            "choir",
+            "drawing",
+            "game"
+          ]
+        }
+      ]
+    },
+    {
+      "cluster_id": 4,
+      "size": 8,
+      "top_terms": [
+        {
+          "term": "code",
+          "count": 4
+        },
+        {
+          "term": "programming",
+          "count": 4
+        },
+        {
+          "term": "photography",
+          "count": 3
+        },
+        {
+          "term": "sport",
+          "count": 2
+        },
+        {
+          "term": "language",
+          "count": 1
+        },
+        {
+          "term": "3d",
+          "count": 1
+        },
+        {
+          "term": "rendering",
+          "count": 1
+        },
+        {
+          "term": "piano",
+          "count": 1
+        }
+      ],
+      "members": [
+        {
+          "id": 10,
+          "alias": "Daybeha",
+          "hobby": [
+            "code",
+            "sport"
+          ]
+        },
+        {
+          "id": 16,
+          "alias": "monoid",
+          "hobby": [
+            "programming",
+            "language",
+            "3d",
+            "rendering",
+            "piano",
+            "code",
+            "rust",
+            "wasm"
+          ]
+        },
+        {
+          "id": 17,
+          "alias": "Ishi",
+          "hobby": [
+            "program",
+            "reading",
+            "fiction",
+            "electronics",
+            "sport",
+            "sailing",
+            "travel",
+            "photography",
+            "photo",
+            "japanese"
+          ]
+        },
+        {
+          "id": 23,
+          "alias": "Pål",
+          "hobby": [
+            "code",
+            "programming",
+            "music"
+          ]
+        },
+        {
+          "id": 24,
+          "alias": "Modi",
+          "hobby": [
+            "code"
+          ]
+        },
+        {
+          "id": 25,
+          "alias": "Bluebell",
+          "hobby": [
+            "programming",
+            "design",
+            "photography"
+          ]
+        },
+        {
+          "id": 26,
+          "alias": "Noggin_bops",
+          "hobby": [
+            "game",
+            "programming"
+          ]
+        },
+        {
+          "id": 30,
+          "alias": "DonkeyKong1",
+          "hobby": [
+            "photography"
+          ]
+        }
+      ]
+    },
+    {
+      "cluster_id": 1,
+      "size": 5,
+      "top_terms": [
+        {
+          "term": "reading",
+          "count": 3
+        },
+        {
+          "term": "cooking",
+          "count": 3
+        },
+        {
+          "term": "movie",
+          "count": 2
+        },
+        {
+          "term": "travel",
+          "count": 2
+        },
+        {
+          "term": "drawing",
+          "count": 1
+        },
+        {
+          "term": "series",
+          "count": 1
+        },
+        {
+          "term": "baking",
+          "count": 1
+        },
+        {
+          "term": "ukulele",
+          "count": 1
+        }
+      ],
+      "members": [
+        {
+          "id": 5,
+          "alias": "Yami",
+          "hobby": [
+            "drawing",
+            "reading",
+            "series",
+            "movie",
+            "cooking",
+            "baking"
+          ]
+        },
+        {
+          "id": 7,
+          "alias": "Oseram",
+          "hobby": [
+            "ukulele",
+            "travel",
+            "hiking",
+            "movie",
+            "cooking",
+            "sailing"
+          ]
+        },
+        {
+          "id": 12,
+          "alias": "PogChamp",
+          "hobby": [
+            "gaming",
+            "reading",
+            "film",
+            "guitar"
+          ]
+        },
+        {
+          "id": 22,
+          "alias": "Skvarre",
+          "hobby": [
+            "band",
+            "cooking",
+            "game",
+            "beer"
+          ]
+        },
+        {
+          "id": 37,
+          "alias": "coldfooter",
+          "hobby": [
+            "reading",
+            "fiction",
+            "poetry",
+            "music",
+            "coding",
+            "art",
+            "travel"
+          ]
+        }
+      ]
+    },
+    {
+      "cluster_id": 2,
+      "size": 5,
+      "top_terms": [
+        {
+          "term": "bouldering",
+          "count": 3
+        },
+        {
+          "term": "climbing",
+          "count": 3
+        },
+        {
+          "term": "videogame",
+          "count": 3
+        },
+        {
+          "term": "hiking",
+          "count": 1
+        },
+        {
+          "term": "football",
+          "count": 1
+        },
+        {
+          "term": "skiing",
+          "count": 1
+        },
+        {
+          "term": "languages",
+          "count": 1
+        },
+        {
+          "term": "programming",
+          "count": 1
+        }
+      ],
+      "members": [
+        {
+          "id": 11,
+          "alias": "Pasta",
+          "hobby": [
+            "bouldering",
+            "hiking",
+            "football",
+            "skiing"
+          ]
+        },
+        {
+          "id": 13,
+          "alias": "Ropianos",
+          "hobby": [
+            "climbing",
+            "bouldering",
+            "languages",
+            "programming",
+            "boardgame",
+            "videogame"
+          ]
+        },
+        {
+          "id": 18,
+          "alias": "xXVisWizXx",
+          "hobby": [
+            "videogame",
+            "climbing",
+            "travel",
+            "guitar",
+            "design"
+          ]
+        },
+        {
+          "id": 34,
+          "alias": "PetrifiedDropbear69",
+          "hobby": [
+            "reading",
+            "videogame",
+            "bouldering"
+          ]
+        },
+        {
+          "id": 36,
+          "alias": "HalfCrimp",
+          "hobby": [
+            "climbing",
+            "photography",
+            "game"
+          ]
+        }
+      ]
+    },
+    {
+      "cluster_id": 5,
+      "size": 3,
+      "top_terms": [
+        {
+          "term": "workout",
+          "count": 3
+        },
+        {
+          "term": "film",
+          "count": 1
+        },
+        {
+          "term": "reading",
+          "count": 1
+        },
+        {
+          "term": "chess",
+          "count": 1
+        },
+        {
+          "term": "music",
+          "count": 1
+        },
+        {
+          "term": "guitar",
+          "count": 1
+        },
+        {
+          "term": "piano",
+          "count": 1
+        },
+        {
+          "term": "cooking",
+          "count": 1
+        }
+      ],
+      "members": [
+        {
+          "id": 27,
+          "alias": "Lumos",
+          "hobby": [
+            "workout",
+            "film",
+            "reading",
+            "chess",
+            "music"
+          ]
+        },
+        {
+          "id": 31,
+          "alias": "ardillito28",
+          "hobby": [
+            "workout",
+            "guitar",
+            "piano"
+          ]
+        },
+        {
+          "id": 38,
+          "alias": "Ramennoodle",
+          "hobby": [
+            "workout",
+            "cooking"
+          ]
+        }
+      ]
+    },
+    {
+      "cluster_id": 0,
+      "size": 2,
+      "top_terms": [
+        {
+          "term": "illustration",
+          "count": 1
+        },
+        {
+          "term": "game",
+          "count": 1
+        },
+        {
+          "term": "3dmodeling",
+          "count": 1
+        },
+        {
+          "term": "design",
+          "count": 1
+        },
+        {
+          "term": "counterstrike",
+          "count": 1
+        }
+      ],
+      "members": [
+        {
+          "id": 1,
+          "alias": "Soup",
+          "hobby": [
+            "illustration",
+            "game",
+            "3dmodeling"
+          ]
+        },
+        {
+          "id": 20,
+          "alias": "Turb0clutcharen",
+          "hobby": [
+            "design",
+            "counterstrike"
+          ]
+        }
+      ]
+    }
+  ]
+}

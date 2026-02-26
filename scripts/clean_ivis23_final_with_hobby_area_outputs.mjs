@@ -48,19 +48,63 @@ const RATING_COLS = {
   "communication": "How would you rate your communication skills?"
 };
 
-const STOP_WORDS = new Set(["a", "about", "above", "after", "all", "also", "am", "among", "an", "and", "apart", "are", "as", "at", "be", "been", "before", "being", "below", "between", "both", "but", "by", "continue", "did", "do", "does", "doing", "during", "else", "enjoy", "especially", "favorite", "finish", "for", "from", "getting", "going", "had", "has", "have", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "hobbies", "hobby", "how", "i", "if", "in", "interest", "interested", "into", "is", "it", "its", "itself", "just", "kind", "learning", "like", "love", "main", "making", "me", "mine", "most", "mostly", "my", "myself", "new", "of", "often", "on", "onto", "or", "other", "otherwise", "our", "ours", "ourselves", "over", "play", "playing", "please", "ready", "really", "she", "so", "sometimes", "start", "studying", "stuff", "tell", "that", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "thing", "things", "this", "those", "through", "to", "too", "trying", "under", "us", "usual", "usually", "very", "was", "watching", "we", "well", "were", "what", "when", "while", "who", "whole", "why", "with", "working", "you", "your", "yours", "yourself", "yourselves"]);
+const STOP_WORDS = new Set(["a", "about", "above", "after", "all", "also", "am", "among", "an", "and", "apart", "are", "as", "at", "be", "been", "before", "being", "below", "between", "both", "but", "by", "connect", "continue", "did", "do", "does", "doing", "during", "else", "enjoy", "especially", "favorite", "finish", "first", "for", "from", "get", "getting", "going", "had", "has", "have", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "hobbies", "hobby", "how", "i", "if", "in", "interest", "interested", "into", "is", "it", "its", "itself", "just", "kind", "learn", "learning", "life", "like", "love", "main", "making", "master", "me", "mine", "most", "mostly", "my", "myself", "new", "of", "often", "on", "onto", "or", "other", "otherwise", "our", "ours", "ourselves", "over", "plan", "play", "playing", "please", "pretty", "question", "quite", "ready", "really", "she", "side", "so", "sometimes", "start", "studies", "studying", "stuff", "tell", "that", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "thing", "things", "this", "those", "through", "to", "too", "toward", "trying", "under", "us", "usual", "usually", "very", "was", "watching", "we", "well", "were", "what", "when", "which", "while", "who", "whole", "why", "with", "working", "you", "your", "yours", "yourself", "yourselves"]);
 
-const NOISE_WORDS = new Set(["current", "currently", "different", "engineer", "family", "first", "friend", "get", "girl", "goal", "hard", "impossible", "kth", "life", "lot", "not", "plan", "pretty", "question", "science", "side", "software", "student", "study", "time", "toward", "visual", "which", "year", "zone"]);
+const NOISE_WORDS = new Set(["challenged", "current", "currently", "different", "ended", "engineer", "family", "friend", "girl", "goal", "hard", "impossible", "kth", "life", "lot", "not", "obssession", "open", "plan", "pretty", "question", "science", "side", "software", "student", "study", "time", "toward", "visual", "which", "year", "zone"]);
+
+const COUNTRY_WORDS = new Set(["sweden", "swedish", "japan", "japanese", "china", "chinese", "india", "indian", "usa", "america", "american", "canada", "canadian", "germany", "german", "france", "french", "italy", "italian", "spain", "spanish", "uk", "england", "britain", "british", "korea", "korean", "norway", "norwegian", "finland", "finnish", "denmark", "danish", "netherlands", "dutch", "russia", "russian", "brazil", "brazilian", "mexico", "mexican"]);
+
+// Iteratively extended from hobby_filtered_words_report.json
+const EXTRA_STOP_WORDS = [
+  "friends", "one", "though", "much", "something", "everything", "still", "better", "would", "many",
+  "years", "future", "development", "make", "than", "day", "should", "order", "thus", "practice",
+  "course", "good", "able", "more", "can", "found", "focus", "any", "general", "ago", "because",
+  "lost", "since", "want", "kinds", "around", "back", "know", "meet", "people", "free", "such",
+  "works", "work", "out", "comfort", "towards", "towards", "places", "spare",
+];
+
+const EXTRA_NOISE_WORDS = [
+  "computer", "graphics", "technology", "visualisation", "auditory",
+];
+
+for (const w of EXTRA_STOP_WORDS) STOP_WORDS.add(w);
+for (const w of EXTRA_NOISE_WORDS) NOISE_WORDS.add(w);
+
+const DEFAULT_BLACKLIST_PATH = path.resolve(process.cwd(), "src/data/hobby_blacklist.json");
+const blacklistArg = process.argv[4];
+const blacklistPath = blacklistArg ? path.resolve(blacklistArg) : DEFAULT_BLACKLIST_PATH;
+
+function applyExternalBlacklist(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const raw = fs.readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+  const parsed = JSON.parse(raw);
+  const stopwords = Array.isArray(parsed?.stopwords) ? parsed.stopwords : [];
+  const noise = Array.isArray(parsed?.noise_words) ? parsed.noise_words : [];
+  const countries = Array.isArray(parsed?.country_words) ? parsed.country_words : [];
+  for (const w of stopwords) STOP_WORDS.add(String(w).toLowerCase());
+  for (const w of noise) NOISE_WORDS.add(String(w).toLowerCase());
+  for (const w of countries) COUNTRY_WORDS.add(String(w).toLowerCase());
+}
+
+applyExternalBlacklist(blacklistPath);
 
 const PHRASE_CORRECTIONS = [
+  [/\([^)]*\)/g, " "],
   [/3d\s+modelling/g, "3dmodeling"],
   [/3d\s+modeling/g, "3dmodeling"],
   [/3d\s+printing/g, "3dprinting"],
+  [/3dmodeling\s*(and|&|\/)\s*printing/g, "3dmodeling 3dprinting"],
+  [/3d\s+modeling\s*(and|&|\/)\s*printing/g, "3dmodeling 3dprinting"],
+  [/3d\s+modelling\s*(and|&|\/)\s*printing/g, "3dmodeling 3dprinting"],
   [/video\s+games?/g, "videogame"],
   [/board\s+games?/g, "boardgame"],
   [/counter\s*strike/g, "counterstrike"],
   [/working\s+out/g, "workout"],
+  [/work\s+out/g, "workout"],
   [/data\s+analysis/g, "dataanalysis"],
+  [/open\s+ended\s+question/g, " "],
+  [/first\s+quite/g, " "],
+  [/don\s*t/g, " "],
   [/television\s+series/g, "series"],
   [/tv\s+series/g, "series"],
 ];
@@ -75,6 +119,7 @@ const MULTIWORD_CANONICAL = {
   "3d modelling": "3dmodeling",
   "3d printing": "3dprinting",
   "working out": "workout",
+  "work out": "workout",
 };
 
 const TOKEN_CORRECTIONS = {
@@ -89,6 +134,7 @@ const TOKEN_CORRECTIONS = {
   programing: "programming",
   sports: "sport",
   studie: "study",
+  studies: "study",
   thirtie: "thirties",
   traveling: "travel",
   travelling: "travel",
@@ -97,14 +143,16 @@ const TOKEN_CORRECTIONS = {
 
 // [ [area, [keywords...]], ... ]
 const AREA_RULES = [
-  ["sports_outdoors", ["badminton", "basketball", "bike", "bouldering", "climb", "climbing", "cycling", "dance", "fitness", "football", "gym", "handball", "hike", "hiking", "jogging", "kendo", "run", "running", "sailing", "skate", "ski", "skiing", "soccer", "sport", "swim", "swimming", "tennis", "workout", "yoga"]],
-  ["arts_media", ["anime", "art", "band", "choir", "cinema", "design", "draw", "drawing", "film", "guitar", "illustration", "movie", "movies", "music", "paint", "painting", "photo", "photography", "piano", "series", "sing", "singing", "sketch", "ukulele"]],
+  ["sports_outdoors", ["badminton", "basketball", "bike", "bouldering", "climb", "climbing", "cycling", "dance", "fitness", "football", "gym", "handball", "hike", "hiking", "jogging", "kendo", "run", "running", "sailing", "skate", "ski", "skiing", "soccer", "sport", "swim", "swimming", "tennis", "training", "workout", "yoga"]],
+  ["arts_media", ["anime", "art", "artistic", "cinema", "dancing", "design", "draw", "drawing", "film", "illustration", "knitting", "movie", "movies", "paint", "painting", "photo", "photography", "series", "sketch"]],
+  ["music", ["band", "bass", "choir", "guitar", "music", "piano", "sing", "singing", "ukulele"]],
   ["games", ["boardgame", "chess", "counterstrike", "dnd", "game", "gaming", "pokemon", "videogame"]],
-  ["tech_making", ["3d", "3dmodeling", "3dprinting", "blender", "code", "coding", "dataanalysis", "electronics", "maker", "program", "programming", "rendering", "robot", "rust", "unity", "wasm"]],
-  ["reading_writing", ["book", "books", "fiction", "literature", "novel", "poem", "poetry", "read", "reading", "write", "writing"]],
+  ["tech_making", ["3d", "3dmodeling", "3dprinting", "blender", "code", "coding", "dataanalysis", "electronics", "interactive", "maker", "program", "programming", "rendering", "robot", "rust", "unity", "wasm", "web"]],
+  ["reading_writing", ["book", "books", "fantasy", "fiction", "history", "literature", "novel", "poem", "poetry", "read", "reading", "wikipedia", "write", "writing"]],
   ["travel", ["travel", "trip"]],
   ["food", ["bake", "baking", "bartending", "beer", "cocktail", "coffee", "cook", "cooking", "food", "tea"]],
-  ["languages_culture", ["culture", "japanese", "language", "languages", "swedish"]],
+  ["languages_culture", ["culture", "language", "languages"]],
+  ["other", ["entrepreneurship", "business"]],
 ];
 
 const VALID_HOBBY_TERMS = new Set(AREA_RULES.flatMap(([, words]) => words));
@@ -131,6 +179,12 @@ function extractKeywords(raw, maxKeywords = 12) {
   const words = t.split(" ").filter(Boolean);
   const seen = new Set();
   const out = [];
+  const filtered = [];
+
+  const pushFiltered = (reason, token) => {
+    if (!token) return;
+    filtered.push({ reason, token });
+  };
 
   for (let i = 0; i < words.length; i++) {
     let matchedCanonical = null;
@@ -153,21 +207,49 @@ function extractKeywords(raw, maxKeywords = 12) {
 
     let w = matchedCanonical ?? words[i];
     w = TOKEN_CORRECTIONS[w] ?? w;
-    if (STOP_WORDS.has(w)) continue;
-    if (NOISE_WORDS.has(w)) continue;
-    if (w.length <= 2 && w !== "3d") continue;
-    if (/^\d+$/.test(w)) continue;
-    if (!VALID_HOBBY_TERMS.has(w)) continue;
-    if (seen.has(w)) continue;
+    if (STOP_WORDS.has(w)) {
+      pushFiltered("stopword", w);
+      continue;
+    }
+    if (NOISE_WORDS.has(w)) {
+      pushFiltered("noise", w);
+      continue;
+    }
+    if (COUNTRY_WORDS.has(w)) {
+      pushFiltered("country", w);
+      continue;
+    }
+    if (w.length <= 2 && w !== "3d") {
+      pushFiltered("too_short", w);
+      continue;
+    }
+    if (/^\d+$/.test(w)) {
+      pushFiltered("number", w);
+      continue;
+    }
+    if (!VALID_HOBBY_TERMS.has(w)) {
+      pushFiltered("not_in_rules", w);
+      continue;
+    }
+    if (seen.has(w)) {
+      pushFiltered("duplicate", w);
+      continue;
+    }
     seen.add(w);
     out.push(w);
     if (out.length >= maxKeywords) break;
   }
 
   if (seen.has("videogame")) {
-    return out.filter((w) => w !== "game");
+    return {
+      keywords: out.filter((w) => w !== "game"),
+      filtered,
+    };
   }
-  return out;
+  return {
+    keywords: out,
+    filtered,
+  };
 }
 
 function hobbyAreas(keywords) {
@@ -263,7 +345,15 @@ const ratingIdx = Object.fromEntries(
 );
 
 const areaCounts = new Map();
+const filteredWordCounts = new Map();
 const out = [];
+
+function bumpFiltered(reason, token) {
+  if (!reason || !token) return;
+  if (!filteredWordCounts.has(reason)) filteredWordCounts.set(reason, new Map());
+  const byToken = filteredWordCounts.get(reason);
+  byToken.set(token, (byToken.get(token) ?? 0) + 1);
+}
 
 for (let r = 1; r < rows.length; r++) {
   const cols = rows[r];
@@ -272,8 +362,11 @@ for (let r = 1; r < rows.length; r++) {
   const alias = cols[iAlias] ?? "";
   const raw = cols[iHobby] ?? "";
 
-  const hobby = extractKeywords(raw, 12);
+  const { keywords: hobby, filtered } = extractKeywords(raw, 12);
   const hobby_area = hobbyAreas(hobby);
+  for (const item of filtered) {
+    bumpFiltered(item.reason, item.token);
+  }
 
   for (const a of hobby_area) {
     areaCounts.set(a, (areaCounts.get(a) ?? 0) + 1);
@@ -311,7 +404,21 @@ fs.writeFileSync(path.join(outDir, "hobby_area_counts.json"), JSON.stringify(cou
 const rulesArr = AREA_RULES.map(([hobby_area, keywords]) => ({ hobby_area, keywords }));
 fs.writeFileSync(path.join(outDir, "hobby_area_rules.json"), JSON.stringify(rulesArr, null, 2), "utf-8");
 
+// write filtered words report for stopword tuning
+const filteredReport = Array.from(filteredWordCounts.entries())
+  .map(([reason, tokenMap]) => ({
+    reason,
+    total_filtered: Array.from(tokenMap.values()).reduce((a, b) => a + b, 0),
+    top_words: Array.from(tokenMap.entries())
+      .map(([token, count]) => ({ token, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 80),
+  }))
+  .sort((a, b) => b.total_filtered - a.total_filtered);
+fs.writeFileSync(path.join(outDir, "hobby_filtered_words_report.json"), JSON.stringify(filteredReport, null, 2), "utf-8");
+
 console.log("Wrote:", path.join(outDir, "IVIS23_final.json"));
 console.log("Wrote:", path.join(outDir, "hobby_area_counts.json"));
 console.log("Wrote:", path.join(outDir, "hobby_area_rules.json"));
+console.log("Wrote:", path.join(outDir, "hobby_filtered_words_report.json"));
 console.log("Rows:", out.length);

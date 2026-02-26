@@ -1,36 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import dogsJson from "@/data/dogs_ninjas_raw.json";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import ivisRecordsJson from "@/data/IVIS23_final.json";
-import type { DogBreed } from "@/types/dogBreed";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
-import { traitLabels } from "@/utils/traitFilter";
-import theDogApiBreeds from "@/data/dogs_thedogapi_breeds.json";
-import { findBreedGroupByName, getBreedGroupTagStyle } from "@/utils/fuzzyBreedGroup";
-import { fuzzyFilter } from "@/utils/fuzzySearch";
-
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
-import {
-  TRAIT_KEYS,
-  type TraitKey,
-} from "@/utils/traitFilter";
-
-
-const dogs = ref<DogBreed[]>([]);
-const route = useRoute();
-const router = useRouter();
-const selectedName = ref<string>("");
-const dogSearchQuery = ref("");
-const dogSelectOpen = ref(false);
-const dogSelectRoot = ref<HTMLElement | null>(null);
-const dogSearchInput = ref<HTMLInputElement | null>(null);
 const beeswarmSectionRef = ref<HTMLElement | null>(null);
-const selectedBeeswarmBreedGroup = ref<string | null>(null);
 const ivisRecords = ivisRecordsJson as IvisRecord[];
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
 const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
@@ -102,6 +79,7 @@ function readStoredGrouping(): StoredGrouping {
 const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
 const selectedGroupId = ref<number | null>(null);
 const selectedComparePersonId = ref<number | null>(null);
+const selectedBeeswarmPersonId = ref<number | null>(null);
 
 const groupedMembersById = computed(() => {
   const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
@@ -174,162 +152,48 @@ watch(
   { immediate: true },
 );
 
-const selectedDog = computed(() => dogs.value.find((d) => d.name === selectedName.value) ?? null);
-
-const highlightId = computed(() => selectedDog.value?.name ?? null);
-const selectedBreedGroup = computed(() => {
-  const dogName = selectedDog.value?.name;
-  if (!dogName) return null;
-  return findBreedGroupByName(
-    dogName,
-    theDogApiBreeds as { name: string; breed_group?: string | null }[],
-  );
-});
-const selectedBreedGroupStyle = computed(() =>
-  selectedBreedGroup.value ? getBreedGroupTagStyle(selectedBreedGroup.value) : null,
-);
-
-const filteredDogs = computed(() => dogs.value);
-
-const filteredCount = computed(() => filteredDogs.value.length);
-const totalCount = computed(() => dogs.value.length);
-const dogSelectOptions = computed(() => {
-  const matched = fuzzyFilter(dogs.value, dogSearchQuery.value, (d) => d.name, {
-    limit: dogs.value.length,
-  });
-  const sel = selectedDog.value;
-  if (!sel || matched.some((d) => d.name === sel.name)) return matched;
-  return [sel, ...matched];
-});
-
-function focusDogSearch() {
-  nextTick(() => {
-    dogSearchInput.value?.focus();
-  });
-}
-
-function toggleDogSelect() {
-  dogSelectOpen.value = !dogSelectOpen.value;
-  if (dogSelectOpen.value) {
-    focusDogSearch();
-    return;
-  }
-  dogSearchQuery.value = "";
-}
-
-function pickDogFromDropdown(name: string) {
-  selectedName.value = name;
-  dogSelectOpen.value = false;
-  dogSearchQuery.value = "";
-}
-
-function onDocClick(e: MouseEvent) {
-  const el = dogSelectRoot.value;
-  if (!el) return;
-  if (!el.contains(e.target as Node)) {
-    dogSelectOpen.value = false;
-    dogSearchQuery.value = "";
-  }
-}
-
-function readSingleQueryValue(value: unknown): string | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
-}
-
-async function focusBeeswarmByBreedGroup(group: string | null) {
-  if (!group) return;
-  selectedBeeswarmBreedGroup.value = group;
-  await nextTick();
-  beeswarmSectionRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
-  router.push({
-    path: "/home",
-    query: { ...route.query, beeswarmBreedGroup: group, homeSelectedDog: undefined },
-    hash: "#beeswarm-section",
-  });
-}
-function onSelectDog(id: string | number) {
-  selectedName.value = String(id);
-}
-
 function onSelectHeatGroup(groupId: number) {
   selectedGroupId.value = groupId;
 }
 
 function onChooseGroupMember(memberId: number) {
   selectedComparePersonId.value = memberId;
+  selectedBeeswarmPersonId.value = memberId;
   writeComparePersonId(memberId);
 }
 
-function sendToCompare() {
-  const dog = selectedDog.value;
-  if (!dog) return;
-  const name = dog.name;
-
-  try {
-    // fallback锛氬鏋滅敱 query 涓簡锛孋ompare 椤甸潰杩樿兘锟?localStorage 鎺ュ埌
-    const queueKey = "compare_add_queue";
-    const rawQueue = localStorage.getItem(queueKey);
-    const queue = rawQueue ? (JSON.parse(rawQueue) as unknown) : [];
-    const names = Array.isArray(queue) ? queue.filter((v): v is string => typeof v === "string") : [];
-
-    if (!names.includes(name) && names.length < 5) {
-      names.push(name);
-    }
-
-    localStorage.setItem(queueKey, JSON.stringify(names));
-    localStorage.setItem("compare_add", name);
-    window.dispatchEvent(new Event("compare-queue-updated"));
-  } catch (_) {
-    // ignore storage failures
-  }
-
-  // 閫氳繃 query 鎶婂悕瀛楀甫锟?Compare
+function onSelectBeeswarmPerson(personId: number) {
+  selectedBeeswarmPersonId.value = personId;
+  selectedComparePersonId.value = personId;
+  writeComparePersonId(personId);
 }
 
-const beeswarmTraits = computed<TraitKey[]>(() => {
-  return [...TRAIT_KEYS];
-});
-
-watch(
-  () => selectedName.value,
-  (next, prev) => {
-    if (!next || next === prev) return;
-  },
-);
-
-watch(
-  () => [route.query.beeswarmBreedGroup, route.query.homeSelectedDog, route.hash, dogs.value.length] as const,
-  async ([groupQuery, homeSelectedDogQuery, hash]) => {
-    selectedBeeswarmBreedGroup.value = readSingleQueryValue(groupQuery);
-    const targetDogName = readSingleQueryValue(homeSelectedDogQuery);
-    if (targetDogName && dogs.value.some((d) => d.name === targetDogName)) {
-      selectedName.value = targetDogName;
-    }
-    if (!selectedBeeswarmBreedGroup.value && hash !== "#beeswarm-section") return;
-
-    await nextTick();
-    beeswarmSectionRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
-  },
-  { immediate: true },
-);
+const beeswarmTraits = computed(() => [...IVIS_RATING_KEYS]);
+const beeswarmTraitLabels: Record<string, string> = {
+  information_visualization: "Information Visualization",
+  statistical: "Statistical",
+  mathematics: "Mathematics",
+  drawing_and_artistic: "Drawing and Artistic",
+  computer_usage: "Computer Usage",
+  programming: "Programming",
+  computer_graphics_programming: "Computer Graphics Programming",
+  human_computer_interaction_programming: "HCI Programming",
+  user_experience_evaluation: "UX Evaluation",
+  communication: "Communication",
+  collaboration: "Collaboration",
+  code_repository: "Code Repository",
+};
 
 onMounted(() => {
-  dogs.value = dogsJson as DogBreed[];
-
-  const first = dogs.value[0];
-  if (first) selectedName.value = first.name;
-
-  document.addEventListener("mousedown", onDocClick);
   storedGrouping.value = readStoredGrouping();
   selectedComparePersonId.value = readComparePersonId();
+  selectedBeeswarmPersonId.value = selectedComparePersonId.value;
   window.addEventListener("storage", onGroupingStorageChanged);
   window.addEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
   window.addEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("mousedown", onDocClick);
   window.removeEventListener("storage", onGroupingStorageChanged);
   window.removeEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
   window.removeEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
@@ -338,16 +202,18 @@ onBeforeUnmount(() => {
 function onGroupingStorageChanged() {
   storedGrouping.value = readStoredGrouping();
   selectedComparePersonId.value = readComparePersonId();
+  selectedBeeswarmPersonId.value = selectedComparePersonId.value;
 }
 
 function onCompareSelectionChanged() {
   selectedComparePersonId.value = readComparePersonId();
+  selectedBeeswarmPersonId.value = selectedComparePersonId.value;
 }
 </script>
 
 <template>
   <div class="home">
-    <!-- 涓婇潰涓夊潡鍗＄墖锟?-->
+    <!-- 娑撳﹪娼版稉澶婃健閸楋紕澧栭敓?-->
     <section class="top">
       <div class="card right">
         <div class="title">Temperament traits</div>
@@ -357,10 +223,10 @@ function onCompareSelectionChanged() {
       </div>
     </section>
 
-    <!-- 涓嬫柟锛氬ぇ scatter + 鍙充晶鍒楄〃 -->
+    <!-- 娑撳鏌熼敍姘亣 scatter + 閸欏厖鏅堕崚妤勩€?-->
     <section class="bottom">
       <div class="card scatter">
-        <div class="title">Dogs overview</div>
+        <div class="title">Groups overview</div>
 
         <div class="plotArea">
           <HeatedMap
@@ -399,12 +265,12 @@ function onCompareSelectionChanged() {
 
         <div class="plotArea beeswarmArea">
           <BeeswarmPlot
-            :dogs="dogs"
+            :records="ivisRecords"
             :traits="beeswarmTraits"
-            :traitLabels="traitLabels"
-            :highlightId="highlightId"
-            :selectedBreedGroup="selectedBeeswarmBreedGroup"
-            @selectDog="onSelectDog"
+            :traitLabels="beeswarmTraitLabels"
+            :highlightId="selectedBeeswarmPersonId"
+            
+            @selectPerson="onSelectBeeswarmPerson"
           />
         </div>
       </div>
@@ -617,7 +483,7 @@ function onCompareSelectionChanged() {
 }
 
 .card.list {
-  height: 660px; /* 楂樺害鍥哄畾涓嶅彉 */
+  height: 660px; /* 妤傛ê瀹抽崶鍝勭暰娑撳秴褰?*/
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -641,7 +507,7 @@ function onCompareSelectionChanged() {
 
 .listBody {
   flex: 1 1 auto;
-  overflow-y: auto; /* 涓嬫媺婊氬姩 */
+  overflow-y: auto; /* 娑撳濯哄姘З */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -699,7 +565,7 @@ function onCompareSelectionChanged() {
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
 }
 
-/* 閫変腑楂樹寒 */
+/* 闁鑵戞妯瑰瘨 */
 .row.active {
   background: #ffdf5d;
 }
@@ -725,3 +591,5 @@ function onCompareSelectionChanged() {
 
 
 </style>
+
+

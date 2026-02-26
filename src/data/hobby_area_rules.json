@@ -29,6 +29,7 @@
       "swim",
       "swimming",
       "tennis",
+      "training",
       "workout",
       "yoga"
     ]
@@ -38,27 +39,36 @@
     "keywords": [
       "anime",
       "art",
-      "band",
-      "choir",
+      "artistic",
       "cinema",
+      "dancing",
       "design",
       "draw",
       "drawing",
       "film",
-      "guitar",
       "illustration",
+      "knitting",
       "movie",
       "movies",
-      "music",
       "paint",
       "painting",
       "photo",
       "photography",
-      "piano",
       "series",
+      "sketch"
+    ]
+  },
+  {
+    "hobby_area": "music",
+    "keywords": [
+      "band",
+      "bass",
+      "choir",
+      "guitar",
+      "music",
+      "piano",
       "sing",
       "singing",
-      "sketch",
       "ukulele"
     ]
   },
@@ -86,6 +96,7 @@
       "coding",
       "dataanalysis",
       "electronics",
+      "interactive",
       "maker",
       "program",
       "programming",
@@ -93,7 +104,8 @@
       "robot",
       "rust",
       "unity",
-      "wasm"
+      "wasm",
+      "web"
     ]
   },
   {
@@ -101,13 +113,16 @@
     "keywords": [
       "book",
       "books",
+      "fantasy",
       "fiction",
+      "history",
       "literature",
       "novel",
       "poem",
       "poetry",
       "read",
       "reading",
+      "wikipedia",
       "write",
       "writing"
     ]
@@ -138,10 +153,15 @@
     "hobby_area": "languages_culture",
     "keywords": [
       "culture",
-      "japanese",
       "language",
-      "languages",
-      "swedish"
+      "languages"
+    ]
+  },
+  {
+    "hobby_area": "other",
+    "keywords": [
+      "entrepreneurship",
+      "business"
     ]
   }
 ]

@@ -1,11 +1,11 @@
 [
   {
     "hobby_area": "arts_media",
-    "count": 26
+    "count": 22
   },
   {
     "hobby_area": "sports_outdoors",
-    "count": 21
+    "count": 22
   },
   {
     "hobby_area": "games",
@@ -13,18 +13,22 @@
   },
   {
     "hobby_area": "tech_making",
-    "count": 12
+    "count": 13
+  },
+  {
+    "hobby_area": "music",
+    "count": 11
   },
   {
     "hobby_area": "reading_writing",
-    "count": 7
+    "count": 8
   },
   {
     "hobby_area": "food",
     "count": 6
   },
   {
-    "hobby_area": "languages_culture",
+    "hobby_area": "other",
     "count": 5
   },
   {
@@ -32,7 +36,7 @@
     "count": 4
   },
   {
-    "hobby_area": "other",
-    "count": 2
+    "hobby_area": "languages_culture",
+    "count": 3
   }
 ]

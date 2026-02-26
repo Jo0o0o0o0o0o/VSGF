@@ -1,0 +1,896 @@
+[
+  {
+    "reason": "stopword",
+    "total_filtered": 979,
+    "top_words": [
+      {
+        "token": "i",
+        "count": 118
+      },
+      {
+        "token": "and",
+        "count": 82
+      },
+      {
+        "token": "to",
+        "count": 46
+      },
+      {
+        "token": "in",
+        "count": 43
+      },
+      {
+        "token": "a",
+        "count": 41
+      },
+      {
+        "token": "the",
+        "count": 33
+      },
+      {
+        "token": "like",
+        "count": 32
+      },
+      {
+        "token": "my",
+        "count": 25
+      },
+      {
+        "token": "of",
+        "count": 23
+      },
+      {
+        "token": "as",
+        "count": 20
+      },
+      {
+        "token": "also",
+        "count": 16
+      },
+      {
+        "token": "with",
+        "count": 14
+      },
+      {
+        "token": "have",
+        "count": 14
+      },
+      {
+        "token": "but",
+        "count": 12
+      },
+      {
+        "token": "it",
+        "count": 12
+      },
+      {
+        "token": "is",
+        "count": 12
+      },
+      {
+        "token": "that",
+        "count": 12
+      },
+      {
+        "token": "am",
+        "count": 12
+      },
+      {
+        "token": "especially",
+        "count": 10
+      },
+      {
+        "token": "love",
+        "count": 10
+      },
+      {
+        "token": "play",
+        "count": 10
+      },
+      {
+        "token": "at",
+        "count": 10
+      },
+      {
+        "token": "interested",
+        "count": 10
+      },
+      {
+        "token": "on",
+        "count": 9
+      },
+      {
+        "token": "interest",
+        "count": 9
+      },
+      {
+        "token": "for",
+        "count": 8
+      },
+      {
+        "token": "playing",
+        "count": 7
+      },
+      {
+        "token": "enjoy",
+        "count": 7
+      },
+      {
+        "token": "well",
+        "count": 7
+      },
+      {
+        "token": "from",
+        "count": 7
+      },
+      {
+        "token": "be",
+        "count": 7
+      },
+      {
+        "token": "watching",
+        "count": 6
+      },
+      {
+        "token": "things",
+        "count": 5
+      },
+      {
+        "token": "friends",
+        "count": 5
+      },
+      {
+        "token": "doing",
+        "count": 5
+      },
+      {
+        "token": "going",
+        "count": 5
+      },
+      {
+        "token": "or",
+        "count": 5
+      },
+      {
+        "token": "side",
+        "count": 5
+      },
+      {
+        "token": "really",
+        "count": 5
+      },
+      {
+        "token": "most",
+        "count": 4
+      },
+      {
+        "token": "new",
+        "count": 4
+      },
+      {
+        "token": "get",
+        "count": 4
+      },
+      {
+        "token": "so",
+        "count": 4
+      },
+      {
+        "token": "work",
+        "count": 4
+      },
+      {
+        "token": "me",
+        "count": 4
+      },
+      {
+        "token": "learning",
+        "count": 4
+      },
+      {
+        "token": "been",
+        "count": 4
+      },
+      {
+        "token": "one",
+        "count": 4
+      },
+      {
+        "token": "are",
+        "count": 4
+      },
+      {
+        "token": "an",
+        "count": 4
+      },
+      {
+        "token": "this",
+        "count": 4
+      },
+      {
+        "token": "though",
+        "count": 4
+      },
+      {
+        "token": "very",
+        "count": 4
+      },
+      {
+        "token": "quite",
+        "count": 4
+      },
+      {
+        "token": "hobbies",
+        "count": 4
+      },
+      {
+        "token": "other",
+        "count": 4
+      },
+      {
+        "token": "much",
+        "count": 4
+      },
+      {
+        "token": "something",
+        "count": 4
+      },
+      {
+        "token": "making",
+        "count": 3
+      },
+      {
+        "token": "if",
+        "count": 3
+      },
+      {
+        "token": "has",
+        "count": 3
+      },
+      {
+        "token": "about",
+        "count": 3
+      },
+      {
+        "token": "everything",
+        "count": 3
+      },
+      {
+        "token": "still",
+        "count": 3
+      },
+      {
+        "token": "better",
+        "count": 3
+      },
+      {
+        "token": "all",
+        "count": 3
+      },
+      {
+        "token": "would",
+        "count": 3
+      },
+      {
+        "token": "which",
+        "count": 3
+      },
+      {
+        "token": "working",
+        "count": 3
+      },
+      {
+        "token": "both",
+        "count": 3
+      },
+      {
+        "token": "too",
+        "count": 3
+      },
+      {
+        "token": "mostly",
+        "count": 3
+      },
+      {
+        "token": "hobby",
+        "count": 3
+      },
+      {
+        "token": "many",
+        "count": 3
+      },
+      {
+        "token": "years",
+        "count": 3
+      },
+      {
+        "token": "places",
+        "count": 3
+      },
+      {
+        "token": "future",
+        "count": 3
+      },
+      {
+        "token": "studying",
+        "count": 3
+      },
+      {
+        "token": "development",
+        "count": 3
+      },
+      {
+        "token": "getting",
+        "count": 3
+      }
+    ]
+  },
+  {
+    "reason": "not_in_rules",
+    "total_filtered": 300,
+    "top_words": [
+      {
+        "token": "end",
+        "count": 2
+      },
+      {
+        "token": "lead",
+        "count": 2
+      },
+      {
+        "token": "take",
+        "count": 2
+      },
+      {
+        "token": "mix",
+        "count": 2
+      },
+      {
+        "token": "sci",
+        "count": 2
+      },
+      {
+        "token": "courses",
+        "count": 2
+      },
+      {
+        "token": "real",
+        "count": 2
+      },
+      {
+        "token": "printing",
+        "count": 1
+      },
+      {
+        "token": "digital",
+        "count": 1
+      },
+      {
+        "token": "pro",
+        "count": 1
+      },
+      {
+        "token": "college",
+        "count": 1
+      },
+      {
+        "token": "statistics",
+        "count": 1
+      },
+      {
+        "token": "freelance",
+        "count": 1
+      },
+      {
+        "token": "interstellar",
+        "count": 1
+      },
+      {
+        "token": "cocktails",
+        "count": 1
+      },
+      {
+        "token": "riga",
+        "count": 1
+      },
+      {
+        "token": "switzerland",
+        "count": 1
+      },
+      {
+        "token": "speak",
+        "count": 1
+      },
+      {
+        "token": "group",
+        "count": 1
+      },
+      {
+        "token": "extremely",
+        "count": 1
+      },
+      {
+        "token": "extroverted",
+        "count": 1
+      },
+      {
+        "token": "jokes",
+        "count": 1
+      },
+      {
+        "token": "esfp",
+        "count": 1
+      },
+      {
+        "token": "personality",
+        "count": 1
+      },
+      {
+        "token": "giant",
+        "count": 1
+      },
+      {
+        "token": "brain",
+        "count": 1
+      },
+      {
+        "token": "combined",
+        "count": 1
+      },
+      {
+        "token": "bit",
+        "count": 1
+      },
+      {
+        "token": "adhd",
+        "count": 1
+      },
+      {
+        "token": "leave",
+        "count": 1
+      },
+      {
+        "token": "till",
+        "count": 1
+      },
+      {
+        "token": "last",
+        "count": 1
+      },
+      {
+        "token": "minute",
+        "count": 1
+      },
+      {
+        "token": "tryhards",
+        "count": 1
+      },
+      {
+        "token": "sold",
+        "count": 1
+      },
+      {
+        "token": "soul",
+        "count": 1
+      },
+      {
+        "token": "high",
+        "count": 1
+      },
+      {
+        "token": "frequency",
+        "count": 1
+      },
+      {
+        "token": "crypto",
+        "count": 1
+      },
+      {
+        "token": "trading",
+        "count": 1
+      },
+      {
+        "token": "company",
+        "count": 1
+      },
+      {
+        "token": "trader",
+        "count": 1
+      },
+      {
+        "token": "campus",
+        "count": 1
+      },
+      {
+        "token": "daily",
+        "count": 1
+      },
+      {
+        "token": "basis",
+        "count": 1
+      },
+      {
+        "token": "big",
+        "count": 1
+      },
+      {
+        "token": "nono",
+        "count": 1
+      },
+      {
+        "token": "breakfast",
+        "count": 1
+      },
+      {
+        "token": "discussing",
+        "count": 1
+      },
+      {
+        "token": "ideas",
+        "count": 1
+      },
+      {
+        "token": "someone",
+        "count": 1
+      },
+      {
+        "token": "snowboarding",
+        "count": 1
+      },
+      {
+        "token": "afterwards",
+        "count": 1
+      },
+      {
+        "token": "looking",
+        "count": 1
+      },
+      {
+        "token": "tickets",
+        "count": 1
+      },
+      {
+        "token": "basel",
+        "count": 1
+      },
+      {
+        "token": "andrew",
+        "count": 1
+      },
+      {
+        "token": "tate",
+        "count": 1
+      },
+      {
+        "token": "tiktoks",
+        "count": 1
+      },
+      {
+        "token": "seeing",
+        "count": 1
+      },
+      {
+        "token": "party",
+        "count": 1
+      },
+      {
+        "token": "biggest",
+        "count": 1
+      },
+      {
+        "token": "obsession",
+        "count": 1
+      },
+      {
+        "token": "half",
+        "count": 1
+      },
+      {
+        "token": "large",
+        "count": 1
+      },
+      {
+        "token": "folk",
+        "count": 1
+      },
+      {
+        "token": "customs",
+        "count": 1
+      },
+      {
+        "token": "vtubers",
+        "count": 1
+      },
+      {
+        "token": "believe",
+        "count": 1
+      },
+      {
+        "token": "body",
+        "count": 1
+      },
+      {
+        "token": "mind",
+        "count": 1
+      },
+      {
+        "token": "realize",
+        "count": 1
+      },
+      {
+        "token": "ones",
+        "count": 1
+      },
+      {
+        "token": "true",
+        "count": 1
+      },
+      {
+        "token": "capabilities",
+        "count": 1
+      },
+      {
+        "token": "shown",
+        "count": 1
+      },
+      {
+        "token": "mental",
+        "count": 1
+      },
+      {
+        "token": "capacity",
+        "count": 1
+      },
+      {
+        "token": "increases",
+        "count": 1
+      },
+      {
+        "token": "trains",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "noise",
+    "total_filtered": 72,
+    "top_words": [
+      {
+        "token": "time",
+        "count": 8
+      },
+      {
+        "token": "computer",
+        "count": 6
+      },
+      {
+        "token": "graphics",
+        "count": 5
+      },
+      {
+        "token": "not",
+        "count": 5
+      },
+      {
+        "token": "kth",
+        "count": 4
+      },
+      {
+        "token": "year",
+        "count": 4
+      },
+      {
+        "token": "lot",
+        "count": 4
+      },
+      {
+        "token": "science",
+        "count": 4
+      },
+      {
+        "token": "engineer",
+        "count": 3
+      },
+      {
+        "token": "study",
+        "count": 3
+      },
+      {
+        "token": "currently",
+        "count": 3
+      },
+      {
+        "token": "visual",
+        "count": 3
+      },
+      {
+        "token": "technology",
+        "count": 3
+      },
+      {
+        "token": "software",
+        "count": 2
+      },
+      {
+        "token": "visualisation",
+        "count": 2
+      },
+      {
+        "token": "student",
+        "count": 2
+      },
+      {
+        "token": "auditory",
+        "count": 2
+      },
+      {
+        "token": "family",
+        "count": 1
+      },
+      {
+        "token": "zone",
+        "count": 1
+      },
+      {
+        "token": "challenged",
+        "count": 1
+      },
+      {
+        "token": "girl",
+        "count": 1
+      },
+      {
+        "token": "impossible",
+        "count": 1
+      },
+      {
+        "token": "goal",
+        "count": 1
+      },
+      {
+        "token": "hard",
+        "count": 1
+      },
+      {
+        "token": "different",
+        "count": 1
+      },
+      {
+        "token": "open",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "too_short",
+    "total_filtered": 36,
+    "top_words": [
+      {
+        "token": "m",
+        "count": 18
+      },
+      {
+        "token": "ve",
+        "count": 5
+      },
+      {
+        "token": "up",
+        "count": 3
+      },
+      {
+        "token": "go",
+        "count": 2
+      },
+      {
+        "token": "fi",
+        "count": 2
+      },
+      {
+        "token": "s",
+        "count": 2
+      },
+      {
+        "token": "ll",
+        "count": 1
+      },
+      {
+        "token": "tv",
+        "count": 1
+      },
+      {
+        "token": "9",
+        "count": 1
+      },
+      {
+        "token": "6",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "duplicate",
+    "total_filtered": 18,
+    "top_words": [
+      {
+        "token": "travel",
+        "count": 3
+      },
+      {
+        "token": "game",
+        "count": 3
+      },
+      {
+        "token": "programming",
+        "count": 2
+      },
+      {
+        "token": "movie",
+        "count": 1
+      },
+      {
+        "token": "training",
+        "count": 1
+      },
+      {
+        "token": "jogging",
+        "count": 1
+      },
+      {
+        "token": "artistic",
+        "count": 1
+      },
+      {
+        "token": "film",
+        "count": 1
+      },
+      {
+        "token": "reading",
+        "count": 1
+      },
+      {
+        "token": "sport",
+        "count": 1
+      },
+      {
+        "token": "videogame",
+        "count": 1
+      },
+      {
+        "token": "code",
+        "count": 1
+      },
+      {
+        "token": "fiction",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "country",
+    "total_filtered": 5,
+    "top_words": [
+      {
+        "token": "japanese",
+        "count": 2
+      },
+      {
+        "token": "japan",
+        "count": 2
+      },
+      {
+        "token": "swedish",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "number",
+    "total_filtered": 1,
+    "top_words": [
+      {
+        "token": "2019",
+        "count": 1
+      }
+    ]
+  }
+]

@@ -69,6 +69,19 @@ const usedStudentIds = computed(() => {
 const availableStudents = computed(() =>
   students.filter((student) => !usedStudentIds.value.has(student.id))
 );
+const slotSearchQuery = ref<Record<string, string>>({});
+
+function slotKey(groupId: number, slotIndex: number) {
+  return `${groupId}-${slotIndex}`;
+}
+
+function getFilteredStudents(groupId: number, slotIndex: number) {
+  const q = (slotSearchQuery.value[slotKey(groupId, slotIndex)] ?? "").trim().toLowerCase();
+  if (!q) return availableStudents.value;
+  return availableStudents.value.filter((student) => {
+    return student.alias.toLowerCase().includes(q) || String(student.id).includes(q);
+  });
+}
 
 function toggleTip(groupId: number, slotIndex: number) {
   if (
@@ -78,6 +91,7 @@ function toggleTip(groupId: number, slotIndex: number) {
     activeTip.value = null;
     return;
   }
+  slotSearchQuery.value[slotKey(groupId, slotIndex)] = "";
   activeTip.value = { groupId, slotIndex };
 }
 
@@ -85,6 +99,7 @@ function addMember(groupId: number, slotIndex: number, student: Student) {
   const group = groups.value.find((item) => item.id === groupId);
   if (!group) return;
   group.members[slotIndex] = student;
+  slotSearchQuery.value[slotKey(groupId, slotIndex)] = "";
   activeTip.value = null;
 }
 
@@ -328,9 +343,23 @@ watch(
           <button
             class="slotCard"
             type="button"
-            @click="toggleTip(group.id, slotIndex)"
           >
-            <span v-if="member" class="memberAlias">{{ member.alias }}</span>
+            <div v-if="member" class="memberContent">
+              <span class="memberAlias">{{ member.alias }}</span>
+              <div class="memberHobbyRow">
+                <span
+                  v-for="hobby in member.hobby_area"
+                  :key="`member-${member.id}-${hobby}`"
+                  class="memberHobbyChip"
+                  :style="getHobbyTagStyle(hobby)"
+                >
+                  {{ formatHobbyLabel(hobby) }}
+                </span>
+                <span v-if="member.hobby_area.length === 0" class="memberHobbyChip memberHobbyEmpty">
+                  No hobby
+                </span>
+              </div>
+            </div>
             <span v-else class="plusMark">+</span>
           </button>
 
@@ -344,15 +373,34 @@ watch(
             x
           </button>
 
+          <button
+            class="slotPicker"
+            type="button"
+            @click="toggleTip(group.id, slotIndex)"
+          >
+            <span class="slotPickerText">
+              {{ member ? `${member.alias} (#${member.id})` : "choose people" }}
+            </span>
+            <span class="slotPickerCaret">˅</span>
+          </button>
+
           <div
             v-if="
               activeTip?.groupId === group.id && activeTip.slotIndex === slotIndex
             "
             class="topTip"
           >
-            <div v-if="availableStudents.length" class="tipList">
+            <div class="tipSearchWrap">
+              <input
+                v-model="slotSearchQuery[slotKey(group.id, slotIndex)]"
+                class="tipSearchInput"
+                type="text"
+                placeholder="Search people..."
+              />
+            </div>
+            <div v-if="getFilteredStudents(group.id, slotIndex).length" class="tipList">
               <button
-                v-for="student in availableStudents"
+                v-for="student in getFilteredStudents(group.id, slotIndex)"
                 :key="student.id"
                 class="tipItem"
                 type="button"
@@ -361,7 +409,7 @@ watch(
                 {{ student.alias }}
               </button>
             </div>
-            <p v-else class="tipEmpty">No student left</p>
+            <p v-else class="tipEmpty">No matched student</p>
           </div>
         </div>
         <button
@@ -523,6 +571,12 @@ watch(
 
 .slotCardWrap {
   position: relative;
+  background: #dddddf;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .slotCardWrap.slotDropActive .slotCard {
@@ -534,21 +588,64 @@ watch(
 .slotCard {
   width: 100%;
   border: none;
-  cursor: pointer;
+  cursor: default;
   aspect-ratio: 1 / 1;
   background: #d2d2d4;
+  position: relative;
+  overflow: hidden;
   display: grid;
   place-items: center;
+  border-radius: 14px;
+}
+
+.memberContent {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
 }
 
 .memberAlias {
-  font-size: clamp(16px, 2vw, 22px);
+  font-size: clamp(16px, 2vw, 34px);
   line-height: 1.2;
   color: #111;
   font-weight: 600;
-  padding: 10px;
+  padding: 10px 8px 48px;
   text-align: center;
   word-break: break-word;
+}
+
+.memberHobbyRow {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.memberHobbyChip {
+  min-height: 20px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.memberHobbyEmpty {
+  color: #666;
+  background: #ececec;
+  border-color: #d3d3d3;
 }
 
 .plusMark {
@@ -560,8 +657,8 @@ watch(
 
 .removeBtn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 18px;
+  right: 18px;
   border: none;
   width: 22px;
   height: 22px;
@@ -572,14 +669,43 @@ watch(
   cursor: pointer;
 }
 
+.slotPicker {
+  border: 1px solid #c8c8cd;
+  background: #efefef;
+  border-radius: 10px;
+  min-height: 38px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.slotPickerText {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slotPickerCaret {
+  font-size: 17px;
+  color: #555;
+  line-height: 1;
+}
+
 .topTip {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 10px);
-  transform: translateX(-50%);
-  width: min(220px, 94vw);
-  max-height: 220px;
-  overflow: auto;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 6px);
+  width: auto;
+  max-height: 240px;
+  overflow: hidden;
   background: #ffffff;
   border: 1px solid #bfc3ca;
   border-radius: 10px;
@@ -588,7 +714,24 @@ watch(
   padding: 8px;
 }
 
+.tipSearchWrap {
+  margin-bottom: 8px;
+}
+
+.tipSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+
 .tipList {
+  max-height: 160px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -678,6 +821,10 @@ watch(
 
   .nextBtn {
     min-height: 90px;
+  }
+
+  .slotPickerText {
+    font-size: 14px;
   }
 
   .detailsDrawer {

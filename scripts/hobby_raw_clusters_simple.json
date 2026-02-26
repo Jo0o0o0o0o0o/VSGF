@@ -1,0 +1,188 @@
+[
+  {
+    "cluster": 3,
+    "members": [
+      {
+        "id": 2,
+        "alias": "vq"
+      },
+      {
+        "id": 3,
+        "alias": "jjettas"
+      },
+      {
+        "id": 4,
+        "alias": "SunnyStockholm"
+      },
+      {
+        "id": 6,
+        "alias": "pringles"
+      },
+      {
+        "id": 8,
+        "alias": "Rizzlord"
+      },
+      {
+        "id": 9,
+        "alias": "Koronesuki"
+      },
+      {
+        "id": 14,
+        "alias": "Horse123"
+      },
+      {
+        "id": 15,
+        "alias": "Rebin"
+      },
+      {
+        "id": 19,
+        "alias": "Aloy"
+      },
+      {
+        "id": 21,
+        "alias": "kanelbullar13"
+      },
+      {
+        "id": 28,
+        "alias": "Santa86"
+      },
+      {
+        "id": 29,
+        "alias": "mercury"
+      },
+      {
+        "id": 33,
+        "alias": "unpwu"
+      },
+      {
+        "id": 35,
+        "alias": "ChaCharizard"
+      },
+      {
+        "id": 39,
+        "alias": "Rufstufsan"
+      },
+      {
+        "id": 41,
+        "alias": "Bempis2"
+      }
+    ]
+  },
+  {
+    "cluster": 4,
+    "members": [
+      {
+        "id": 10,
+        "alias": "Daybeha"
+      },
+      {
+        "id": 16,
+        "alias": "monoid"
+      },
+      {
+        "id": 17,
+        "alias": "Ishi"
+      },
+      {
+        "id": 23,
+        "alias": "Pål"
+      },
+      {
+        "id": 24,
+        "alias": "Modi"
+      },
+      {
+        "id": 25,
+        "alias": "Bluebell"
+      },
+      {
+        "id": 26,
+        "alias": "Noggin_bops"
+      },
+      {
+        "id": 30,
+        "alias": "DonkeyKong1"
+      }
+    ]
+  },
+  {
+    "cluster": 1,
+    "members": [
+      {
+        "id": 5,
+        "alias": "Yami"
+      },
+      {
+        "id": 7,
+        "alias": "Oseram"
+      },
+      {
+        "id": 12,
+        "alias": "PogChamp"
+      },
+      {
+        "id": 22,
+        "alias": "Skvarre"
+      },
+      {
+        "id": 37,
+        "alias": "coldfooter"
+      }
+    ]
+  },
+  {
+    "cluster": 2,
+    "members": [
+      {
+        "id": 11,
+        "alias": "Pasta"
+      },
+      {
+        "id": 13,
+        "alias": "Ropianos"
+      },
+      {
+        "id": 18,
+        "alias": "xXVisWizXx"
+      },
+      {
+        "id": 34,
+        "alias": "PetrifiedDropbear69"
+      },
+      {
+        "id": 36,
+        "alias": "HalfCrimp"
+      }
+    ]
+  },
+  {
+    "cluster": 5,
+    "members": [
+      {
+        "id": 27,
+        "alias": "Lumos"
+      },
+      {
+        "id": 31,
+        "alias": "ardillito28"
+      },
+      {
+        "id": 38,
+        "alias": "Ramennoodle"
+      }
+    ]
+  },
+  {
+    "cluster": 0,
+    "members": [
+      {
+        "id": 1,
+        "alias": "Soup"
+      },
+      {
+        "id": 20,
+        "alias": "Turb0clutcharen"
+      }
+    ]
+  }
+]

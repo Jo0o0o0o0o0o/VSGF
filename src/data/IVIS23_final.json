@@ -66,10 +66,12 @@
     "time_year": "2023",
     "hobby_raw": "Sports (pro/college), statistics, entrepreneurship",
     "hobby": [
-      "sport"
+      "sport",
+      "entrepreneurship"
     ],
     "hobby_area": [
-      "sports_outdoors"
+      "sports_outdoors",
+      "other"
     ],
     "ratings": {
       "information_visualization": 6,
@@ -191,6 +193,7 @@
     "hobby_area": [
       "sports_outdoors",
       "arts_media",
+      "music",
       "travel",
       "food"
     ],
@@ -215,7 +218,7 @@
     "time_year": "2023",
     "hobby_raw": "I'm from Riga, study in Switzerland, don't speak Swedish. But if my group has a pretty girl and we connect, I'm ready to learn. Otherwise, impossible. I'm extremely extroverted and I like making jokes about everything. My ESFP personality and my giant brain combined with a bit of ADHD make it so I leave everything till the last minute and still end up doing better than all of the tryhards. I've also sold my soul to a work at a high frequency crypto trading company as a trader so going to campus on a daily basis is kind of a big nono for me. I like to start my day by going for breakfast and discussing business ideas with someone. Then continue with playing basketball or going snowboarding, afterwards I'll go for playing the guitar, looking at tickets to Art Basel, watching andrew tate tiktoks. And then I would finish the day with seeing my friends and going out to party",
     "hobby": [
-      "swedish",
+      "business",
       "basketball",
       "guitar",
       "art"
@@ -223,7 +226,8 @@
     "hobby_area": [
       "sports_outdoors",
       "arts_media",
-      "languages_culture"
+      "music",
+      "other"
     ],
     "ratings": {
       "information_visualization": 6,
@@ -246,13 +250,14 @@
     "time_year": "2023",
     "hobby_raw": "Currently, my is biggest obsession in life is learning Japanese, a goal which I have been working hard towards on the side of my studies at KTH for about a year and a half. It has lead me to take a large interest in the culture as well, with everything from the food and folk customs to anime and Vtubers. \n\nI also enjoy training, especially jogging. I believe that one should work on both the body and the mind in order to realize ones true capabilities (studies have also shown that mental capacity increases if one trains). Thus, I'm currently doing a mix of strength training, jogging, flexibility and handstand practice in order to make sure I stay in shape.\n\nI've always had a fondness for video games as well. In fact, they are what lead me to have an interest in pursuing programming and visualisation here at KTH. Thus, the side of visualization/graphics that I am the most interested in is computer graphics, but I'm hoping that this course will be a lot of fun as well!\n\nI've been trying to get into the artistic side of things too recently. I'm mostly doing 3D modeling but I've dabbled in drawing as well. I thought it might be a good idea to be able to mix the more scientific side of visualisation and graphics that I expect to get from KTH with a more artistic side that I can develop on my own. I'm still at the beginning of that journey though.",
     "hobby": [
-      "japanese",
       "culture",
       "food",
       "anime",
+      "training",
       "jogging",
       "videogame",
       "programming",
+      "artistic",
       "3dmodeling",
       "drawing"
     ],
@@ -345,10 +350,12 @@
       "gaming",
       "reading",
       "film",
+      "bass",
       "guitar"
     ],
     "hobby_area": [
       "arts_media",
+      "music",
       "games",
       "reading_writing"
     ],
@@ -476,7 +483,7 @@
       "wasm"
     ],
     "hobby_area": [
-      "arts_media",
+      "music",
       "tech_making",
       "languages_culture"
     ],
@@ -504,21 +511,20 @@
       "program",
       "reading",
       "fiction",
+      "fantasy",
       "electronics",
       "sport",
       "sailing",
       "travel",
       "photography",
-      "photo",
-      "japanese"
+      "photo"
     ],
     "hobby_area": [
       "sports_outdoors",
       "arts_media",
       "tech_making",
       "reading_writing",
-      "travel",
-      "languages_culture"
+      "travel"
     ],
     "ratings": {
       "information_visualization": 2,
@@ -545,12 +551,15 @@
       "climbing",
       "travel",
       "guitar",
-      "design"
+      "design",
+      "interactive"
     ],
     "hobby_area": [
       "sports_outdoors",
       "arts_media",
+      "music",
       "games",
+      "tech_making",
       "travel"
     ],
     "ratings": {
@@ -606,11 +615,14 @@
     "hobby_raw": "I am interested in graphic design, geography, history and technology. On my spare time I play counter strike and edit wikipedia articles.",
     "hobby": [
       "design",
-      "counterstrike"
+      "history",
+      "counterstrike",
+      "wikipedia"
     ],
     "hobby_area": [
       "arts_media",
-      "games"
+      "games",
+      "reading_writing"
     ],
     "ratings": {
       "information_visualization": 3,
@@ -665,7 +677,7 @@
       "beer"
     ],
     "hobby_area": [
-      "arts_media",
+      "music",
       "games",
       "food"
     ],
@@ -695,7 +707,7 @@
       "music"
     ],
     "hobby_area": [
-      "arts_media",
+      "music",
       "tech_making"
     ],
     "ratings": {
@@ -719,9 +731,12 @@
     "time_year": "2023",
     "hobby_raw": "I started studying at Mittuniversitet in 2019 and I am studying Civil Engineering with a focus in Computer Science and currently Master in Interactive Media Technoloyg. It is my fourth year. Academically I find it really inetersting to programme, it could be confusing but I think every programmer gets frustrated when the code does not work as it should. In my free time I usually work out.",
     "hobby": [
-      "code"
+      "interactive",
+      "code",
+      "workout"
     ],
     "hobby_area": [
+      "sports_outdoors",
       "tech_making"
     ],
     "ratings": {
@@ -746,7 +761,10 @@
     "hobby_raw": "In my education I am interested in programming, and especially web programming. I also like design and therefore frontend programming is something I am interested in getting better at. I have a few hobbies, even though I am not too good at them, which are; dancing, knitting and photography. ",
     "hobby": [
       "programming",
+      "web",
       "design",
+      "dancing",
+      "knitting",
       "photography"
     ],
     "hobby_area": [
@@ -806,13 +824,16 @@
       "film",
       "reading",
       "chess",
-      "music"
+      "music",
+      "entrepreneurship"
     ],
     "hobby_area": [
       "sports_outdoors",
       "arts_media",
+      "music",
       "games",
-      "reading_writing"
+      "reading_writing",
+      "other"
     ],
     "ratings": {
       "information_visualization": 7,
@@ -866,6 +887,7 @@
     "hobby": [
       "sport",
       "handball",
+      "dancing",
       "movie",
       "series"
     ],
@@ -894,7 +916,8 @@
     "time_year": "2023",
     "hobby_raw": "I like photography, knitting and pottery!",
     "hobby": [
-      "photography"
+      "photography",
+      "knitting"
     ],
     "hobby_area": [
       "arts_media"
@@ -921,12 +944,13 @@
     "hobby_raw": "I like to workout and hangout with friends, i also love to play instruments such as bass, guitar, piano and drums.",
     "hobby": [
       "workout",
+      "bass",
       "guitar",
       "piano"
     ],
     "hobby_area": [
       "sports_outdoors",
-      "arts_media"
+      "music"
     ],
     "ratings": {
       "information_visualization": 4,
@@ -1091,14 +1115,19 @@
     "hobby": [
       "reading",
       "fiction",
+      "history",
       "poetry",
+      "fantasy",
       "music",
+      "wikipedia",
+      "web",
       "coding",
       "art",
       "travel"
     ],
     "hobby_area": [
       "arts_media",
+      "music",
       "tech_making",
       "reading_writing",
       "travel"
@@ -1210,6 +1239,7 @@
     ],
     "hobby_area": [
       "arts_media",
+      "music",
       "games"
     ],
     "ratings": {
