@@ -51,6 +51,8 @@ const groups = ref<Group[]>(
 const activeTip = ref<{ groupId: number; slotIndex: number } | null>(null);
 const detailsGroupId = ref<number | null>(null);
 const detailsOpen = ref(false);
+const draggingStudentId = ref<number | null>(null);
+const dragOverSlot = ref<{ groupId: number; slotIndex: number } | null>(null);
 
 const usedStudentIds = computed(() => {
   const ids = new Set<number>();
@@ -92,6 +94,64 @@ function removeMember(groupId: number, slotIndex: number) {
   group.members[slotIndex] = null;
 }
 
+function onStudentDragStart(studentId: number, ev: DragEvent) {
+  draggingStudentId.value = studentId;
+  if (ev.dataTransfer) {
+    ev.dataTransfer.effectAllowed = "move";
+    ev.dataTransfer.setData("text/plain", String(studentId));
+  }
+}
+
+function onStudentDragEnd() {
+  draggingStudentId.value = null;
+  dragOverSlot.value = null;
+}
+
+function onSlotDragOver(groupId: number, slotIndex: number, ev: DragEvent) {
+  const group = groups.value.find((item) => item.id === groupId);
+  if (!group || group.members[slotIndex]) return;
+  ev.preventDefault();
+  if (ev.dataTransfer) {
+    ev.dataTransfer.dropEffect = "move";
+  }
+  dragOverSlot.value = { groupId, slotIndex };
+}
+
+function onSlotDragLeave(groupId: number, slotIndex: number) {
+  if (
+    dragOverSlot.value?.groupId === groupId &&
+    dragOverSlot.value.slotIndex === slotIndex
+  ) {
+    dragOverSlot.value = null;
+  }
+}
+
+function onSlotDrop(groupId: number, slotIndex: number, ev: DragEvent) {
+  ev.preventDefault();
+  const rawId = ev.dataTransfer?.getData("text/plain");
+  const droppedId = Number(rawId);
+  const studentId = Number.isFinite(droppedId) ? droppedId : draggingStudentId.value;
+
+  if (typeof studentId !== "number" || !Number.isFinite(studentId)) {
+    dragOverSlot.value = null;
+    return;
+  }
+
+  const group = groups.value.find((item) => item.id === groupId);
+  const student = students.find((item) => item.id === studentId);
+  const isAlreadyUsed = usedStudentIds.value.has(studentId);
+
+  if (!group || !student || isAlreadyUsed || group.members[slotIndex]) {
+    dragOverSlot.value = null;
+    return;
+  }
+
+  group.members[slotIndex] = student;
+  activeTip.value = null;
+  dragOverSlot.value = null;
+  draggingStudentId.value = null;
+}
+
 const selectedGroup = computed(() =>
   detailsGroupId.value === null
     ? null
@@ -119,6 +179,8 @@ const groupHobbiesMap = computed(() => {
   });
   return byGroupId;
 });
+
+const activeDragGroupId = computed<number | null>(() => dragOverSlot.value?.groupId ?? null);
 
 function openGroupDetails(groupId: number) {
   detailsGroupId.value = groupId;
@@ -213,6 +275,10 @@ watch(
           v-for="student in availableStudents"
           :key="`unassigned-${student.id}`"
           class="personBlock"
+          :class="{ dragging: draggingStudentId === student.id }"
+          draggable="true"
+          @dragstart="onStudentDragStart(student.id, $event)"
+          @dragend="onStudentDragEnd"
         >
           {{ student.alias }}
         </div>
@@ -223,7 +289,12 @@ watch(
     </section>
 
     <main class="groupingPage">
-    <section v-for="group in groups" :key="group.id" class="groupRow">
+    <section
+      v-for="group in groups"
+      :key="group.id"
+      class="groupRow"
+      :class="{ dropGroupActive: activeDragGroupId === group.id }"
+    >
       <div class="groupHeader">
         <span class="groupId">{{ group.id }}</span>
         <div class="chipRow">
@@ -246,6 +317,13 @@ watch(
           v-for="(member, slotIndex) in group.members"
           :key="slotIndex"
           class="slotCardWrap"
+          :class="{
+            slotDropActive:
+              dragOverSlot?.groupId === group.id && dragOverSlot.slotIndex === slotIndex,
+          }"
+          @dragover="onSlotDragOver(group.id, slotIndex, $event)"
+          @dragleave="onSlotDragLeave(group.id, slotIndex)"
+          @drop="onSlotDrop(group.id, slotIndex, $event)"
         >
           <button
             class="slotCard"
@@ -302,8 +380,7 @@ watch(
     <div v-if="detailsOpen" class="drawerBackdrop" @click="closeGroupDetails"></div>
     <aside class="detailsDrawer" :class="{ open: detailsOpen }">
       <button class="drawerClose" type="button" aria-label="close details" @click="closeGroupDetails">
-        ×
-      </button>
+        x</button>
 
       <GroupDetails
         v-if="selectedGroup"
@@ -370,6 +447,13 @@ watch(
   line-height: 1.2;
   overflow: hidden;
   word-break: break-word;
+  cursor: grab;
+  user-select: none;
+}
+
+.personBlock.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
 }
 
 .unassignedEmpty {
@@ -381,6 +465,12 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: box-shadow 0.16s ease;
+}
+
+.groupRow.dropGroupActive {
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.25);
+  border-radius: 8px;
 }
 
 .groupHeader {
@@ -433,6 +523,12 @@ watch(
 
 .slotCardWrap {
   position: relative;
+}
+
+.slotCardWrap.slotDropActive .slotCard {
+  outline: 2px dashed #3b82f6;
+  outline-offset: -4px;
+  background: #dde9ff;
 }
 
 .slotCard {
