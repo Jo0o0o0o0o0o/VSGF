@@ -25,6 +25,8 @@ type LineSeries = {
 };
 
 const svgRef = ref<SVGSVGElement | null>(null);
+const wrapRef = ref<HTMLDivElement | null>(null);
+const tip = ref({ show: false, x: 0, y: 0, name: "", field: "", value: 0 });
 let ro: ResizeObserver | null = null;
 
 const dataset = ivisData as IvisRecord[];
@@ -141,6 +143,117 @@ function draw() {
     .attr("stroke-linejoin", "round")
     .attr("d", (d) => line(d) ?? "");
 
+  function setTip(
+    ev: PointerEvent,
+    datum: { name: string; field: string; value: number },
+  ) {
+    const hostWrap = wrapRef.value;
+    if (!hostWrap) return;
+    const rectWrap = hostWrap.getBoundingClientRect();
+    tip.value = {
+      show: true,
+      x: ev.clientX - rectWrap.left + 10,
+      y: ev.clientY - rectWrap.top + 10,
+      name: datum.name,
+      field: datum.field,
+      value: Number(datum.value.toFixed(2)),
+    };
+  }
+
+  function nearestPointByX(mouseX: number, values: LinePoint[]) {
+    if (!values.length) return null;
+    let nearest = values[0]!;
+    let nearestDist = Math.abs((x(nearest.key) ?? 0) - mouseX);
+    for (const item of values) {
+      const dist = Math.abs((x(item.key) ?? 0) - mouseX);
+      if (dist < nearestDist) {
+        nearest = item;
+        nearestDist = dist;
+      }
+    }
+    return nearest;
+  }
+
+  const studentHitData = allSeries.map((series, idx) => ({
+    idx,
+    name: series.alias,
+    values: series.values,
+  }));
+
+  root
+    .append("g")
+    .selectAll("path.student-hit")
+    .data(studentHitData)
+    .join("path")
+    .attr("class", "student-hit")
+    .attr("d", (d) => line(d.values) ?? "")
+    .attr("fill", "none")
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 12)
+    .style("cursor", "pointer")
+    .on("pointerenter", function (event, d) {
+      const [mouseX] = d3.pointer(event as PointerEvent, root.node());
+      const nearest = nearestPointByX(mouseX, d.values);
+      if (!nearest) return;
+      d3.select(this).attr("stroke", "rgba(15,23,42,0.15)");
+      setTip(event as PointerEvent, {
+        name: d.name,
+        field: fieldLabel(nearest.key),
+        value: nearest.value,
+      });
+    })
+    .on("pointermove", function (event, d) {
+      const [mouseX] = d3.pointer(event as PointerEvent, root.node());
+      const nearest = nearestPointByX(mouseX, d.values);
+      if (!nearest) return;
+      setTip(event as PointerEvent, {
+        name: d.name,
+        field: fieldLabel(nearest.key),
+        value: nearest.value,
+      });
+    })
+    .on("pointerleave", function () {
+      d3.select(this).attr("stroke", "transparent");
+      tip.value.show = false;
+    });
+
+  root
+    .append("g")
+    .selectAll("path.avg-hit")
+    .data([{ name: "Average", values: avgSeries }])
+    .join("path")
+    .attr("class", "avg-hit")
+    .attr("d", (d) => line(d.values) ?? "")
+    .attr("fill", "none")
+    .attr("stroke", "transparent")
+    .attr("stroke-width", 14)
+    .style("cursor", "pointer")
+    .on("pointerenter", function (event, d) {
+      const [mouseX] = d3.pointer(event as PointerEvent, root.node());
+      const nearest = nearestPointByX(mouseX, d.values);
+      if (!nearest) return;
+      d3.select(this).attr("stroke", "rgba(249,115,22,0.2)");
+      setTip(event as PointerEvent, {
+        name: d.name,
+        field: fieldLabel(nearest.key),
+        value: nearest.value,
+      });
+    })
+    .on("pointermove", function (event, d) {
+      const [mouseX] = d3.pointer(event as PointerEvent, root.node());
+      const nearest = nearestPointByX(mouseX, d.values);
+      if (!nearest) return;
+      setTip(event as PointerEvent, {
+        name: d.name,
+        field: fieldLabel(nearest.key),
+        value: nearest.value,
+      });
+    })
+    .on("pointerleave", function () {
+      d3.select(this).attr("stroke", "transparent");
+      tip.value.show = false;
+    });
+
   root
     .append("text")
     .attr("x", innerW)
@@ -162,17 +275,53 @@ onMounted(() => {
 onBeforeUnmount(() => {
   ro?.disconnect();
   ro = null;
+  tip.value.show = false;
 });
 </script>
 
 <template>
-  <svg ref="svgRef"></svg>
+  <div ref="wrapRef" class="wrap">
+    <svg ref="svgRef"></svg>
+    <div
+      v-if="tip.show"
+      class="tooltip"
+      :style="{ left: `${tip.x}px`, top: `${tip.y}px` }"
+    >
+      <div class="title">{{ tip.name }}</div>
+      <div>{{ tip.field }}: {{ tip.value }}</div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+.wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 svg {
   width: 100%;
   height: 100%;
   min-height: 260px;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  max-width: 240px;
+  z-index: 20;
+}
+
+.title {
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 </style>

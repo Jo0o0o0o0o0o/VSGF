@@ -205,7 +205,24 @@ watch(
 </script>
 
 <template>
-  <main class="groupingPage">
+  <div class="groupingLayout">
+    <section class="unassignedSection">
+      <div class="unassignedHeader">Select People</div>
+      <div class="unassignedGrid">
+        <div
+          v-for="student in availableStudents"
+          :key="`unassigned-${student.id}`"
+          class="personBlock"
+        >
+          {{ student.alias }}
+        </div>
+        <div v-if="availableStudents.length === 0" class="unassignedEmpty">
+          All people are grouped.
+        </div>
+      </div>
+    </section>
+
+    <main class="groupingPage">
     <section v-for="group in groups" :key="group.id" class="groupRow">
       <div class="groupHeader">
         <span class="groupId">{{ group.id }}</span>
@@ -296,16 +313,68 @@ watch(
       />
     </aside>
   </main>
+  </div>
 </template>
 
 <style scoped>
-.groupingPage {
+.groupingLayout {
   min-height: 100vh;
   background: #f5f5f5;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.groupingPage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unassignedSection {
+  background: #d2d2d4;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unassignedHeader {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.02em;
+}
+
+.unassignedGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.personBlock {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 92px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.unassignedEmpty {
+  font-size: 12px;
+  color: #4b5563;
 }
 
 .groupRow {
