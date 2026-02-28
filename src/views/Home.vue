@@ -4,6 +4,7 @@ import ivisRecordsJson from "@/data/IVIS23_final.json";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
+import CompareView from "@/views/Compare.vue";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
@@ -80,6 +81,7 @@ const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.leng
 const selectedGroupId = ref<number | null>(null);
 const selectedComparePersonId = ref<number | null>(null);
 const selectedBeeswarmPersonId = ref<number | null>(null);
+const compareDrawerOpen = ref(false);
 
 const groupedMembersById = computed(() => {
   const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
@@ -160,6 +162,7 @@ function onChooseGroupMember(memberId: number) {
   selectedComparePersonId.value = memberId;
   selectedBeeswarmPersonId.value = memberId;
   writeComparePersonId(memberId);
+  compareDrawerOpen.value = true;
 }
 
 function onSelectBeeswarmPerson(personId: number) {
@@ -208,6 +211,10 @@ function onGroupingStorageChanged() {
 function onCompareSelectionChanged() {
   selectedComparePersonId.value = readComparePersonId();
   selectedBeeswarmPersonId.value = selectedComparePersonId.value;
+}
+
+function closeCompareDrawer() {
+  compareDrawerOpen.value = false;
 }
 </script>
 
@@ -275,6 +282,18 @@ function onCompareSelectionChanged() {
         </div>
       </div>
     </section>
+
+    <div
+      v-if="compareDrawerOpen"
+      class="compareBackdrop"
+      @click="closeCompareDrawer"
+    ></div>
+    <aside class="compareDrawer" :class="{ open: compareDrawerOpen }">
+      <button class="compareDrawerClose" type="button" aria-label="close compare" @click="closeCompareDrawer">
+        x
+      </button>
+      <CompareView />
+    </aside>
   </div>
 </template>
 
@@ -587,6 +606,50 @@ function onCompareSelectionChanged() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.compareBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 80;
+}
+
+.compareDrawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: min(54vw, 860px);
+  background: #f7f7f7;
+  border-right: 1px solid #d1d5db;
+  transform: translateX(-100%);
+  transition: transform 0.24s ease;
+  z-index: 90;
+  overflow: auto;
+}
+
+.compareDrawer.open {
+  transform: translateX(0);
+}
+
+.compareDrawerClose {
+  position: sticky;
+  top: 8px;
+  margin-left: auto;
+  margin-right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 3;
 }
 
 

@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import CompareSlotsBar from "@/components/CompareSlotsBar.vue";
 import RadarChart from "@/components/RadarChart.vue";
 import GroupDetailsHeatmap from "@/components/GroupDetailsHeatmap.vue";
+import StackBar from "@/components/stackbar.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
 import {
   RADAR_AXES,
@@ -108,6 +109,16 @@ watch(
           />
         </div>
 
+        <h3>Ratings Stacked Bar</h3>
+        <div class="stackBarWrap">
+          <StackBar
+            :dogs="selectedRadarPeople"
+            :axes="activeAxes"
+            :focusIndex="focusIndex"
+            @toggleFocus="toggleFocus"
+          />
+        </div>
+
         <h3>Ratings Radar Compare</h3>
         <div class="radarChartWrap">
           <RadarChart
@@ -163,7 +174,7 @@ watch(
 }
 
 .panel.big {
-  min-height: 580px;
+  min-height: 900px;
   display: flex;
   flex-direction: column;
 }
@@ -171,6 +182,12 @@ watch(
 .heatmapChartWrap {
   height: 280px;
   min-height: 260px;
+  margin-bottom: 12px;
+}
+
+.stackBarWrap {
+  height: 280px;
+  min-height: 240px;
   margin-bottom: 12px;
 }
 
