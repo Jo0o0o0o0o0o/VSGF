@@ -129,16 +129,11 @@ function onStudentDragEnd() {
 
 function onSlotDragOver(groupId: number, slotIndex: number, ev: DragEvent) {
   const group = groups.value.find((item) => item.id === groupId);
-  const rawId = ev.dataTransfer?.getData("text/plain");
-  const parsedId = Number(rawId);
-  const studentId = Number.isFinite(parsedId) ? parsedId : draggingStudentId.value;
+  const studentId = draggingStudentId.value;
   const student = typeof studentId === "number" ? students.find((item) => item.id === studentId) : null;
-  const isAlreadyUsed =
-    typeof studentId === "number" && Number.isFinite(studentId)
-      ? usedStudentIds.value.has(studentId)
-      : true;
 
-  if (!group || !student || isAlreadyUsed) return;
+  if (!group || typeof studentId !== "number" || !student) return;
+  if (usedStudentIds.value.has(studentId)) return;
 
   ev.preventDefault();
   if (ev.dataTransfer) {
@@ -162,9 +157,10 @@ function onSlotDragLeave(groupId: number, slotIndex: number) {
 
 function onSlotDrop(groupId: number, slotIndex: number, ev: DragEvent) {
   ev.preventDefault();
-  const rawId = ev.dataTransfer?.getData("text/plain");
-  const droppedId = Number(rawId);
-  const studentId = Number.isFinite(droppedId) ? droppedId : draggingStudentId.value;
+  const studentId =
+    typeof draggingStudentId.value === "number"
+      ? draggingStudentId.value
+      : Number(ev.dataTransfer?.getData("text/plain"));
 
   if (typeof studentId !== "number" || !Number.isFinite(studentId)) {
     dragOverSlot.value = null;
