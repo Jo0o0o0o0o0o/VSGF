@@ -42,6 +42,7 @@ function setActiveAxes(v: { key: RadarKey; label: string }[]) {
 }
 
 const selectedPeople = computed(() => slots.value.filter(Boolean) as IvisRecord[]);
+const selectedPerson = computed<IvisRecord | null>(() => slots.value[0] ?? null);
 
 const selectedRadarPeople = computed<RadarDog[]>(() =>
   selectedPeople.value.map((p) => ({
@@ -114,6 +115,16 @@ onBeforeUnmount(() => {
         />
       </div>
     </section>
+
+    <section class="panel rawHobbyPanel">
+      <h3>Raw Hobby Answer</h3>
+      <p v-if="selectedPerson" class="rawHobbyText">
+        {{ selectedPerson.hobby_raw || "No raw hobby answer." }}
+      </p>
+      <p v-else class="rawHobbyEmpty">
+        Select a person to view their original hobby response.
+      </p>
+    </section>
   </main>
 </template>
 
@@ -155,5 +166,21 @@ onBeforeUnmount(() => {
 
 .panel.narrow {
   min-height: 0;
+}
+
+.rawHobbyPanel {
+  background: #f8f8f8;
+}
+
+.rawHobbyText {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.rawHobbyEmpty {
+  margin: 0;
+  color: #6b7280;
 }
 </style>

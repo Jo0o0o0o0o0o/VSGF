@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import studentsRaw from "../data/IVIS23_final.json";
+import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
 import type { IvisRecord } from "@/types/ivis23";
 import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 import { writeComparePersonId } from "@/utils/compareSelection";
@@ -38,6 +39,11 @@ type StoredConfirmedGrouping = {
 
 type StoredCollapsedGrouping = {
   collapsedGroupIds: number[];
+};
+
+type HobbyAreaRule = {
+  hobby_area: string;
+  keywords: string[];
 };
 
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
@@ -120,6 +126,194 @@ const availableStudents = computed(() =>
   students.filter((student) => !usedStudentIds.value.has(student.id))
 );
 const slotSearchQuery = ref<Record<string, string>>({});
+const hobbyKeywordQuery = ref("");
+const hobbyAreaRules = hobbyAreaRulesRaw as HobbyAreaRule[];
+
+function normalizeKeyword(text: string) {
+  return text.toLowerCase().trim().replace(/[^a-z0-9_ ]+/g, " ");
+}
+
+function tokenize(text: string) {
+  return normalizeKeyword(text)
+    .split(/\s+/)
+    .filter((token) => token.length >= 3);
+}
+
+function countWholeWordOccurrences(text: string, token: string) {
+  if (!token) return 0;
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escaped}\\b`, "g");
+  return (text.match(regex) ?? []).length;
+}
+
+const areaKeywordSetByArea = new Map<string, Set<string>>(
+  hobbyAreaRules.map((rule) => [
+    normalizeKeyword(rule.hobby_area),
+    new Set(rule.keywords.map((keyword) => normalizeKeyword(keyword))),
+  ])
+);
+
+const areaByKeyword = new Map<string, Set<string>>();
+for (const rule of hobbyAreaRules) {
+  const area = normalizeKeyword(rule.hobby_area);
+  for (const keyword of rule.keywords) {
+    const normalizedKeyword = normalizeKeyword(keyword);
+    if (!normalizedKeyword) continue;
+    if (!areaByKeyword.has(normalizedKeyword)) areaByKeyword.set(normalizedKeyword, new Set<string>());
+    areaByKeyword.get(normalizedKeyword)?.add(area);
+  }
+}
+
+const tokenAreaAffinity = (() => {
+  const tokenCountsByAreaByToken = new Map<string, Map<string, number>>();
+
+  for (const student of students) {
+    const areas = student.hobby_area.map((area) => normalizeKeyword(area)).filter(Boolean);
+    if (!areas.length) continue;
+
+    const tokens = new Set<string>([
+      ...tokenize(student.hobby_raw),
+      ...student.hobby.flatMap((value) => tokenize(value)),
+    ]);
+
+    for (const token of tokens) {
+      if (!tokenCountsByAreaByToken.has(token)) {
+        tokenCountsByAreaByToken.set(token, new Map<string, number>());
+      }
+      const countsByArea = tokenCountsByAreaByToken.get(token);
+      if (!countsByArea) continue;
+
+      for (const area of areas) {
+        countsByArea.set(area, (countsByArea.get(area) ?? 0) + 1);
+      }
+    }
+  }
+
+  const inferredAreasByToken = new Map<string, Set<string>>();
+  tokenCountsByAreaByToken.forEach((countsByArea, token) => {
+    const entries = Array.from(countsByArea.entries()).sort((a, b) => b[1] - a[1]);
+    const topCount = entries[0]?.[1] ?? 0;
+    if (topCount < 2) return;
+
+    const areas = entries
+      .filter(([, count]) => count >= Math.max(2, Math.floor(topCount * 0.6)))
+      .map(([area]) => area);
+
+    if (areas.length) inferredAreasByToken.set(token, new Set(areas));
+  });
+
+  return inferredAreasByToken;
+})();
+
+function inferQueryAreas(tokens: string[]) {
+  const targetAreas = new Set<string>();
+  for (const token of tokens) {
+    if (areaKeywordSetByArea.has(token)) {
+      targetAreas.add(token);
+    }
+    areaByKeyword.get(token)?.forEach((area) => targetAreas.add(area));
+    tokenAreaAffinity.get(token)?.forEach((area) => targetAreas.add(area));
+  }
+  return targetAreas;
+}
+
+function buildStudentTokenSet(student: Student) {
+  return new Set<string>([
+    ...tokenize(student.hobby_raw),
+    ...student.hobby.flatMap((value) => tokenize(value)),
+    ...student.hobby_area.flatMap((value) => tokenize(value)),
+  ]);
+}
+
+function computeKeywordScore(student: Student, keywordRaw: string) {
+  const queryTokens = tokenize(keywordRaw);
+  if (!queryTokens.length) return 0;
+
+  const queryText = normalizeKeyword(keywordRaw);
+  const studentAreas = new Set(student.hobby_area.map((area) => normalizeKeyword(area)).filter(Boolean));
+  const studentTokens = buildStudentTokenSet(student);
+  const studentRaw = normalizeKeyword(student.hobby_raw);
+  const studentHobbyText = normalizeKeyword(student.hobby.join(" "));
+  const targetAreas = inferQueryAreas(queryTokens);
+
+  let score = 0;
+
+  for (const token of queryTokens) {
+    if (studentTokens.has(token)) score += 40;
+    else if (studentRaw.includes(token)) score += 20;
+
+    const mappedAreas = areaByKeyword.get(token);
+    if (mappedAreas) {
+      for (const area of mappedAreas) {
+        if (studentAreas.has(area)) score += 35;
+      }
+    }
+
+    const inferredAreas = tokenAreaAffinity.get(token);
+    if (inferredAreas) {
+      for (const area of inferredAreas) {
+        if (studentAreas.has(area)) score += 20;
+      }
+    }
+  }
+
+  if (studentAreas.has(queryText)) score += 120;
+  for (const area of targetAreas) {
+    if (studentAreas.has(area)) score += 55;
+  }
+
+  let directTokenOccurrences = 0;
+  for (const token of queryTokens) {
+    directTokenOccurrences += countWholeWordOccurrences(studentRaw, token);
+  }
+
+  let relatedKeywordCoverage = 0;
+  for (const area of targetAreas) {
+    const keywords = areaKeywordSetByArea.get(area);
+    if (!keywords || !keywords.size) continue;
+
+    const matchedKeywords = new Set<string>();
+    for (const keyword of keywords) {
+      if (!keyword) continue;
+      const inRaw = countWholeWordOccurrences(studentRaw, keyword) > 0;
+      const inHobby = countWholeWordOccurrences(studentHobbyText, keyword) > 0;
+      if (inRaw || inHobby) matchedKeywords.add(keyword);
+    }
+    relatedKeywordCoverage += matchedKeywords.size;
+  }
+
+  // Add ranking granularity for “interest intensity”.
+  score += directTokenOccurrences * 18;
+  score += relatedKeywordCoverage * 6;
+
+  if (relatedKeywordCoverage > 0) {
+    const strongIntentTerms = ["love", "mainly", "mostly", "favorite", "obsessed", "daily", "often", "lot"];
+    const weakIntentTerms = ["sometimes", "occasionally", "rarely", "little", "bit"];
+    for (const term of strongIntentTerms) {
+      if (countWholeWordOccurrences(studentRaw, term) > 0) score += 4;
+    }
+    for (const term of weakIntentTerms) {
+      if (countWholeWordOccurrences(studentRaw, term) > 0) score -= 3;
+    }
+  }
+
+  return score;
+}
+
+const keywordScoredAvailableStudents = computed(() => {
+  const keyword = hobbyKeywordQuery.value.trim();
+  if (!keyword) {
+    return availableStudents.value.map((student) => ({ student, score: 0 }));
+  }
+
+  return availableStudents.value
+    .map((student) => ({
+      student,
+      score: computeKeywordScore(student, keyword),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.student.alias.localeCompare(b.student.alias));
+});
 
 function slotKey(groupId: number, slotIndex: number) {
   return `${groupId}-${slotIndex}`;
@@ -539,21 +733,30 @@ watch(
 
     <section class="unassignedSection">
       <div class="unassignedHeader">Select People</div>
+      <div class="keywordSearchWrap">
+        <input
+          v-model="hobbyKeywordQuery"
+          class="keywordSearchInput"
+          type="text"
+          placeholder="Score by hobby keyword (e.g. games)"
+        />
+      </div>
       <div class="unassignedGrid">
         <div
-          v-for="student in availableStudents"
-          :key="`unassigned-${student.id}`"
+          v-for="entry in keywordScoredAvailableStudents"
+          :key="`unassigned-${entry.student.id}`"
           class="personBlock"
-          :class="{ dragging: draggingStudentId === student.id }"
+          :class="{ dragging: draggingStudentId === entry.student.id }"
           draggable="true"
-          @dragstart="onStudentDragStart(student.id, $event)"
+          @dragstart="onStudentDragStart(entry.student.id, $event)"
           @dragend="onStudentDragEnd"
-          @click="onUnassignedStudentClick(student.id)"
+          @click="onUnassignedStudentClick(entry.student.id)"
         >
-          {{ student.alias }}
+          <span class="personAlias">{{ entry.student.alias }}</span>
+          <span v-if="hobbyKeywordQuery.trim()" class="personScore">score {{ entry.score }}</span>
         </div>
-        <div v-if="availableStudents.length === 0" class="unassignedEmpty">
-          All people are grouped.
+        <div v-if="keywordScoredAvailableStudents.length === 0" class="unassignedEmpty">
+          {{ availableStudents.length === 0 ? "All people are grouped." : "No people match this keyword." }}
         </div>
       </div>
     </section>
@@ -828,6 +1031,21 @@ watch(
   letter-spacing: 0.02em;
 }
 
+.keywordSearchWrap {
+  width: 100%;
+}
+
+.keywordSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 34px;
+  border: 1px solid #bfc4cd;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  background: #ffffff;
+}
+
 .unassignedGrid {
   display: flex;
   flex-wrap: wrap;
@@ -852,6 +1070,23 @@ watch(
   word-break: break-word;
   cursor: grab;
   user-select: none;
+}
+
+.personAlias {
+  display: block;
+}
+
+.personScore {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
 }
 
 .personBlock.dragging {
