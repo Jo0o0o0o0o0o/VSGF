@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
         @update-slot="setSlot"
         @toggle-focus="toggleFocus"
       />
-      <section class="panel embeddingPanel">
+      <section class="panel level-1 embeddingPanel">
         <h3>Hobby Area Embedding</h3>
         <div class="embeddingChartWrap">
           <EmbeddingAreaBarChart :data="selectedPersonAreaEmbeddingScores" />
@@ -423,7 +423,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="grid">
-      <div class="panel big">
+      <div class="panel level-1 big">
         <h3>Ratings Radar Compare</h3>
         <div class="radarChartWrap">
           <RadarChart
@@ -435,7 +435,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="panel narrow">
+      <div class="panel level-1 narrow">
         <AxisSelector
           :allAxes="allAxes"
           :activeAxes="activeAxes"
@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section class="panel rawHobbyPanel">
+    <section class="panel level-1 rawHobbyPanel">
       <h3>Raw Hobby Answer</h3>
       <p v-if="selectedPerson" class="rawHobbyText">
         {{ selectedPerson.hobby_raw || "No raw hobby answer." }}
@@ -550,3 +550,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+

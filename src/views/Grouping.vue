@@ -276,9 +276,12 @@ async function ensureStudentEmbeddings() {
       `Precomputed embeddings metadata does not match configured model/version for IVIS 20${activeYear.value}.`
     );
   }
-  const missingStudents = students.filter((student) => !studentEmbeddingById.value.has(student.id));
-  if (missingStudents.length > 0) {
-    throw new Error("Precomputed student embeddings are missing or out of sync with dataset/model.");
+  const withHobbyRaw = students.filter((student) => hasSearchableHobbyRaw(student));
+  const coveredCount = withHobbyRaw.filter((student) =>
+    studentEmbeddingById.value.has(student.id)
+  ).length;
+  if (coveredCount === 0 && withHobbyRaw.length > 0) {
+    throw new Error("No usable precomputed student embeddings for current dataset.");
   }
 }
 

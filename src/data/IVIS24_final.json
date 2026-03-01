@@ -1245,29 +1245,6 @@
       "collaboration": 8,
       "code_repository": 3
     }
-  },
-  {
-    "id": 45,
-    "alias": "",
-    "time_year": "",
-    "hobby_raw": "",
-    "hobby": [],
-    "hobby_area": [
-      "other"
-    ],
-    "ratings": {
-      "information_visualization": 4.095238095,
-      "statistical": 4.476190476,
-      "mathematics": 5.119047619,
-      "drawing_and_artistic": 5.285714286,
-      "computer_usage": 7.047619048,
-      "programming": 5.571428571,
-      "computer_graphics_programming": 3.857142857,
-      "human_computer_interaction_programming": 4.785714286,
-      "user_experience_evaluation": 4.357142857,
-      "communication": 7.214285714,
-      "collaboration": 7.285714286,
-      "code_repository": 6.023809524
-    }
   }
+  
 ]

@@ -89,8 +89,8 @@ function onChangeDatasetYear(event: Event) {
 <style scoped>
 .app {
   min-height: 100vh;
-  background-color: #fdfbf3;
-  color: #222;
+  background-color: var(--academic-bg);
+  color: var(--academic-text);
   font-family:
     system-ui,
     -apple-system,
@@ -107,9 +107,9 @@ function onChangeDatasetYear(event: Event) {
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  border-bottom: 1px solid #fff159;
-  background-color: #ffd900;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #d4e0ec;
+  background-color: #dbe8f5;
+  box-shadow: 0 2px 10px rgba(31, 42, 56, 0.08);
 }
 
 .logo {
@@ -129,15 +129,15 @@ function onChangeDatasetYear(event: Event) {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #3f3f46;
+  color: var(--academic-text-muted);
 }
 
 .yearSelect {
   height: 28px;
   border-radius: 8px;
-  border: 1px solid #d4d4d8;
-  background: #fffde8;
-  color: #27272a;
+  border: none;
+  background: #ffffff;
+  color: var(--academic-text);
   padding: 0 8px;
   font-size: 12px;
   font-weight: 600;
@@ -175,7 +175,7 @@ function onChangeDatasetYear(event: Event) {
   font-size: 14px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #333;
+  color: var(--academic-text-muted);
 }
 
 .compareLink {
@@ -189,7 +189,7 @@ function onChangeDatasetYear(event: Event) {
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #ef4444;
+  background: var(--academic-accent-strong);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -204,7 +204,7 @@ function onChangeDatasetYear(event: Event) {
   bottom: -4px;
   width: 0;
   height: 2px;
-  background-color: #ffffff;
+  background-color: var(--academic-accent);
   transition: width 0.18s ease-out;
 }
 
@@ -213,7 +213,7 @@ function onChangeDatasetYear(event: Event) {
 }
 
 .link.router-link-active {
-  color: #111;
+  color: var(--academic-text);
 }
 
 .link.router-link-active::after {
@@ -233,3 +233,4 @@ body,
   padding: 0;
 }
 </style>
+

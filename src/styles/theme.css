@@ -1,0 +1,72 @@
+:root {
+  --academic-bg: #eef3f8;
+  --academic-surface: #ffffff;
+  --academic-surface-muted: #e4edf6;
+  --academic-text: #1f2a38;
+  --academic-text-muted: #4c5d73;
+  --academic-accent: #4d86bf;
+  --academic-accent-strong: #2f6ea9;
+  --card-radius: 14px;
+  --card-shadow-soft: 0 8px 20px rgba(31, 42, 56, 0.12);
+}
+
+html,
+body,
+#app {
+  background: var(--academic-bg);
+  color: var(--academic-text);
+}
+
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Level 1 card: white, no border */
+.level-1,
+.card.level-1,
+.panel.level-1,
+.card:not(.level-2):not(.level-3),
+.panel:not(.level-2):not(.level-3) {
+  background: var(--academic-surface) !important;
+  border: none !important;
+  border-radius: var(--card-radius) !important;
+}
+
+/* Level 2 card: light blue gray, no border */
+.level-2,
+.card.level-2,
+.panel.level-2,
+.card .card,
+.panel .panel {
+  background: var(--academic-surface-muted) !important;
+  border: none !important;
+  border-radius: var(--card-radius) !important;
+}
+
+/* Level 3 card: white, no border, with shadow */
+.level-3,
+.card.level-3,
+.panel.level-3,
+.card .card .card,
+.panel .panel .panel,
+.row {
+  background: var(--academic-surface) !important;
+  border: none !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: var(--card-shadow-soft);
+}
+
+/* Tags/chips: full radius, no border */
+.tag,
+.chip,
+.badge,
+.breedGroupTag,
+.compareBtn,
+.heatmapToggleBtn,
+.varianceToggleBtn,
+.collapseBtn,
+.groupConfirmBtn {
+  border: none !important;
+  border-radius: 999px !important;
+}
+

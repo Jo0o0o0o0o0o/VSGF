@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
     />
 
     <section class="grid">
-      <div class="panel big">
+      <div class="panel level-1 big">
         <h3>Ratings Heatmap</h3>
         <div class="heatmapChartWrap">
           <GroupDetailsHeatmap
@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="embeddingSection">
-      <div class="panel narrow">
+      <div class="panel level-1 narrow">
         <AxisSelector
           :allAxes="allAxes"
           :activeAxes="activeAxes"
@@ -421,7 +421,7 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="panel embeddingPanel">
+      <div class="panel level-1 embeddingPanel">
         <h3>Hobby Area Embedding (Group Sum)</h3>
         <div class="embeddingAreaWrap">
           <EmbeddingAreaBarChart
@@ -538,3 +538,4 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr;
 }
 </style>
+

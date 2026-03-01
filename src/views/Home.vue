@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
@@ -312,7 +312,7 @@ function closeCompareDrawer() {
   <div class="home">
     <!-- 濞戞挸锕鐗堢▔婢跺﹥鍋ラ柛妤嬬磿婢ф牠鏁?-->
     <section class="top">
-      <div class="card right">
+      <div class="card level-1 right">
         <div class="title">Temperament traits</div>
         <div class="traitArea">
           <TraitLineChart @selectPerson="onSelectBeeswarmPerson" />
@@ -322,7 +322,7 @@ function closeCompareDrawer() {
 
     <!-- 濞戞挸顑嗛弻鐔兼晬濮橆兙浜?scatter + 闁告瑥鍘栭弲鍫曞礆濡ゅ嫨鈧?-->
     <section class="bottom">
-      <div class="card scatter">
+      <div class="card level-1 scatter">
         <div class="heatmapHeader">
           <div class="title">Groups overview</div>
           <div class="heatmapToggle" role="group" aria-label="toggle groups display mode">
@@ -354,7 +354,7 @@ function closeCompareDrawer() {
         </div>
       </div>
 
-      <div class="card list">
+      <div class="card level-1 list">
         <div class="listHeader">
           <div class="title">{{ selectedGroupLabel }}</div>
           <div class="subtitle">{{ selectedGroupMembers.length }} members</div>
@@ -378,7 +378,7 @@ function closeCompareDrawer() {
       </div>
     </section>
     <section id="beeswarm-section" ref="beeswarmSectionRef" class="beeswarmSection">
-      <div class="card beeswarm">
+      <div class="card level-1 beeswarm">
         <div class="beeswarmHeader">
           <div class="title">Trait distribution (beeswarm)</div>
           <div class="heatmapToggle" role="group" aria-label="toggle beeswarm x-axis mode">
@@ -832,6 +832,7 @@ function closeCompareDrawer() {
 
 
 </style>
+
 
 
 
