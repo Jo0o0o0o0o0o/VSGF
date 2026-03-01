@@ -298,6 +298,7 @@ async function updateEmbeddingScores() {
 
     const scored: Record<number, number> = {};
     for (const student of students) {
+      if (!hasSearchableHobbyRaw(student)) continue;
       const studentVec = studentEmbeddingById.get(student.id);
       if (!studentVec?.length || !queryVector.length) continue;
       const cosine = dot(studentVec, queryVector);
@@ -414,20 +415,20 @@ function inferQueryAreas(tokens: string[]) {
 function buildStudentTokenSet(student: Student) {
   return new Set<string>([
     ...tokenize(student.hobby_raw),
-    ...student.hobby.flatMap((value) => tokenize(value)),
-    ...student.hobby_area.flatMap((value) => tokenize(value)),
   ]);
 }
 
+function hasSearchableHobbyRaw(student: Student) {
+  return normalizeKeyword(student.hobby_raw).length > 0;
+}
+
 function computeKeywordScore(student: Student, keywordRaw: string) {
+  if (!hasSearchableHobbyRaw(student)) return 0;
   const queryTokens = tokenize(keywordRaw);
   if (!queryTokens.length) return 0;
 
-  const queryText = normalizeKeyword(keywordRaw);
-  const studentAreas = new Set(student.hobby_area.map((area) => normalizeKeyword(area)).filter(Boolean));
   const studentTokens = buildStudentTokenSet(student);
   const studentRaw = normalizeKeyword(student.hobby_raw);
-  const studentHobbyText = normalizeKeyword(student.hobby.join(" "));
   const targetAreas = inferQueryAreas(queryTokens);
 
   let score = 0;
@@ -435,25 +436,6 @@ function computeKeywordScore(student: Student, keywordRaw: string) {
   for (const token of queryTokens) {
     if (studentTokens.has(token)) score += 40;
     else if (studentRaw.includes(token)) score += 20;
-
-    const mappedAreas = areaByKeyword.get(token);
-    if (mappedAreas) {
-      for (const area of mappedAreas) {
-        if (studentAreas.has(area)) score += 35;
-      }
-    }
-
-    const inferredAreas = tokenAreaAffinity.get(token);
-    if (inferredAreas) {
-      for (const area of inferredAreas) {
-        if (studentAreas.has(area)) score += 20;
-      }
-    }
-  }
-
-  if (studentAreas.has(queryText)) score += 120;
-  for (const area of targetAreas) {
-    if (studentAreas.has(area)) score += 55;
   }
 
   let directTokenOccurrences = 0;
@@ -470,8 +452,7 @@ function computeKeywordScore(student: Student, keywordRaw: string) {
     for (const keyword of keywords) {
       if (!keyword) continue;
       const inRaw = countWholeWordOccurrences(studentRaw, keyword) > 0;
-      const inHobby = countWholeWordOccurrences(studentHobbyText, keyword) > 0;
-      if (inRaw || inHobby) matchedKeywords.add(keyword);
+      if (inRaw) matchedKeywords.add(keyword);
     }
     relatedKeywordCoverage += matchedKeywords.size;
   }

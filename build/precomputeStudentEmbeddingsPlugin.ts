@@ -30,9 +30,7 @@ function createFingerprint(payload: string) {
 }
 
 function toEmbeddingText(student: StudentRecord) {
-  const hobby = Array.isArray(student.hobby) ? student.hobby.join(" ") : "";
-  const hobbyArea = Array.isArray(student.hobby_area) ? student.hobby_area.join(" ") : "";
-  return [student.hobby_raw ?? "", hobby, hobbyArea].join(" ");
+  return student.hobby_raw ?? "";
 }
 
 function tensorRowToVector(
