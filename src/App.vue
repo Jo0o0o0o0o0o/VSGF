@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
+import {
+  activeYear,
+  clearYearScopedLocalStoragePreserveYear,
+  datasetYearOptions,
+  setActiveDatasetYear,
+  type DatasetYear,
+} from "@/types/dataSource";
 
 const compareCount = ref(0);
 
@@ -27,6 +34,17 @@ onUnmounted(() => {
   window.removeEventListener("storage", updateCompareCount);
   window.removeEventListener("compare-queue-updated", updateCompareCount);
 });
+
+function onChangeDatasetYear(event: Event) {
+  const target = event.target as HTMLSelectElement | null;
+  if (!target) return;
+  const nextYear = target.value as DatasetYear;
+  if (nextYear === activeYear.value) return;
+  setActiveDatasetYear(nextYear);
+  clearYearScopedLocalStoragePreserveYear();
+  window.dispatchEvent(new Event("compare-queue-updated"));
+  window.location.reload();
+}
 </script>
 
 <template>
@@ -36,6 +54,19 @@ onUnmounted(() => {
         <img class="logo-icon" src="/dogtitle.png" alt="TheDogs icon" />
         <span class="logo-mark">TheDogs</span>
         <span class="logo-text">Dogviz Dashboard</span>
+        <label class="yearSwitch" for="dataset-year-select">
+          <span class="yearLabel">Year</span>
+          <select
+            id="dataset-year-select"
+            class="yearSelect"
+            :value="activeYear"
+            @change="onChangeDatasetYear"
+          >
+            <option v-for="option in datasetYearOptions" :key="option.year" :value="option.year">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
       </div>
 
       <nav class="nav">
@@ -85,6 +116,31 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.yearSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.yearLabel {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3f3f46;
+}
+
+.yearSelect {
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #d4d4d8;
+  background: #fffde8;
+  color: #27272a;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .logo-icon {

@@ -13,9 +13,9 @@ import {
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
-import precomputedEmbeddingsRaw from "@/data/ivis23_student_embeddings.generated.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import type { IvisRecord } from "@/types/ivis23";
+import { getActiveEmbeddings, makeYearStorageKey } from "@/types/dataSource";
 import { formatHobbyLabel } from "@/utils/hobbyTagColorMap";
 
 const props = withDefaults(
@@ -71,15 +71,18 @@ const hobbyAreaKeys = Array.from(
 const keywordsByArea = new Map<string, string[]>(
   hobbyAreaRules.map((rule) => [rule.hobby_area.trim().toLowerCase(), rule.keywords ?? []]),
 );
-const precomputedEmbeddings = precomputedEmbeddingsRaw as PrecomputedEmbeddingsFile;
+const precomputedEmbeddings = getActiveEmbeddings() as PrecomputedEmbeddingsFile | null;
 const precomputedEmbeddingsCompatible =
+  !!precomputedEmbeddings &&
   precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
   precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
 const studentEmbeddingById = new Map<number, number[]>(
-  precomputedEmbeddings.embeddings.map((item) => [item.id, item.vector]) ?? [],
+  precomputedEmbeddings?.embeddings.map((item) => [item.id, item.vector]) ?? [],
 );
 const areaQueryEmbeddingCache = new Map<string, number[]>();
-const AREA_QUERY_CACHE_KEY = `ivis23_area_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`;
+const AREA_QUERY_CACHE_KEY = makeYearStorageKey(
+  `area_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
+);
 let areaEmbeddingPreloadStarted = false;
 let areaEmbeddingTaskSeq = 0;
 let embeddingWorker: Worker | null = null;

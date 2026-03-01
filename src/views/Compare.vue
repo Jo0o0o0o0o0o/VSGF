@@ -11,17 +11,16 @@ import {
   type RadarDog,
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
-import ivisRecordsJson from "@/data/IVIS23_final.json";
 import type { IvisRecord } from "@/types/ivis23";
 import type { CompareGroup } from "@/types/compareGroup";
 import { SKILL_CATEGORIES, type SkillCategoryKey } from "@/types/skillCategory";
 import type { GroupDumbbellDatum } from "@/d3Viz/createGroupDumbbellChart";
 import type { GroupDetailDumbbellDatum } from "@/d3Viz/createGroupDetailDumbbellChart";
 import type { VarianceSdDatum } from "@/d3Viz/createVarianceSdBarChart";
+import { getActiveRecords, makeYearStorageKey, GROUPING_UPDATED_EVENT } from "@/types/dataSource";
 
-const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
-const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
-const COMPARE_GROUP_SLOTS_KEY = "ivis23_compare_group_slots_v1";
+const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
+const COMPARE_GROUP_SLOTS_KEY = makeYearStorageKey("compare_group_slots_v1");
 
 const MAX = 5;
 const allAxes = RADAR_AXES;
@@ -41,7 +40,7 @@ type StoredGrouping = {
   }>;
 };
 
-const allPeople = ivisRecordsJson as IvisRecord[];
+const allPeople = getActiveRecords() as IvisRecord[];
 const peopleById = new Map(allPeople.map((person) => [person.id, person] as const));
 
 const focusIndex = ref<number | null>(null);

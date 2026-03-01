@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import * as d3 from "d3";
-import ivisData from "@/data/IVIS23_final.json";
 import {
   IVIS_RATING_KEYS,
   type IvisRatingKey,
   type IvisRecord,
 } from "@/types/ivis23";
+import { getActiveRecords } from "@/types/dataSource";
 
 defineProps<{
   dog?: unknown;
@@ -32,7 +32,7 @@ const wrapRef = ref<HTMLDivElement | null>(null);
 const tip = ref({ show: false, x: 0, y: 0, name: "", field: "", value: 0 });
 let ro: ResizeObserver | null = null;
 
-const dataset = ivisData as IvisRecord[];
+const dataset = getActiveRecords() as IvisRecord[];
 
 const fieldLabel = (key: IvisRatingKey) =>
   key

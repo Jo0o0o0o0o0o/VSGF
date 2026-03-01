@@ -2,11 +2,17 @@
 import { computed, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
 import CompareView from "@/views/ComparePerson.vue";
-import studentsRaw from "../data/IVIS23_final.json";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
-import precomputedEmbeddingsRaw from "@/data/ivis23_student_embeddings.generated.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import type { IvisRecord } from "@/types/ivis23";
+import {
+  activeYear,
+  getActiveEmbeddings,
+  getActiveRecords,
+  GROUPING_CONFIRMED_EVENT,
+  GROUPING_UPDATED_EVENT,
+  makeYearStorageKey,
+} from "@/types/dataSource";
 import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 import { writeComparePersonId } from "@/utils/compareSelection";
 
@@ -51,19 +57,17 @@ type HobbyAreaRule = {
 type PrecomputedEmbeddingsFile = {
   model: string;
   textBuilderVersion: string;
-  fingerprint: string;
-  generatedAt: string;
-  datasetPath: string;
+  fingerprint?: string;
+  generatedAt?: string;
+  datasetPath?: string;
   embeddings: Array<{ id: number; vector: number[] }>;
 };
 
-const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
-const GROUPING_CONFIRM_STORAGE_KEY = "ivis23_grouping_confirmed_v1";
-const GROUPING_COLLAPSED_STORAGE_KEY = "ivis23_grouping_collapsed_v1";
-const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
-const GROUPING_CONFIRMED_EVENT = "ivis23-grouping-confirmed";
+const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
+const GROUPING_CONFIRM_STORAGE_KEY = makeYearStorageKey("grouping_confirmed_v1");
+const GROUPING_COLLAPSED_STORAGE_KEY = makeYearStorageKey("grouping_collapsed_v1");
 
-const students = studentsRaw as Student[];
+const students = getActiveRecords() as Student[];
 
 function buildGroupSlotSizes(totalStudents: number, preferredSize: PreferredGroupSize): number[] {
   if (totalStudents <= 0) return [preferredSize];
@@ -139,15 +143,20 @@ const availableStudents = computed(() =>
 const slotSearchQuery = ref<Record<string, string>>({});
 const hobbyKeywordQuery = ref("");
 const hobbyAreaRules = hobbyAreaRulesRaw as HobbyAreaRule[];
-const precomputedEmbeddings = precomputedEmbeddingsRaw as PrecomputedEmbeddingsFile;
+const precomputedEmbeddings = computed(
+  () => getActiveEmbeddings() as PrecomputedEmbeddingsFile | null
+);
 const keywordScoringMode = ref<"rule" | "embedding" | "hybrid">("hybrid");
 const embeddingStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
 const embeddingScores = ref<Record<number, number>>({});
 const embeddingErrorMessage = ref("");
 const EMBEDDING_SCORE_MAX = 20;
 const EMBEDDING_SCORE_GAMMA = 2.1;
-const studentEmbeddingById = new Map<number, number[]>(
-  precomputedEmbeddings.embeddings.map((item) => [item.id, item.vector]) ?? []
+const studentEmbeddingById = computed(
+  () =>
+    new Map<number, number[]>(
+      precomputedEmbeddings.value?.embeddings.map((item) => [item.id, item.vector]) ?? []
+    )
 );
 const queryEmbeddingCache = new Map<string, number[]>();
 let embeddingTaskSeq = 0;
@@ -161,10 +170,15 @@ const workerPending = new Map<
     reject: (reason?: unknown) => void;
   }
 >();
-const QUERY_EMBED_CACHE_KEY = `ivis23_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`;
-const precomputedEmbeddingsCompatible =
-  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
-  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
+const QUERY_EMBED_CACHE_KEY = makeYearStorageKey(
+  `query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
+);
+const precomputedEmbeddingsCompatible = computed(
+  () =>
+    !!precomputedEmbeddings.value &&
+    precomputedEmbeddings.value.model === EMBEDDING_MODEL_ID &&
+    precomputedEmbeddings.value.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION
+);
 const requiresEmbeddings = computed(
   () => keywordScoringMode.value === "embedding" || keywordScoringMode.value === "hybrid"
 );
@@ -257,10 +271,12 @@ function callEmbeddingWorker<T>(request: { type: string; payload: unknown }): Pr
 }
 
 async function ensureStudentEmbeddings() {
-  if (!precomputedEmbeddingsCompatible) {
-    throw new Error("Precomputed embeddings metadata does not match configured model/version.");
+  if (!precomputedEmbeddingsCompatible.value) {
+    throw new Error(
+      `Precomputed embeddings metadata does not match configured model/version for IVIS 20${activeYear.value}.`
+    );
   }
-  const missingStudents = students.filter((student) => !studentEmbeddingById.has(student.id));
+  const missingStudents = students.filter((student) => !studentEmbeddingById.value.has(student.id));
   if (missingStudents.length > 0) {
     throw new Error("Precomputed student embeddings are missing or out of sync with dataset/model.");
   }
@@ -300,7 +316,7 @@ async function updateEmbeddingScores() {
     const scored: Record<number, number> = {};
     for (const student of students) {
       if (!hasSearchableHobbyRaw(student)) continue;
-      const studentVec = studentEmbeddingById.get(student.id);
+      const studentVec = studentEmbeddingById.value.get(student.id);
       if (!studentVec?.length || !queryVector.length) continue;
       const cosine = dot(studentVec, queryVector);
       scored[student.id] = Math.max(0, cosine);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import ivisRecordsJson from "@/data/IVIS23_final.json";
 import type { IvisRecord } from "@/types/ivis23";
+import { getActiveRecords } from "@/types/dataSource";
 import { fuzzyFilter } from "@/utils/fuzzySearch";
 import { RADAR_COLORS } from "@/d3Viz/createRadarChart";
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{
   (e: "toggle-focus", index: number): void;
 }>();
 
-const people = ivisRecordsJson as IvisRecord[];
+const people = getActiveRecords() as IvisRecord[];
 const openIndex = ref<number | null>(null);
 const query = ref("");
 const root = ref<HTMLElement | null>(null);

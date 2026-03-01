@@ -1,19 +1,22 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import ivisRecordsJson from "@/data/IVIS23_final.json";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
+import {
+  getActiveRecords,
+  GROUPING_CONFIRMED_EVENT,
+  GROUPING_UPDATED_EVENT,
+  makeYearStorageKey,
+} from "@/types/dataSource";
 
 const beeswarmSectionRef = ref<HTMLElement | null>(null);
-const ivisRecords = ivisRecordsJson as IvisRecord[];
-const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
-const GROUPING_CONFIRM_STORAGE_KEY = "ivis23_grouping_confirmed_v1";
-const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
-const GROUPING_CONFIRMED_EVENT = "ivis23-grouping-confirmed";
+const ivisRecords = getActiveRecords() as IvisRecord[];
+const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
+const GROUPING_CONFIRM_STORAGE_KEY = makeYearStorageKey("grouping_confirmed_v1");
 
 type StoredGrouping = {
   version: 2;
