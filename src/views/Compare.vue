@@ -46,6 +46,7 @@ const peopleById = new Map(allPeople.map((person) => [person.id, person] as cons
 
 const focusIndex = ref<number | null>(null);
 const selectedCategoryKey = ref<SkillCategoryKey | null>(null);
+const varianceUseCategoryMode = ref(false);
 const slots = ref<(CompareGroup | null)[]>(Array.from({ length: MAX }, () => null));
 const storedGrouping = ref<StoredGrouping>({ version: 1, groups: [] });
 const hydratedCompareSlots = ref(false);
@@ -281,6 +282,40 @@ const detailDumbbellData = computed<GroupDetailDumbbellDatum[]>(() =>
 const selectedGroupNames = computed(() => selectedGroups.value.map((group) => group.label));
 
 const varianceSdData = computed<VarianceSdDatum[]>(() => {
+  if (varianceUseCategoryMode.value) {
+    return SKILL_CATEGORIES.map((category) => {
+      const groupTotals = selectedRadarPeople.value.map((group) => {
+        const total = category.dimensions.reduce(
+          (sum, key) => sum + safeMemberValue(Number(group[key])),
+          0,
+        );
+        return Number(total.toFixed(4));
+      });
+
+      if (!groupTotals.length) {
+        return {
+          categoryKey: category.key,
+          categoryLabel: category.label,
+          variance: 0,
+          sd: 0,
+        };
+      }
+
+      const mean = groupTotals.reduce((sum, value) => sum + value, 0) / groupTotals.length;
+      const variance =
+        groupTotals.reduce((sum, value) => sum + (value - mean) * (value - mean), 0) /
+        groupTotals.length;
+      const sd = Math.sqrt(variance);
+
+      return {
+        categoryKey: category.key,
+        categoryLabel: category.label,
+        variance: Number(variance.toFixed(4)),
+        sd: Number(sd.toFixed(4)),
+      };
+    });
+  }
+
   return RADAR_AXES.map((axis) => {
     const groupTotals = selectedRadarPeople.value.map((group) =>
       Number(safeMemberValue(Number(group[axis.key])).toFixed(4)),
@@ -421,6 +456,16 @@ onBeforeUnmount(() => {
 
       <div class="panel full">
         <h3>Variance / SD (Across Groups, Balance)</h3>
+        <div class="varianceToolbar">
+          <button
+            type="button"
+            class="varianceToggleBtn"
+            :class="{ on: varianceUseCategoryMode }"
+            @click="varianceUseCategoryMode = !varianceUseCategoryMode"
+          >
+            {{ varianceUseCategoryMode ? "Category Dimensions: ON" : "Category Dimensions: OFF" }}
+          </button>
+        </div>
         <div class="varianceChartWrap">
           <VarianceSdBarChart :data="varianceSdData" />
         </div>
@@ -478,6 +523,27 @@ onBeforeUnmount(() => {
 .varianceChartWrap {
   height: 320px;
   min-height: 280px;
+}
+
+.varianceToolbar {
+  margin-bottom: 8px;
+}
+
+.varianceToggleBtn {
+  border: 1px solid #9ca3af;
+  background: #f8fafc;
+  color: #111827;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.varianceToggleBtn.on {
+  border-color: #0ea5e9;
+  background: #e0f2fe;
+  color: #0c4a6e;
 }
 
 .dumbbellSplitWrap {
