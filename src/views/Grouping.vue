@@ -36,8 +36,13 @@ type StoredConfirmedGrouping = {
   confirmedGroupIds: number[];
 };
 
+type StoredCollapsedGrouping = {
+  collapsedGroupIds: number[];
+};
+
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
 const GROUPING_CONFIRM_STORAGE_KEY = "ivis23_grouping_confirmed_v1";
+const GROUPING_COLLAPSED_STORAGE_KEY = "ivis23_grouping_collapsed_v1";
 const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
 const GROUPING_CONFIRMED_EVENT = "ivis23-grouping-confirmed";
 
@@ -167,6 +172,11 @@ function onStudentDragEnd() {
   dragOverSlot.value = null;
 }
 
+function onUnassignedStudentClick(studentId: number) {
+  if (typeof draggingStudentId.value === "number") return;
+  openCompareDrawer(studentId);
+}
+
 function onSlotDragOver(groupId: number, slotIndex: number, ev: DragEvent) {
   const group = groups.value.find((item) => item.id === groupId);
   const studentId = draggingStudentId.value;
@@ -278,6 +288,7 @@ function isGroupCollapsed(groupId: number) {
 function toggleGroupCollapsed(groupId: number) {
   groupCollapsedState.value[groupId] = !isGroupCollapsed(groupId);
   activeTip.value = null;
+  persistCollapsedGrouping();
 }
 
 function isGroupConfirmed(groupId: number) {
@@ -411,6 +422,36 @@ function readStoredConfirmedGrouping(): StoredConfirmedGrouping | null {
   }
 }
 
+function readStoredCollapsedGrouping(): StoredCollapsedGrouping | null {
+  try {
+    const raw = localStorage.getItem(GROUPING_COLLAPSED_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const maybe = parsed as Partial<StoredCollapsedGrouping>;
+    if (!Array.isArray(maybe.collapsedGroupIds)) return null;
+    return {
+      collapsedGroupIds: maybe.collapsedGroupIds.filter((id) => typeof id === "number"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistCollapsedGrouping() {
+  try {
+    const collapsedGroupIds = groups.value
+      .map((group) => group.id)
+      .filter((id) => Boolean(groupCollapsedState.value[id]));
+    localStorage.setItem(
+      GROUPING_COLLAPSED_STORAGE_KEY,
+      JSON.stringify({ collapsedGroupIds } satisfies StoredCollapsedGrouping)
+    );
+  } catch {
+    // ignore storage failures
+  }
+}
+
 function persistGrouping() {
   try {
     const payload: StoredGrouping = {
@@ -443,12 +484,27 @@ onMounted(() => {
     }
     confirmedGroupState.value = restored;
   }
+  const collapsedStored = readStoredCollapsedGrouping();
+  if (collapsedStored) {
+    const restored: Record<number, boolean> = {};
+    for (const group of groups.value) {
+      restored[group.id] = collapsedStored.collapsedGroupIds.includes(group.id);
+    }
+    groupCollapsedState.value = restored;
+  }
+  persistCollapsedGrouping();
   persistGrouping();
 });
 
 watch(
   groups,
   () => {
+    const cleaned: Record<number, boolean> = {};
+    for (const group of groups.value) {
+      cleaned[group.id] = Boolean(groupCollapsedState.value[group.id]);
+    }
+    groupCollapsedState.value = cleaned;
+    persistCollapsedGrouping();
     persistGrouping();
   },
   { deep: true }
@@ -492,6 +548,7 @@ watch(
           draggable="true"
           @dragstart="onStudentDragStart(student.id, $event)"
           @dragend="onStudentDragEnd"
+          @click="onUnassignedStudentClick(student.id)"
         >
           {{ student.alias }}
         </div>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import ivisRecordsJson from "@/data/IVIS23_final.json";
 import TraitLineChart from "@/components/TraitLineChart.vue";
@@ -11,9 +11,20 @@ import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from 
 const beeswarmSectionRef = ref<HTMLElement | null>(null);
 const ivisRecords = ivisRecordsJson as IvisRecord[];
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
+const GROUPING_CONFIRM_STORAGE_KEY = "ivis23_grouping_confirmed_v1";
 const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
+const GROUPING_CONFIRMED_EVENT = "ivis23-grouping-confirmed";
 
 type StoredGrouping = {
+  version: 2;
+  preferredGroupSize: 4 | 5;
+  groups: Array<{
+    id: number;
+    memberIds: Array<number | null>;
+  }>;
+};
+
+type LegacyStoredGrouping = {
   version: 1;
   groups: Array<{
     id: number;
@@ -42,7 +53,8 @@ function buildDefaultGrouping(totalStudents: number): StoredGrouping {
   let cursor = 0;
 
   return {
-    version: 1,
+    version: 2,
+    preferredGroupSize: 5,
     groups: slotSizes.map((size, index) => {
       const memberIds = ivisRecords
         .slice(cursor, cursor + size)
@@ -59,13 +71,18 @@ function readStoredGrouping(): StoredGrouping {
     if (!raw) return buildDefaultGrouping(ivisRecords.length);
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") return buildDefaultGrouping(ivisRecords.length);
-    const maybe = parsed as Partial<StoredGrouping>;
-    if (maybe.version !== 1 || !Array.isArray(maybe.groups)) {
+    const maybeV2 = parsed as Partial<StoredGrouping>;
+    const maybeV1 = parsed as Partial<LegacyStoredGrouping>;
+    const isV2 = maybeV2.version === 2 && Array.isArray(maybeV2.groups);
+    const isV1 = maybeV1.version === 1 && Array.isArray(maybeV1.groups);
+    if (!isV2 && !isV1) {
       return buildDefaultGrouping(ivisRecords.length);
     }
+    const rawGroups = (isV2 ? maybeV2.groups : maybeV1.groups) ?? [];
     return {
-      version: 1,
-      groups: maybe.groups
+      version: 2,
+      preferredGroupSize: maybeV2.preferredGroupSize === 4 ? 4 : 5,
+      groups: rawGroups
         .filter((g) => g && typeof g.id === "number" && Array.isArray(g.memberIds))
         .map((g) => ({
           id: g.id,
@@ -78,10 +95,25 @@ function readStoredGrouping(): StoredGrouping {
 }
 
 const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
+const confirmedGroupIds = ref<number[]>([]);
+const heatmapGroupMode = ref<"all" | "confirmed">("all");
 const selectedGroupId = ref<number | null>(null);
 const selectedComparePersonId = ref<number | null>(null);
 const selectedBeeswarmPersonId = ref<number | null>(null);
 const compareDrawerOpen = ref(false);
+function readStoredConfirmedGroupIds() {
+  try {
+    const raw = localStorage.getItem(GROUPING_CONFIRM_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return [];
+    const maybe = parsed as { confirmedGroupIds?: unknown };
+    if (!Array.isArray(maybe.confirmedGroupIds)) return [];
+    return maybe.confirmedGroupIds.filter((id): id is number => typeof id === "number");
+  } catch {
+    return [];
+  }
+}
 
 const groupedMembersById = computed(() => {
   const byId = new Map(ivisRecords.map((r) => [r.id, r] as const));
@@ -104,9 +136,12 @@ const groupedMembersById = computed(() => {
 });
 
 const heatmapRecords = computed<IvisRecord[]>(() => {
+  const confirmedOnly = heatmapGroupMode.value === "confirmed";
+  const confirmedSet = new Set(confirmedGroupIds.value);
   const grouped: IvisRecord[] = [];
 
   for (const group of storedGrouping.value.groups) {
+    if (confirmedOnly && !confirmedSet.has(group.id)) continue;
     const members = groupedMembersById.value.get(group.id) ?? [];
     if (!members.length) continue;
 
@@ -126,7 +161,27 @@ const heatmapRecords = computed<IvisRecord[]>(() => {
     });
   }
 
-  return grouped.length ? grouped : ivisRecords;
+  if (grouped.length) {
+    const averageRatings = IVIS_RATING_KEYS.reduce((acc, key) => {
+      const total = grouped.reduce((sum, groupRecord) => sum + Number(groupRecord.ratings[key] ?? 0), 0);
+      acc[key] = Number((total / grouped.length).toFixed(2));
+      return acc;
+    }, {} as IvisRecord["ratings"]);
+
+    return [
+      ...grouped,
+      {
+        id: -1,
+        alias: `Average (${grouped.length} groups)`,
+        time_year: "grouped",
+        hobby_raw: "",
+        hobby: [],
+        hobby_area: [],
+        ratings: averageRatings,
+      },
+    ];
+  }
+  return confirmedOnly ? [] : ivisRecords;
 });
 
 const selectedGroupMembers = computed<IvisRecord[]>(() => {
@@ -189,21 +244,25 @@ const beeswarmTraitLabels: Record<string, string> = {
 
 onMounted(() => {
   storedGrouping.value = readStoredGrouping();
+  confirmedGroupIds.value = readStoredConfirmedGroupIds();
   selectedComparePersonId.value = readComparePersonId();
   selectedBeeswarmPersonId.value = selectedComparePersonId.value;
   window.addEventListener("storage", onGroupingStorageChanged);
   window.addEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
+  window.addEventListener(GROUPING_CONFIRMED_EVENT, onGroupingStorageChanged);
   window.addEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("storage", onGroupingStorageChanged);
   window.removeEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
+  window.removeEventListener(GROUPING_CONFIRMED_EVENT, onGroupingStorageChanged);
   window.removeEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
 });
 
 function onGroupingStorageChanged() {
   storedGrouping.value = readStoredGrouping();
+  confirmedGroupIds.value = readStoredConfirmedGroupIds();
   selectedComparePersonId.value = readComparePersonId();
   selectedBeeswarmPersonId.value = selectedComparePersonId.value;
 }
@@ -220,7 +279,7 @@ function closeCompareDrawer() {
 
 <template>
   <div class="home">
-    <!-- 娑撳﹪娼版稉澶婃健閸楋紕澧栭�?-->
+    <!-- 濞戞挸锕鐗堢▔婢跺﹥鍋ラ柛妤嬬磿婢ф牠鏁?-->
     <section class="top">
       <div class="card right">
         <div class="title">Temperament traits</div>
@@ -230,10 +289,30 @@ function closeCompareDrawer() {
       </div>
     </section>
 
-    <!-- 娑撳鏌熼敍姘�?scatter + 閸欏厖鏅堕崚妤勩�?-->
+    <!-- 濞戞挸顑嗛弻鐔兼晬濮橆兙浜?scatter + 闁告瑥鍘栭弲鍫曞礆濡ゅ嫨鈧?-->
     <section class="bottom">
       <div class="card scatter">
-        <div class="title">Groups overview</div>
+        <div class="heatmapHeader">
+          <div class="title">Groups overview</div>
+          <div class="heatmapToggle" role="group" aria-label="toggle groups display mode">
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: heatmapGroupMode === 'all' }"
+              type="button"
+              @click="heatmapGroupMode = 'all'"
+            >
+              All groups
+            </button>
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: heatmapGroupMode === 'confirmed' }"
+              type="button"
+              @click="heatmapGroupMode = 'confirmed'"
+            >
+              Confirmed only
+            </button>
+          </div>
+        </div>
 
         <div class="plotArea">
           <HeatedMap
@@ -342,6 +421,41 @@ function closeCompareDrawer() {
 .title {
   font-weight: 600;
   margin-bottom: 10px;
+}
+
+.heatmapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.heatmapHeader .title {
+  margin-bottom: 0;
+}
+
+.heatmapToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heatmapToggleBtn {
+  border: 1px solid #c8cdd5;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.heatmapToggleBtn.active {
+  border-color: #1f8a53;
+  background: #dff3e7;
+  color: #166534;
 }
 
 .select {
@@ -502,7 +616,7 @@ function closeCompareDrawer() {
 }
 
 .card.list {
-  height: 660px; /* 妤傛ê瀹抽崶鍝勭暰娑撳秴褰?*/
+  height: 660px; /* 濡ゅ倹锚鐎规娊宕堕崫鍕毎濞戞挸绉磋ぐ?*/
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -526,7 +640,7 @@ function closeCompareDrawer() {
 
 .listBody {
   flex: 1 1 auto;
-  overflow-y: auto; /* 娑撳濯哄姘З */
+  overflow-y: auto; /* 濞戞挸顑嗘刊鍝勵煥濮橆剙袟 */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -584,7 +698,7 @@ function closeCompareDrawer() {
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
 }
 
-/* 闁鑵戞妯瑰�?*/
+/* 闂侇偄顦懙鎴烆殗濡懓鐦?*/
 .row.active {
   background: #ffdf5d;
 }
@@ -654,5 +768,6 @@ function closeCompareDrawer() {
 
 
 </style>
+
 
 
