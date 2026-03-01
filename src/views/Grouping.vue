@@ -8,6 +8,7 @@ import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 import { writeComparePersonId } from "@/utils/compareSelection";
 
 type Student = IvisRecord;
+type PreferredGroupSize = 4 | 5;
 
 type Group = {
   id: number;
@@ -15,6 +16,15 @@ type Group = {
 };
 
 type StoredGrouping = {
+  version: 2;
+  preferredGroupSize: PreferredGroupSize;
+  groups: Array<{
+    id: number;
+    memberIds: Array<number | null>;
+  }>;
+};
+
+type LegacyStoredGrouping = {
   version: 1;
   groups: Array<{
     id: number;
@@ -22,32 +32,60 @@ type StoredGrouping = {
   }>;
 };
 
+type StoredConfirmedGrouping = {
+  confirmedGroupIds: number[];
+};
+
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
+const GROUPING_CONFIRM_STORAGE_KEY = "ivis23_grouping_confirmed_v1";
 const GROUPING_UPDATED_EVENT = "ivis23-grouping-updated";
+const GROUPING_CONFIRMED_EVENT = "ivis23-grouping-confirmed";
 
 const students = studentsRaw as Student[];
 
-function buildGroupSlotSizes(totalStudents: number): number[] {
-  if (totalStudents <= 0) return [5];
+function buildGroupSlotSizes(totalStudents: number, preferredSize: PreferredGroupSize): number[] {
+  if (totalStudents <= 0) return [preferredSize];
   if (totalStudents <= 5) return [totalStudents];
 
-  const groupCount = Math.ceil(totalStudents / 5);
-  const totalMaxSlots = groupCount * 5;
-  const slotsToRemove = totalMaxSlots - totalStudents;
-  const sizes = Array(groupCount).fill(5);
+  const minGroupCount = Math.ceil(totalStudents / 5);
+  const maxGroupCount = Math.floor(totalStudents / 4);
 
-  for (let i = 0; i < slotsToRemove; i += 1) {
-    sizes[i] = 4;
+  if (minGroupCount <= maxGroupCount) {
+    const groupCount = preferredSize === 5 ? minGroupCount : maxGroupCount;
+    const sizes = Array(groupCount).fill(4);
+    const extraStudents = totalStudents - groupCount * 4;
+
+    for (let i = 0; i < extraStudents; i += 1) {
+      sizes[i] = 5;
+    }
+
+    return sizes;
+  }
+
+  const groupCount = Math.ceil(totalStudents / preferredSize);
+  const sizes = Array(groupCount).fill(preferredSize);
+  const lastGroupSize = totalStudents - preferredSize * (groupCount - 1);
+  if (groupCount > 0) {
+    sizes[groupCount - 1] = lastGroupSize;
   }
 
   return sizes;
 }
 
-const groups = ref<Group[]>(
-  buildGroupSlotSizes(students.length).map((size, index) => ({
+function normalizePreferredGroupSize(value: unknown): PreferredGroupSize {
+  return value === 4 ? 4 : 5;
+}
+
+function buildEmptyGroups(preferredSize: PreferredGroupSize): Group[] {
+  return buildGroupSlotSizes(students.length, preferredSize).map((size, index) => ({
     id: index + 1,
     members: Array(size).fill(null),
-  }))
+  }));
+}
+
+const preferredGroupSize = ref<PreferredGroupSize>(5);
+const groups = ref<Group[]>(
+  buildEmptyGroups(preferredGroupSize.value)
 );
 
 const activeTip = ref<{ groupId: number; slotIndex: number } | null>(null);
@@ -58,6 +96,8 @@ const draggingStudentId = ref<number | null>(null);
 const dragOverSlot = ref<
   { groupId: number; slotIndex: number; mode: "add" | "replace" } | null
 >(null);
+const groupCollapsedState = ref<Record<number, boolean>>({});
+const confirmedGroupState = ref<Record<number, boolean>>({});
 
 const usedStudentIds = computed(() => {
   const ids = new Set<number>();
@@ -231,17 +271,36 @@ function closeCompareDrawer() {
   compareDrawerOpen.value = false;
 }
 
-function readStoredGrouping(): StoredGrouping | null {
+function isGroupCollapsed(groupId: number) {
+  return Boolean(groupCollapsedState.value[groupId]);
+}
+
+function toggleGroupCollapsed(groupId: number) {
+  groupCollapsedState.value[groupId] = !isGroupCollapsed(groupId);
+  activeTip.value = null;
+}
+
+function isGroupConfirmed(groupId: number) {
+  return Boolean(confirmedGroupState.value[groupId]);
+}
+
+function readStoredGrouping(): { preferredGroupSize: PreferredGroupSize; groups: StoredGrouping["groups"] } | null {
   try {
     const raw = localStorage.getItem(GROUPING_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") return null;
-    const maybe = parsed as Partial<StoredGrouping>;
-    if (maybe.version !== 1 || !Array.isArray(maybe.groups)) return null;
+    const maybeV2 = parsed as Partial<StoredGrouping>;
+    const maybeV1 = parsed as Partial<LegacyStoredGrouping>;
+
+    const isV2 = maybeV2.version === 2 && Array.isArray(maybeV2.groups);
+    const isV1 = maybeV1.version === 1 && Array.isArray(maybeV1.groups);
+    if (!isV2 && !isV1) return null;
+
+    const rawGroups = (isV2 ? maybeV2.groups : maybeV1.groups) ?? [];
     return {
-      version: 1,
-      groups: maybe.groups
+      preferredGroupSize: normalizePreferredGroupSize(maybeV2.preferredGroupSize),
+      groups: rawGroups
         .filter((g) => g && typeof g.id === "number" && Array.isArray(g.memberIds))
         .map((g) => ({
           id: g.id,
@@ -253,7 +312,7 @@ function readStoredGrouping(): StoredGrouping | null {
   }
 }
 
-function applyStoredGrouping(stored: StoredGrouping) {
+function applyStoredGrouping(stored: { groups: StoredGrouping["groups"] }) {
   const byId = new Map(students.map((s) => [s.id, s] as const));
   const used = new Set<number>();
 
@@ -272,10 +331,91 @@ function applyStoredGrouping(stored: StoredGrouping) {
   });
 }
 
+function collectAssignedStudentsInOrder() {
+  return groups.value.flatMap((group) => group.members).filter((member): member is Student => Boolean(member));
+}
+
+function rebuildGroups(nextPreferredSize: PreferredGroupSize, preserveAssignedMembers = true) {
+  const assigned = preserveAssignedMembers ? collectAssignedStudentsInOrder() : [];
+  groups.value = buildEmptyGroups(nextPreferredSize);
+
+  if (!assigned.length) return;
+
+  let cursor = 0;
+  for (const group of groups.value) {
+    for (let i = 0; i < group.members.length; i += 1) {
+      if (cursor >= assigned.length) return;
+      const member = assigned[cursor];
+      if (!member) return;
+      group.members[i] = member;
+      cursor += 1;
+    }
+  }
+}
+
+function changePreferredGroupSize(delta: number) {
+  const next = normalizePreferredGroupSize(preferredGroupSize.value + delta);
+  if (next === preferredGroupSize.value) return;
+  preferredGroupSize.value = next;
+  rebuildGroups(next, true);
+  activeTip.value = null;
+  dragOverSlot.value = null;
+}
+
+function buildConfirmedGroupingPayload(groupId: number, isConfirmed: boolean) {
+  const targetGroup = groups.value.find((group) => group.id === groupId);
+  return {
+    confirmedAt: new Date().toISOString(),
+    groupId,
+    isConfirmed,
+    preferredGroupSize: preferredGroupSize.value,
+    confirmedGroupIds: groups.value
+      .map((group) => group.id)
+      .filter((id) => Boolean(confirmedGroupState.value[id])),
+    group: {
+      id: targetGroup?.id ?? groupId,
+      memberIds: targetGroup?.members.map((member) => member?.id ?? null) ?? [],
+    },
+    groups: groups.value.map((group) => ({
+      id: group.id,
+      memberIds: group.members.map((member) => member?.id ?? null),
+    })),
+  };
+}
+
+function toggleGroupConfirm(groupId: number) {
+  const next = !isGroupConfirmed(groupId);
+  confirmedGroupState.value[groupId] = next;
+  const payload = buildConfirmedGroupingPayload(groupId, next);
+  try {
+    localStorage.setItem(GROUPING_CONFIRM_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore storage failures
+  }
+  window.dispatchEvent(new CustomEvent(GROUPING_CONFIRMED_EVENT, { detail: payload }));
+}
+
+function readStoredConfirmedGrouping(): StoredConfirmedGrouping | null {
+  try {
+    const raw = localStorage.getItem(GROUPING_CONFIRM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const maybe = parsed as Partial<StoredConfirmedGrouping>;
+    if (!Array.isArray(maybe.confirmedGroupIds)) return null;
+    return {
+      confirmedGroupIds: maybe.confirmedGroupIds.filter((id) => typeof id === "number"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function persistGrouping() {
   try {
     const payload: StoredGrouping = {
-      version: 1,
+      version: 2,
+      preferredGroupSize: preferredGroupSize.value,
       groups: groups.value.map((group) => ({
         id: group.id,
         memberIds: group.members.map((member) => member?.id ?? null),
@@ -291,7 +431,17 @@ function persistGrouping() {
 onMounted(() => {
   const stored = readStoredGrouping();
   if (stored) {
+    preferredGroupSize.value = stored.preferredGroupSize;
+    rebuildGroups(preferredGroupSize.value, false);
     applyStoredGrouping(stored);
+  }
+  const confirmedStored = readStoredConfirmedGrouping();
+  if (confirmedStored) {
+    const restored: Record<number, boolean> = {};
+    for (const group of groups.value) {
+      restored[group.id] = confirmedStored.confirmedGroupIds.includes(group.id);
+    }
+    confirmedGroupState.value = restored;
   }
   persistGrouping();
 });
@@ -307,6 +457,30 @@ watch(
 
 <template>
   <div class="groupingLayout">
+    <section class="groupSizeSection">
+      <span class="groupSizeLabel">Group size per team</span>
+      <div class="groupSizeStepper" role="group" aria-label="change group size">
+        <button
+          class="groupSizeBtn"
+          type="button"
+          :disabled="preferredGroupSize <= 4"
+          @click="changePreferredGroupSize(-1)"
+        >
+          -
+        </button>
+        <span class="groupSizeValue">{{ preferredGroupSize }}</span>
+        <button
+          class="groupSizeBtn"
+          type="button"
+          :disabled="preferredGroupSize >= 5"
+          @click="changePreferredGroupSize(1)"
+        >
+          +
+        </button>
+      </div>
+      <span class="groupSizeHint">Auto balances based on your 4/5 choice.</span>
+    </section>
+
     <section class="unassignedSection">
       <div class="unassignedHeader">Select People</div>
       <div class="unassignedGrid">
@@ -332,10 +506,36 @@ watch(
       v-for="group in groups"
       :key="group.id"
       class="groupRow"
-      :class="{ dropGroupActive: activeDragGroupId === group.id }"
+      :class="{
+        dropGroupActive: activeDragGroupId === group.id,
+        groupConfirmed: isGroupConfirmed(group.id),
+      }"
     >
       <div class="groupHeader">
-        <span class="groupId">{{ group.id }}</span>
+        <div class="groupTitleWrap">
+          <span class="groupId">{{ group.id }}</span>
+          <button
+            class="collapseBtn"
+            type="button"
+            @click="toggleGroupCollapsed(group.id)"
+          >
+            <span>{{ isGroupCollapsed(group.id) ? "Expand" : "Collapse" }}</span>
+            <span
+              class="collapseCaret"
+              :class="{ collapsed: isGroupCollapsed(group.id) }"
+            >
+              ▼
+            </span>
+          </button>
+          <button
+            class="groupConfirmBtn"
+            :class="{ confirmed: isGroupConfirmed(group.id) }"
+            type="button"
+            @click="toggleGroupConfirm(group.id)"
+          >
+            {{ isGroupConfirmed(group.id) ? "Cancel" : "Confirm" }}
+          </button>
+        </div>
         <div class="chipRow">
           <span
             v-for="hobby in groupHobbiesMap.get(group.id) ?? []"
@@ -351,7 +551,11 @@ watch(
         </div>
       </div>
 
-      <div class="slotRow" :style="{ '--slot-count': group.members.length }">
+      <div
+        v-show="!isGroupCollapsed(group.id)"
+        class="slotRow"
+        :style="{ '--slot-count': group.members.length }"
+      >
         <div
           v-for="(member, slotIndex) in group.members"
           :key="slotIndex"
@@ -451,7 +655,7 @@ watch(
         </button>
       </div>
 
-      <div class="footerBar"></div>
+      <div v-show="!isGroupCollapsed(group.id)" class="footerBar"></div>
     </section>
 
     <div v-if="detailsOpen" class="drawerBackdrop" @click="closeGroupDetails"></div>
@@ -485,17 +689,70 @@ watch(
 <style scoped>
 .groupingLayout {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 20px 24px;
+  background: #f3f4f6;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+}
+
+.groupSizeSection {
+  background: #d2d2d4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.groupSizeLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+
+.groupSizeStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupSizeBtn {
+  border: 1px solid #b4b7be;
+  background: #f1f1f2;
+  color: #111;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.groupSizeBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.groupSizeValue {
+  min-width: 18px;
+  text-align: center;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+  color: #111827;
+}
+
+.groupSizeHint {
+  font-size: 12px;
+  color: #4b5563;
 }
 
 .groupingPage {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .unassignedSection {
@@ -553,8 +810,17 @@ watch(
 .groupRow {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   transition: box-shadow 0.16s ease;
+  background: #ffffff;
+  border: 1px solid #d7dbe2;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.groupRow.groupConfirmed {
+  background: #dff3e7;
+  border-color: #8bc8a4;
 }
 
 .groupRow.dropGroupActive {
@@ -565,8 +831,15 @@ watch(
 .groupHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   min-height: 26px;
+}
+
+.groupTitleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .groupId {
@@ -574,6 +847,49 @@ watch(
   line-height: 1;
   color: #222;
   font-weight: 500;
+}
+
+.collapseBtn {
+  border: 1px solid #c5c7ce;
+  background: #f8f8f9;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+}
+
+.groupConfirmBtn {
+  border: 1px solid #167243;
+  background: #1f8a53;
+  color: #fff;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.groupConfirmBtn.confirmed {
+  border-color: #9a2f2f;
+  background: #bf3f3f;
+}
+
+.collapseCaret {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.collapseCaret.collapsed {
+  transform: rotate(-90deg);
 }
 
 .chipRow {
@@ -612,7 +928,7 @@ watch(
 
 .slotCardWrap {
   position: relative;
-  background: #dddddf;
+  background: #f0f1f4;
   border-radius: 14px;
   padding: 12px;
   display: flex;
