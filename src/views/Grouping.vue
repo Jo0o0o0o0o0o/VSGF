@@ -4,6 +4,8 @@ import GroupDetails from "@/views/GroupDetails.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import studentsRaw from "../data/IVIS23_final.json";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
+import precomputedEmbeddingsRaw from "@/data/ivis23_student_embeddings.generated.json";
+import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import type { IvisRecord } from "@/types/ivis23";
 import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 import { writeComparePersonId } from "@/utils/compareSelection";
@@ -44,6 +46,15 @@ type StoredCollapsedGrouping = {
 type HobbyAreaRule = {
   hobby_area: string;
   keywords: string[];
+};
+
+type PrecomputedEmbeddingsFile = {
+  model: string;
+  textBuilderVersion: string;
+  fingerprint: string;
+  generatedAt: string;
+  datasetPath: string;
+  embeddings: Array<{ id: number; vector: number[] }>;
 };
 
 const GROUPING_STORAGE_KEY = "ivis23_grouping_v1";
@@ -128,6 +139,34 @@ const availableStudents = computed(() =>
 const slotSearchQuery = ref<Record<string, string>>({});
 const hobbyKeywordQuery = ref("");
 const hobbyAreaRules = hobbyAreaRulesRaw as HobbyAreaRule[];
+const precomputedEmbeddings = precomputedEmbeddingsRaw as PrecomputedEmbeddingsFile;
+const keywordScoringMode = ref<"rule" | "embedding" | "hybrid">("hybrid");
+const embeddingStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
+const embeddingScores = ref<Record<number, number>>({});
+const embeddingErrorMessage = ref("");
+const EMBEDDING_WEIGHT = 120;
+const studentEmbeddingById = new Map<number, number[]>(
+  precomputedEmbeddings.embeddings.map((item) => [item.id, item.vector]) ?? []
+);
+const queryEmbeddingCache = new Map<string, number[]>();
+let embeddingTaskSeq = 0;
+let embeddingWorker: Worker | null = null;
+let workerRequestId = 0;
+let embeddingPreloadStarted = false;
+const workerPending = new Map<
+  number,
+  {
+    resolve: (value: unknown) => void;
+    reject: (reason?: unknown) => void;
+  }
+>();
+const QUERY_EMBED_CACHE_KEY = `ivis23_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`;
+const precomputedEmbeddingsCompatible =
+  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
+  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
+const requiresEmbeddings = computed(
+  () => keywordScoringMode.value === "embedding" || keywordScoringMode.value === "hybrid"
+);
 
 function normalizeKeyword(text: string) {
   return text.toLowerCase().trim().replace(/[^a-z0-9_ ]+/g, " ");
@@ -144,6 +183,161 @@ function countWholeWordOccurrences(text: string, token: string) {
   const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`\\b${escaped}\\b`, "g");
   return (text.match(regex) ?? []).length;
+}
+
+function dot(a: number[], b: number[]) {
+  const len = Math.min(a.length, b.length);
+  let sum = 0;
+  for (let i = 0; i < len; i += 1) sum += (a[i] ?? 0) * (b[i] ?? 0);
+  return sum;
+}
+
+function normalizeVector(vec: number[]) {
+  const norm = Math.sqrt(dot(vec, vec)) || 1;
+  return vec.map((v) => v / norm);
+}
+
+function persistEmbeddingCaches() {
+  try {
+    const queryObject = Object.fromEntries(queryEmbeddingCache.entries());
+    localStorage.setItem(QUERY_EMBED_CACHE_KEY, JSON.stringify(queryObject));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function restoreEmbeddingCaches() {
+  try {
+    const rawQueries = localStorage.getItem(QUERY_EMBED_CACHE_KEY);
+    if (rawQueries) {
+      const parsed = JSON.parse(rawQueries) as Record<string, number[]>;
+      Object.entries(parsed).forEach(([query, vector]) => {
+        if (!Array.isArray(vector)) return;
+        queryEmbeddingCache.set(query, vector.map((v) => Number(v)));
+      });
+    }
+  } catch {
+    // ignore cache parse failures
+  }
+}
+
+function ensureEmbeddingWorker() {
+  if (embeddingWorker) return embeddingWorker;
+  embeddingWorker = new Worker(new URL("../workers/embeddingWorker.ts", import.meta.url), {
+    type: "module",
+  });
+  embeddingWorker.onmessage = (event: MessageEvent) => {
+    const msg = event.data as
+      | { type: "warmup"; requestId: number; payload: { ok: true } }
+      | { type: "query"; requestId: number; payload: { query: string; vector: number[] } }
+      | { type: "error"; requestId: number; payload: { message: string } };
+
+    const pending = workerPending.get(msg.requestId);
+    if (!pending) return;
+    workerPending.delete(msg.requestId);
+
+    if (msg.type === "error") {
+      pending.reject(new Error(msg.payload.message));
+      return;
+    }
+
+    pending.resolve(msg.payload);
+  };
+  return embeddingWorker;
+}
+
+function callEmbeddingWorker<T>(request: { type: string; payload: unknown }): Promise<T> {
+  const worker = ensureEmbeddingWorker();
+  const requestId = ++workerRequestId;
+  return new Promise<T>((resolve, reject) => {
+    workerPending.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
+    worker.postMessage({ ...request, requestId });
+  });
+}
+
+async function ensureStudentEmbeddings() {
+  if (!precomputedEmbeddingsCompatible) {
+    throw new Error("Precomputed embeddings metadata does not match configured model/version.");
+  }
+  const missingStudents = students.filter((student) => !studentEmbeddingById.has(student.id));
+  if (missingStudents.length > 0) {
+    throw new Error("Precomputed student embeddings are missing or out of sync with dataset/model.");
+  }
+}
+
+async function ensureQueryEmbedding(query: string) {
+  const normalizedQuery = normalizeKeyword(query);
+  if (queryEmbeddingCache.has(normalizedQuery)) return queryEmbeddingCache.get(normalizedQuery) ?? [];
+
+  const result = await callEmbeddingWorker<{ query: string; vector: number[] }>({
+    type: "embed-query",
+    payload: { query: normalizedQuery },
+  });
+  const normalized = normalizeVector(result.vector ?? []);
+  queryEmbeddingCache.set(normalizedQuery, normalized);
+  persistEmbeddingCaches();
+  return normalized;
+}
+
+async function updateEmbeddingScores() {
+  const keyword = hobbyKeywordQuery.value.trim();
+  if (!requiresEmbeddings.value || !keyword) {
+    embeddingScores.value = {};
+    if (embeddingStatus.value !== "error") embeddingStatus.value = "idle";
+    return;
+  }
+
+  const seq = ++embeddingTaskSeq;
+  embeddingStatus.value = "loading";
+  embeddingErrorMessage.value = "";
+
+  try {
+    await ensureStudentEmbeddings();
+    const queryVector = await ensureQueryEmbedding(keyword);
+    if (seq !== embeddingTaskSeq) return;
+
+    const scored: Record<number, number> = {};
+    for (const student of students) {
+      const studentVec = studentEmbeddingById.get(student.id);
+      if (!studentVec?.length || !queryVector.length) continue;
+      const cosine = dot(studentVec, queryVector);
+      scored[student.id] = Math.max(0, cosine);
+    }
+    embeddingScores.value = scored;
+    embeddingStatus.value = "ready";
+  } catch (error) {
+    if (seq !== embeddingTaskSeq) return;
+    embeddingScores.value = {};
+    embeddingStatus.value = "error";
+    const message = error instanceof Error ? error.message : "Failed to load embedding model.";
+    if (message.includes("<!DOCTYPE")) {
+      embeddingErrorMessage.value =
+        "Model file request returned HTML. This usually means model download is blocked or redirected.";
+    } else {
+      embeddingErrorMessage.value = message;
+    }
+  }
+}
+
+async function startEmbeddingPreload() {
+  if (embeddingPreloadStarted) return;
+  embeddingPreloadStarted = true;
+
+  try {
+    if (embeddingStatus.value === "idle") {
+      embeddingStatus.value = "loading";
+    }
+    ensureEmbeddingWorker();
+    await callEmbeddingWorker<{ ok: true }>({ type: "warmup", payload: {} });
+    await ensureStudentEmbeddings();
+    if (embeddingStatus.value !== "error") {
+      embeddingStatus.value = "ready";
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to preload embeddings.";
+    embeddingStatus.value = "error";
+    embeddingErrorMessage.value = message;
+  }
 }
 
 const areaKeywordSetByArea = new Map<string, Set<string>>(
@@ -309,10 +503,26 @@ const keywordScoredAvailableStudents = computed(() => {
   return availableStudents.value
     .map((student) => ({
       student,
-      score: computeKeywordScore(student, keyword),
+      score: (() => {
+        const ruleScore = computeKeywordScore(student, keyword);
+        const embeddingScore = (embeddingScores.value[student.id] ?? 0) * EMBEDDING_WEIGHT;
+
+        if (keywordScoringMode.value === "rule") return ruleScore;
+        if (keywordScoringMode.value === "embedding") {
+          if (embeddingStatus.value === "ready") return embeddingScore;
+          return ruleScore;
+        }
+
+        if (embeddingStatus.value === "ready") return ruleScore + embeddingScore;
+        return ruleScore;
+      })(),
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.student.alias.localeCompare(b.student.alias));
+});
+
+watch([hobbyKeywordQuery, keywordScoringMode], () => {
+  updateEmbeddingScores();
 });
 
 function slotKey(groupId: number, slotIndex: number) {
@@ -664,6 +874,8 @@ function persistGrouping() {
 }
 
 onMounted(() => {
+  restoreEmbeddingCaches();
+  startEmbeddingPreload();
   const stored = readStoredGrouping();
   if (stored) {
     preferredGroupSize.value = stored.preferredGroupSize;
@@ -740,6 +952,38 @@ watch(
           type="text"
           placeholder="Score by hobby keyword (e.g. games)"
         />
+        <div class="modeSwitch" role="group" aria-label="keyword scoring mode">
+          <button
+            class="modeSwitchBtn"
+            :class="{ active: keywordScoringMode === 'rule' }"
+            type="button"
+            @click="keywordScoringMode = 'rule'"
+          >
+            Rule only
+          </button>
+          <button
+            class="modeSwitchBtn"
+            :class="{ active: keywordScoringMode === 'embedding' }"
+            type="button"
+            @click="keywordScoringMode = 'embedding'"
+          >
+            Embedding only
+          </button>
+          <button
+            class="modeSwitchBtn"
+            :class="{ active: keywordScoringMode === 'hybrid' }"
+            type="button"
+            @click="keywordScoringMode = 'hybrid'"
+          >
+            Hybrid
+          </button>
+        </div>
+        <p v-if="requiresEmbeddings && embeddingStatus === 'loading'" class="embeddingHint">
+          Loading embedding model...
+        </p>
+        <p v-else-if="requiresEmbeddings && embeddingStatus === 'error'" class="embeddingHint embeddingHintError">
+          Embeddings unavailable, using rule score only. {{ embeddingErrorMessage }}
+        </p>
       </div>
       <div class="unassignedGrid">
         <div
@@ -753,7 +997,7 @@ watch(
           @click="onUnassignedStudentClick(entry.student.id)"
         >
           <span class="personAlias">{{ entry.student.alias }}</span>
-          <span v-if="hobbyKeywordQuery.trim()" class="personScore">score {{ entry.score }}</span>
+          <span v-if="hobbyKeywordQuery.trim()" class="personScore">score {{ Math.round(entry.score) }}</span>
         </div>
         <div v-if="keywordScoredAvailableStudents.length === 0" class="unassignedEmpty">
           {{ availableStudents.length === 0 ? "All people are grouped." : "No people match this keyword." }}
@@ -1033,6 +1277,9 @@ watch(
 
 .keywordSearchWrap {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .keywordSearchInput {
@@ -1044,6 +1291,40 @@ watch(
   padding: 0 10px;
   font-size: 13px;
   background: #ffffff;
+}
+
+.modeSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.modeSwitchBtn {
+  border: 1px solid #c8cdd5;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeSwitchBtn.active {
+  border-color: #1f8a53;
+  background: #dff3e7;
+  color: #166534;
+}
+
+.embeddingHint {
+  margin: 0;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.embeddingHintError {
+  color: #b91c1c;
 }
 
 .unassignedGrid {
