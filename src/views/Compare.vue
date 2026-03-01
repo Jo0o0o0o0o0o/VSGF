@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
     />
 
     <section class="grid">
-      <div class="panel level-1 big">
+      <div class="panel level-3 big">
         <h3>Group Ratings Radar Compare</h3>
         <div class="radarChartWrap">
           <RadarChart
@@ -415,7 +415,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="panel level-1 narrow">
+      <div class="panel level-3 narrow">
         <AxisSelector
           :allAxes="allAxes"
           :activeAxes="activeAxes"
@@ -423,10 +423,10 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="panel level-1 full">
+      <div class="panel level-3 full">
         <h3>Group Category Dumbbell</h3>
         <div class="dumbbellSplitWrap">
-          <div class="dumbbellMainWrap level-2">
+          <div class="dumbbellMainWrap">
             <GroupDumbbellChart
               :data="categoryDumbbellData"
               :groupNames="selectedGroupNames"
@@ -436,7 +436,7 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div class="dumbbellDetailWrap level-2">
+          <div class="dumbbellDetailWrap level-5">
             <template v-if="selectedCategory && detailAxes.length">
               <h4 class="detailTitle">{{ selectedCategory.label }} Details</h4>
               <GroupDetailDumbbellChart
@@ -446,7 +446,7 @@ onBeforeUnmount(() => {
                 @toggleFocus="toggleFocus"
               />
             </template>
-            <div v-else class="detailEmpty level-3">
+            <div v-else class="detailEmpty">
               Click one category label in the left dumbbell chart to open detail view.
             </div>
           </div>

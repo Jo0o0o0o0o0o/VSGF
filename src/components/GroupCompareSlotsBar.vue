@@ -88,7 +88,7 @@ function filteredList(currentIndex: number) {
     <div
       v-for="i in props.max"
       :key="i"
-      class="slot"
+      class="slot level-3"
       :style="
         props.focusIndex === i - 1 && slotRadarColors[i - 1]
           ? { backgroundColor: toSoftBackground(slotRadarColors[i - 1]!) }

@@ -938,8 +938,8 @@ watch(
 </script>
 
 <template>
-  <div class="groupingLayout">
-    <section class="groupSizeSection">
+  
+    <section class="groupSizeSection level-3">
       <span class="groupSizeLabel">Group size per team</span>
       <div class="groupSizeStepper" role="group" aria-label="change group size">
         <button
@@ -963,7 +963,7 @@ watch(
       <span class="groupSizeHint">Auto balances based on your 4/5 choice.</span>
     </section>
 
-    <section class="unassignedSection">
+    <section class="unassignedSection level-3">
       <div class="unassignedHeader">Select People</div>
       <div class="keywordSearchWrap">
         <input
@@ -1029,7 +1029,7 @@ watch(
     <section
       v-for="group in groups"
       :key="group.id"
-      class="groupRow"
+      class="groupRow level-3"
       :class="{
         dropGroupActive: activeDragGroupId === group.id,
         groupConfirmed: isGroupConfirmed(group.id),
@@ -1083,7 +1083,7 @@ watch(
         <div
           v-for="(member, slotIndex) in group.members"
           :key="slotIndex"
-          class="slotCardWrap"
+          class="slotCardWrap level-3"
           :class="{
             slotDropActive:
               dragOverSlot?.groupId === group.id && dragOverSlot.slotIndex === slotIndex,
@@ -1098,6 +1098,7 @@ watch(
         >
           <button
             class="slotCard"
+            :class="{ filled: Boolean(member) }"
             type="button"
             @click="member && openCompareDrawer(member.id)"
           >
@@ -1138,7 +1139,13 @@ watch(
             <span class="slotPickerText">
               {{ member ? `${member.alias} (#${member.id})` : "choose people" }}
             </span>
-            <span class="slotPickerCaret">˅</span>
+            <span class="slotPickerCaret">
+              {{
+                activeTip?.groupId === group.id && activeTip.slotIndex === slotIndex
+                  ? "^"
+                  : "v"
+              }}
+            </span>
           </button>
 
           <div
@@ -1207,7 +1214,7 @@ watch(
       <CompareView />
     </aside>
   </main>
-  </div>
+  
 </template>
 
 <style scoped>
@@ -1228,6 +1235,10 @@ watch(
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.groupSizeSection + .unassignedSection {
+  margin-top: 14px;
 }
 
 .groupSizeLabel {
@@ -1277,6 +1288,10 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.unassignedSection + .groupingPage {
+  margin-top: 14px;
 }
 
 .unassignedSection {
@@ -1521,12 +1536,12 @@ watch(
 
 .slotCardWrap {
   position: relative;
-  background: #f0f1f4;
+  background: #f4f4f4;
   border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  min-height: 160px;
 }
 
 .slotCardWrap.slotDropActive .slotCard {
@@ -1546,12 +1561,16 @@ watch(
   border: none;
   cursor: pointer;
   aspect-ratio: 1 / 1;
-  background: #d2d2d4;
+  background: #e9e9e9;
   position: relative;
   overflow: hidden;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 16px;
+}
+
+.slotCard.filled {
+  background: #ffffff;
 }
 
 .memberContent {
@@ -1559,36 +1578,44 @@ watch(
   height: 100%;
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 12px;
+  gap: 10px;
 }
 
 .memberAlias {
-  font-size: clamp(16px, 2vw, 34px);
+  font-size: clamp(16px, 1.7vw, 24px);
   line-height: 1.2;
-  color: #111;
-  font-weight: 600;
-  padding: 10px 8px 48px;
+  color: #475569;
+  font-weight: 700;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 24px);
   text-align: center;
   word-break: break-word;
+  z-index: 1;
 }
 
 .memberHobbyRow {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
   display: flex;
+  width: 100%;
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 6px;
+  align-content: flex-start;
+  max-height: 56px;
+  overflow: auto;
 }
 
 .memberHobbyChip {
   min-height: 20px;
   border-radius: 999px;
-  border: 1px solid transparent;
+  border: none;
   padding: 2px 8px;
   font-size: 10px;
   line-height: 1;
@@ -1605,43 +1632,46 @@ watch(
 }
 
 .plusMark {
-  font-size: clamp(48px, 8vw, 78px);
+  font-size: clamp(42px, 6vw, 58px);
   line-height: 1;
-  color: #000;
-  font-weight: 300;
+  color: #6b7280;
+  font-weight: 500;
+  opacity: 0.75;
 }
 
 .removeBtn {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: 22px;
+  right: 22px;
   border: none;
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(55, 65, 81, 0.9);
   color: #fff;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1;
   cursor: pointer;
 }
 
 .slotPicker {
-  border: 1px solid #c8c8cd;
-  background: #efefef;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
   border-radius: 10px;
   min-height: 38px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 10px;
   cursor: pointer;
 }
 
 .slotPickerText {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.9;
+  color: #111827;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1649,8 +1679,9 @@ watch(
 }
 
 .slotPickerCaret {
-  font-size: 17px;
-  color: #555;
+  font-size: 14px;
+  color: #6b7280;
+  opacity: 0.7;
   line-height: 1;
 }
 
@@ -1658,45 +1689,48 @@ watch(
   position: absolute;
   left: 12px;
   right: 12px;
-  top: calc(100% + 6px);
+  top: 0;
   width: auto;
-  max-height: 240px;
-  overflow: hidden;
+  max-height: 260px;
   background: #ffffff;
-  border: 1px solid #bfc3ca;
-  border-radius: 10px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   z-index: 30;
-  padding: 8px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .tipSearchWrap {
-  margin-bottom: 8px;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .tipSearchInput {
   width: 100%;
   box-sizing: border-box;
-  height: 32px;
+  height: 34px;
   padding: 0 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 10px;
   background: #fff;
   font-size: 13px;
+  outline: none;
 }
 
 .tipList {
-  max-height: 160px;
+  max-height: 220px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 6px;
+  padding: 6px;
 }
 
 .tipItem {
-  border: none;
-  background: #eceef2;
-  border-radius: 6px;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fafafa;
+  border-radius: 10px;
   padding: 8px 10px;
   font-size: 14px;
   text-align: left;
@@ -1704,13 +1738,14 @@ watch(
 }
 
 .tipItem:hover {
-  background: #dfe3ea;
+  background: #f0f0f0;
 }
 
 .tipEmpty {
-  margin: 2px 0;
-  font-size: 13px;
-  color: #666;
+  padding: 12px;
+  font-size: 12px;
+  color: #4b5563;
+  opacity: 0.7;
 }
 
 .nextBtn {

@@ -52,8 +52,8 @@ function onChangeDatasetYear(event: Event) {
     <header class="topbar">
       <div class="logo">
         <img class="logo-icon" src="/dogtitle.png" alt="TheDogs icon" />
-        <span class="logo-mark">TheDogs</span>
-        <span class="logo-text">Dogviz Dashboard</span>
+        <span class="logo-mark">Grouping</span>
+        <span class="logo-text">Dashboard</span>
         <label class="yearSwitch" for="dataset-year-select">
           <span class="yearLabel">Year</span>
           <select

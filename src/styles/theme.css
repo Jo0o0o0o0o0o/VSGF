@@ -2,10 +2,12 @@
   --academic-bg: #eef3f8;
   --academic-surface: #ffffff;
   --academic-surface-muted: #e4edf6;
+  --academic-surface-soft: #f4f8fc;
   --academic-text: #1f2a38;
   --academic-text-muted: #4c5d73;
   --academic-accent: #4d86bf;
   --academic-accent-strong: #2f6ea9;
+  --academic-border: #b8c8d8;
   --card-radius: 14px;
   --card-shadow-soft: 0 8px 20px rgba(31, 42, 56, 0.12);
 }
@@ -56,6 +58,24 @@ body {
   box-shadow: var(--card-shadow-soft);
 }
 
+/* Level 5 card: white background with blue dashed border */
+.level-5,
+.card.level-5,
+.panel.level-5 {
+  background: var(--academic-surface) !important;
+  border: 1px dashed var(--academic-accent) !important;
+  border-radius: var(--card-radius) !important;
+}
+
+/* Level 6 card: light blue-gray background with dashed border */
+.level-6,
+.card.level-6,
+.panel.level-6 {
+  background: var(--academic-surface-muted) !important;
+  border: 1px dashed var(--academic-border) !important;
+  border-radius: var(--card-radius) !important;
+}
+
 /* Tags/chips: full radius, no border */
 .tag,
 .chip,
@@ -68,5 +88,17 @@ body {
 .groupConfirmBtn {
   border: none !important;
   border-radius: 999px !important;
+}
+
+/* Active button style: light blue background/text and no border */
+button.active,
+button.on,
+.groupSizeBtn.active,
+.modeSwitchBtn.active,
+.heatmapToggleBtn.active,
+.varianceToggleBtn.on {
+  background: #dbe8f5 !important;
+  color: #37556f !important;
+  border: none !important;
 }
 

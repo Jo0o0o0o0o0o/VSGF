@@ -92,7 +92,11 @@ export function createGroupDetailsHeatmap(
     const cells: GroupDetailsHeatCell[] = [...personCells, ...averageCells];
 
     const maxValue = d3.max(cells, (d) => d.value) ?? 0;
-    const color = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, Math.max(1, maxValue)]);
+    const color = d3
+      .scaleSequential(
+        d3.interpolateRgbBasis(["#eef3f8", "#dbe8f5", "#a8c7e5", "#6ea2d1", "#2f6ea9"]),
+      )
+      .domain([0, Math.max(1, maxValue)]);
 
     gx.attr("transform", `translate(0,${innerH})`).call(
       d3.axisBottom(x).tickFormat((k) => opt.axes.find((a) => a.key === k)?.label ?? String(k)),
