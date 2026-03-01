@@ -1,0 +1,167 @@
+[
+  {
+    "hobby_area": "sports_outdoors",
+    "keywords": [
+      "badminton",
+      "basketball",
+      "bike",
+      "bouldering",
+      "climb",
+      "climbing",
+      "cycling",
+      "dance",
+      "fitness",
+      "football",
+      "gym",
+      "handball",
+      "hike",
+      "hiking",
+      "jogging",
+      "kendo",
+      "run",
+      "running",
+      "sailing",
+      "skate",
+      "ski",
+      "skiing",
+      "soccer",
+      "sport",
+      "swim",
+      "swimming",
+      "tennis",
+      "training",
+      "workout",
+      "yoga"
+    ]
+  },
+  {
+    "hobby_area": "arts_media",
+    "keywords": [
+      "anime",
+      "art",
+      "artistic",
+      "cinema",
+      "dancing",
+      "design",
+      "draw",
+      "drawing",
+      "film",
+      "illustration",
+      "knitting",
+      "movie",
+      "movies",
+      "paint",
+      "painting",
+      "photo",
+      "photography",
+      "series",
+      "sketch"
+    ]
+  },
+  {
+    "hobby_area": "music",
+    "keywords": [
+      "band",
+      "bass",
+      "choir",
+      "guitar",
+      "music",
+      "piano",
+      "sing",
+      "singing",
+      "ukulele"
+    ]
+  },
+  {
+    "hobby_area": "games",
+    "keywords": [
+      "boardgame",
+      "chess",
+      "counterstrike",
+      "dnd",
+      "game",
+      "gaming",
+      "pokemon",
+      "videogame"
+    ]
+  },
+  {
+    "hobby_area": "tech_making",
+    "keywords": [
+      "3d",
+      "3dmodeling",
+      "3dprinting",
+      "blender",
+      "code",
+      "coding",
+      "dataanalysis",
+      "electronics",
+      "interactive",
+      "maker",
+      "program",
+      "programming",
+      "rendering",
+      "robot",
+      "rust",
+      "unity",
+      "wasm",
+      "web"
+    ]
+  },
+  {
+    "hobby_area": "reading_writing",
+    "keywords": [
+      "book",
+      "books",
+      "fantasy",
+      "fiction",
+      "history",
+      "literature",
+      "novel",
+      "poem",
+      "poetry",
+      "read",
+      "reading",
+      "wikipedia",
+      "write",
+      "writing"
+    ]
+  },
+  {
+    "hobby_area": "travel",
+    "keywords": [
+      "travel",
+      "trip"
+    ]
+  },
+  {
+    "hobby_area": "food",
+    "keywords": [
+      "bake",
+      "baking",
+      "bartending",
+      "beer",
+      "cocktail",
+      "coffee",
+      "cook",
+      "cooking",
+      "food",
+      "tea"
+    ]
+  },
+  {
+    "hobby_area": "languages_culture",
+    "keywords": [
+      "culture",
+      "language",
+      "languages"
+    ]
+  },
+  {
+    "hobby_area": "other",
+    "keywords": [
+      "entrepreneurship",
+      "business"
+    ]
+  }
+]

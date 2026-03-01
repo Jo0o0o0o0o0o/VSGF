@@ -12,6 +12,9 @@ defineProps<{
   dog?: unknown;
   avgTraits?: unknown;
 }>();
+const emit = defineEmits<{
+  (e: "selectPerson", id: number): void;
+}>();
 
 type LinePoint = {
   key: IvisRatingKey;
@@ -175,6 +178,7 @@ function draw() {
   }
 
   const studentHitData = allSeries.map((series, idx) => ({
+    id: series.id,
     idx,
     name: series.alias,
     values: series.values,
@@ -215,6 +219,9 @@ function draw() {
     .on("pointerleave", function () {
       d3.select(this).attr("stroke", "transparent");
       tip.value.show = false;
+    })
+    .on("click", function (_event, d) {
+      emit("selectPerson", d.id);
     });
 
   root

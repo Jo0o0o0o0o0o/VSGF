@@ -85,6 +85,8 @@ export const RADAR_COLORS: string[] = [
   ...d3.schemeTableau10.slice(6),
 ];
 
+const AVERAGE_RADAR_COLOR = "#6b7280";
+
 export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers = {}) {
   const svg = d3.select(svgEl);
   const root = svg.append("g");
@@ -130,8 +132,9 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
     }
 
     const count = axes.length;
-    const outerPadding = 34;
-    const axisLabelOffset = 18;
+    // Keep extra breathing room so axis labels are fully visible.
+    const outerPadding = 48;
+    const axisLabelOffset = 22;
     const radius = Math.max(10, Math.min(width, height) / 2 - (outerPadding + axisLabelOffset));
     const cx = width / 2;
     const cy = height / 2;
@@ -213,7 +216,10 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("fill", YELLOW_THEME.axisLabelFill)
       .text((d) => d.label);
 
-    const colorAt = (i: number) => RADAR_COLORS[i % RADAR_COLORS.length] ?? "#898989";
+    const colorAt = (dog: RadarDog, i: number) =>
+      dog.name.trim().toLowerCase() === "average"
+        ? AVERAGE_RADAR_COLOR
+        : (RADAR_COLORS[i % RADAR_COLORS.length] ?? "#898989");
 
     const groups = dataLayer
       .selectAll<SVGGElement, RadarDog>("g.dog")
@@ -247,9 +253,9 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .join("path")
       .attr("class", "area")
       .attr("d", (d) => polygonPath(pointsOf(d.dog)))
-      .attr("fill", (d) => colorAt(d.dogIndex))
+      .attr("fill", (d) => colorAt(d.dog, d.dogIndex))
       .attr("fill-opacity", 0.22)
-      .attr("stroke", (d) => colorAt(d.dogIndex))
+      .attr("stroke", (d) => colorAt(d.dog, d.dogIndex))
       .attr("stroke-width", 2.2)
       .style("cursor", "pointer")
       .on("pointerenter", (event, d) => handlers.onHover?.(hoverDatumOf(d.dog, d.dogIndex), event as PointerEvent))
@@ -274,12 +280,16 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("cx", (d) => d.p[0])
       .attr("cy", (d) => d.p[1])
       .attr("r", 2.8)
-      .attr("fill", (d) => colorAt(d.dogIndex))
+      .attr("fill", (d) => colorAt(dogFromIndex(d.dogIndex), d.dogIndex))
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.8)
       .attr("opacity", 0.95)
       .style("cursor", "pointer")
       .on("click", (event, d) => handlers.onClick?.(d.dogIndex, event as PointerEvent));
+
+    function dogFromIndex(index: number) {
+      return dogs[index] ?? ({ name: "" } as RadarDog);
+    }
 
     const focus = opt.focusIndex ?? null;
     const hasFocus = focus !== null && focus >= 0 && focus < dogs.length;

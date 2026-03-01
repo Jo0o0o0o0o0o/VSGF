@@ -1,11 +1,10 @@
 import * as d3 from "d3";
 import type { BeeswarmNode } from "@/components/BeeWarmPlot.vue";
-import type { IvisRatingKey } from "@/types/ivis23";
 
 export type BeeswarmOptions = {
   width: number;
   height: number;
-  traits: IvisRatingKey[];
+  traits: string[];
   traitLabels: Record<string, string>;
   highlightId?: number | null;
   pointColor?: string;

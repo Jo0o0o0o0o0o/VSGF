@@ -25,8 +25,11 @@ let chart: ReturnType<typeof createRadarChart> | null = null;
 let ro: ResizeObserver | null = null;
 
 const dogs = computed(() => props.dogs ?? []);
+const AVERAGE_RADAR_COLOR = "#6b7280";
 
 function legendColor(idx: number) {
+  const name = dogs.value[idx]?.name?.trim().toLowerCase();
+  if (name === "average") return AVERAGE_RADAR_COLOR;
   return RADAR_COLORS[idx % RADAR_COLORS.length] ?? "#f59e0b";
 }
 

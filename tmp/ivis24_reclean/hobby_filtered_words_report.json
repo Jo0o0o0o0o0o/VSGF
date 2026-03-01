@@ -1,0 +1,816 @@
+[
+  {
+    "reason": "stopword",
+    "total_filtered": 437,
+    "top_words": [
+      {
+        "token": "i",
+        "count": 50
+      },
+      {
+        "token": "and",
+        "count": 43
+      },
+      {
+        "token": "to",
+        "count": 23
+      },
+      {
+        "token": "a",
+        "count": 20
+      },
+      {
+        "token": "in",
+        "count": 19
+      },
+      {
+        "token": "my",
+        "count": 17
+      },
+      {
+        "token": "like",
+        "count": 17
+      },
+      {
+        "token": "the",
+        "count": 14
+      },
+      {
+        "token": "of",
+        "count": 13
+      },
+      {
+        "token": "am",
+        "count": 10
+      },
+      {
+        "token": "development",
+        "count": 7
+      },
+      {
+        "token": "as",
+        "count": 7
+      },
+      {
+        "token": "learning",
+        "count": 6
+      },
+      {
+        "token": "is",
+        "count": 6
+      },
+      {
+        "token": "also",
+        "count": 6
+      },
+      {
+        "token": "that",
+        "count": 5
+      },
+      {
+        "token": "for",
+        "count": 5
+      },
+      {
+        "token": "playing",
+        "count": 5
+      },
+      {
+        "token": "play",
+        "count": 5
+      },
+      {
+        "token": "interested",
+        "count": 5
+      },
+      {
+        "token": "enjoy",
+        "count": 5
+      },
+      {
+        "token": "hobbies",
+        "count": 4
+      },
+      {
+        "token": "at",
+        "count": 4
+      },
+      {
+        "token": "how",
+        "count": 4
+      },
+      {
+        "token": "love",
+        "count": 4
+      },
+      {
+        "token": "on",
+        "count": 4
+      },
+      {
+        "token": "main",
+        "count": 3
+      },
+      {
+        "token": "which",
+        "count": 3
+      },
+      {
+        "token": "do",
+        "count": 3
+      },
+      {
+        "token": "so",
+        "count": 3
+      },
+      {
+        "token": "me",
+        "count": 3
+      },
+      {
+        "token": "it",
+        "count": 3
+      },
+      {
+        "token": "can",
+        "count": 3
+      },
+      {
+        "token": "would",
+        "count": 3
+      },
+      {
+        "token": "into",
+        "count": 3
+      },
+      {
+        "token": "work",
+        "count": 3
+      },
+      {
+        "token": "with",
+        "count": 3
+      },
+      {
+        "token": "especially",
+        "count": 3
+      },
+      {
+        "token": "interest",
+        "count": 3
+      },
+      {
+        "token": "from",
+        "count": 3
+      },
+      {
+        "token": "making",
+        "count": 3
+      },
+      {
+        "token": "are",
+        "count": 3
+      },
+      {
+        "token": "good",
+        "count": 2
+      },
+      {
+        "token": "myself",
+        "count": 2
+      },
+      {
+        "token": "years",
+        "count": 2
+      },
+      {
+        "token": "learn",
+        "count": 2
+      },
+      {
+        "token": "want",
+        "count": 2
+      },
+      {
+        "token": "by",
+        "count": 2
+      },
+      {
+        "token": "there",
+        "count": 2
+      },
+      {
+        "token": "doing",
+        "count": 2
+      },
+      {
+        "token": "but",
+        "count": 2
+      },
+      {
+        "token": "since",
+        "count": 2
+      },
+      {
+        "token": "this",
+        "count": 2
+      },
+      {
+        "token": "why",
+        "count": 2
+      },
+      {
+        "token": "many",
+        "count": 2
+      },
+      {
+        "token": "you",
+        "count": 2
+      },
+      {
+        "token": "your",
+        "count": 2
+      },
+      {
+        "token": "very",
+        "count": 2
+      },
+      {
+        "token": "things",
+        "count": 2
+      },
+      {
+        "token": "be",
+        "count": 2
+      },
+      {
+        "token": "such",
+        "count": 2
+      },
+      {
+        "token": "have",
+        "count": 2
+      },
+      {
+        "token": "other",
+        "count": 2
+      },
+      {
+        "token": "did",
+        "count": 1
+      },
+      {
+        "token": "quite",
+        "count": 1
+      },
+      {
+        "token": "was",
+        "count": 1
+      },
+      {
+        "token": "an",
+        "count": 1
+      },
+      {
+        "token": "often",
+        "count": 1
+      },
+      {
+        "token": "new",
+        "count": 1
+      },
+      {
+        "token": "watching",
+        "count": 1
+      },
+      {
+        "token": "spare",
+        "count": 1
+      },
+      {
+        "token": "all",
+        "count": 1
+      },
+      {
+        "token": "over",
+        "count": 1
+      },
+      {
+        "token": "being",
+        "count": 1
+      },
+      {
+        "token": "one",
+        "count": 1
+      },
+      {
+        "token": "much",
+        "count": 1
+      },
+      {
+        "token": "while",
+        "count": 1
+      },
+      {
+        "token": "people",
+        "count": 1
+      },
+      {
+        "token": "friends",
+        "count": 1
+      },
+      {
+        "token": "get",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "not_in_rules",
+    "total_filtered": 271,
+    "top_words": [
+      {
+        "token": "data",
+        "count": 5
+      },
+      {
+        "token": "machine",
+        "count": 4
+      },
+      {
+        "token": "interests",
+        "count": 4
+      },
+      {
+        "token": "include",
+        "count": 3
+      },
+      {
+        "token": "build",
+        "count": 3
+      },
+      {
+        "token": "etc",
+        "count": 3
+      },
+      {
+        "token": "now",
+        "count": 3
+      },
+      {
+        "token": "rock",
+        "count": 3
+      },
+      {
+        "token": "storytelling",
+        "count": 3
+      },
+      {
+        "token": "some",
+        "count": 2
+      },
+      {
+        "token": "way",
+        "count": 2
+      },
+      {
+        "token": "ways",
+        "count": 2
+      },
+      {
+        "token": "end",
+        "count": 2
+      },
+      {
+        "token": "engineering",
+        "count": 2
+      },
+      {
+        "token": "visualization",
+        "count": 2
+      },
+      {
+        "token": "part",
+        "count": 2
+      },
+      {
+        "token": "animation",
+        "count": 2
+      },
+      {
+        "token": "creative",
+        "count": 2
+      },
+      {
+        "token": "volleyball",
+        "count": 2
+      },
+      {
+        "token": "cars",
+        "count": 2
+      },
+      {
+        "token": "nicaragua",
+        "count": 2
+      },
+      {
+        "token": "specifically",
+        "count": 2
+      },
+      {
+        "token": "mainly",
+        "count": 2
+      },
+      {
+        "token": "where",
+        "count": 2
+      },
+      {
+        "token": "own",
+        "count": 2
+      },
+      {
+        "token": "production",
+        "count": 2
+      },
+      {
+        "token": "creating",
+        "count": 2
+      },
+      {
+        "token": "students",
+        "count": 2
+      },
+      {
+        "token": "related",
+        "count": 2
+      },
+      {
+        "token": "generation",
+        "count": 2
+      },
+      {
+        "token": "including",
+        "count": 2
+      },
+      {
+        "token": "listening",
+        "count": 2
+      },
+      {
+        "token": "skills",
+        "count": 2
+      },
+      {
+        "token": "nerd",
+        "count": 2
+      },
+      {
+        "token": "accessibility",
+        "count": 2
+      },
+      {
+        "token": "expect",
+        "count": 1
+      },
+      {
+        "token": "contribute",
+        "count": 1
+      },
+      {
+        "token": "choice",
+        "count": 1
+      },
+      {
+        "token": "track",
+        "count": 1
+      },
+      {
+        "token": "shy",
+        "count": 1
+      },
+      {
+        "token": "social",
+        "count": 1
+      },
+      {
+        "token": "anxiety",
+        "count": 1
+      },
+      {
+        "token": "tends",
+        "count": 1
+      },
+      {
+        "token": "entire",
+        "count": 1
+      },
+      {
+        "token": "pandemic",
+        "count": 1
+      },
+      {
+        "token": "period",
+        "count": 1
+      },
+      {
+        "token": "change",
+        "count": 1
+      },
+      {
+        "token": "putting",
+        "count": 1
+      },
+      {
+        "token": "uncomfortable",
+        "count": 1
+      },
+      {
+        "token": "position",
+        "count": 1
+      },
+      {
+        "token": "two",
+        "count": 1
+      },
+      {
+        "token": "forced",
+        "count": 1
+      },
+      {
+        "token": "noob",
+        "count": 1
+      },
+      {
+        "token": "take",
+        "count": 1
+      },
+      {
+        "token": "another",
+        "count": 1
+      },
+      {
+        "token": "level",
+        "count": 1
+      },
+      {
+        "token": "graduate",
+        "count": 1
+      },
+      {
+        "token": "viable",
+        "count": 1
+      },
+      {
+        "token": "product",
+        "count": 1
+      },
+      {
+        "token": "graduation",
+        "count": 1
+      },
+      {
+        "token": "hello",
+        "count": 1
+      },
+      {
+        "token": "incorporate",
+        "count": 1
+      },
+      {
+        "token": "chemical",
+        "count": 1
+      },
+      {
+        "token": "hence",
+        "count": 1
+      },
+      {
+        "token": "majors",
+        "count": 1
+      },
+      {
+        "token": "synthesis",
+        "count": 1
+      },
+      {
+        "token": "optimization",
+        "count": 1
+      },
+      {
+        "token": "crochet",
+        "count": 1
+      },
+      {
+        "token": "knowledge",
+        "count": 1
+      },
+      {
+        "token": "front",
+        "count": 1
+      },
+      {
+        "token": "spending",
+        "count": 1
+      },
+      {
+        "token": "partner",
+        "count": 1
+      },
+      {
+        "token": "dog",
+        "count": 1
+      },
+      {
+        "token": "electronic",
+        "count": 1
+      },
+      {
+        "token": "theatre",
+        "count": 1
+      },
+      {
+        "token": "exercise",
+        "count": 1
+      },
+      {
+        "token": "activities",
+        "count": 1
+      },
+      {
+        "token": "artificial",
+        "count": 1
+      },
+      {
+        "token": "intelligence",
+        "count": 1
+      },
+      {
+        "token": "finance",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "noise",
+    "total_filtered": 36,
+    "top_words": [
+      {
+        "token": "time",
+        "count": 7
+      },
+      {
+        "token": "computer",
+        "count": 5
+      },
+      {
+        "token": "technology",
+        "count": 4
+      },
+      {
+        "token": "science",
+        "count": 4
+      },
+      {
+        "token": "lot",
+        "count": 3
+      },
+      {
+        "token": "kth",
+        "count": 2
+      },
+      {
+        "token": "study",
+        "count": 2
+      },
+      {
+        "token": "current",
+        "count": 2
+      },
+      {
+        "token": "graphics",
+        "count": 1
+      },
+      {
+        "token": "different",
+        "count": 1
+      },
+      {
+        "token": "student",
+        "count": 1
+      },
+      {
+        "token": "software",
+        "count": 1
+      },
+      {
+        "token": "goal",
+        "count": 1
+      },
+      {
+        "token": "currently",
+        "count": 1
+      },
+      {
+        "token": "visual",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "too_short",
+    "total_filtered": 19,
+    "top_words": [
+      {
+        "token": "m",
+        "count": 5
+      },
+      {
+        "token": "ai",
+        "count": 4
+      },
+      {
+        "token": "s",
+        "count": 2
+      },
+      {
+        "token": "24",
+        "count": 1
+      },
+      {
+        "token": "1",
+        "count": 1
+      },
+      {
+        "token": "ml",
+        "count": 1
+      },
+      {
+        "token": "ve",
+        "count": 1
+      },
+      {
+        "token": "up",
+        "count": 1
+      },
+      {
+        "token": "n",
+        "count": 1
+      },
+      {
+        "token": "j",
+        "count": 1
+      },
+      {
+        "token": "tv",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "country",
+    "total_filtered": 3,
+    "top_words": [
+      {
+        "token": "germany",
+        "count": 1
+      },
+      {
+        "token": "indian",
+        "count": 1
+      },
+      {
+        "token": "japanese",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "duplicate",
+    "total_filtered": 3,
+    "top_words": [
+      {
+        "token": "game",
+        "count": 1
+      },
+      {
+        "token": "music",
+        "count": 1
+      },
+      {
+        "token": "cooking",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "reason": "number",
+    "total_filtered": 1,
+    "top_words": [
+      {
+        "token": "2025",
+        "count": 1
+      }
+    ]
+  }
+]

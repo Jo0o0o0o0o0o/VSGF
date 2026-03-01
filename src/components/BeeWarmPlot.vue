@@ -6,7 +6,7 @@ import { createBeeswarmPlot } from "@/d3Viz/createBeewarmPlot";
 export type BeeswarmNode = d3.SimulationNodeDatum & {
   personId: number;
   personName: string;
-  trait: IvisRatingKey;
+  trait: string;
   value: number;
   x?: number;
   y?: number;
@@ -14,8 +14,9 @@ export type BeeswarmNode = d3.SimulationNodeDatum & {
 
 const props = defineProps<{
   records: IvisRecord[];
-  traits: readonly IvisRatingKey[];
+  traits: readonly string[];
   traitLabels: Record<string, string>;
+  traitGroups?: Record<string, readonly IvisRatingKey[]>;
   highlightId?: number | null;
 }>();
 
@@ -45,10 +46,22 @@ function setTipFromEvent(ev: PointerEvent) {
 const nodes = computed<BeeswarmNode[]>(() => {
   const traits = [...props.traits];
   const out: BeeswarmNode[] = [];
+  const traitGroups = props.traitGroups ?? {};
 
   for (const record of props.records) {
     for (const trait of traits) {
-      const value = record.ratings?.[trait];
+      const groupedTraits = traitGroups[trait];
+      let value: number | undefined;
+      if (groupedTraits && groupedTraits.length > 0) {
+        const values = groupedTraits
+          .map((key) => record.ratings?.[key])
+          .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+        if (values.length) {
+          value = values.reduce((sum, v) => sum + v, 0) / values.length;
+        }
+      } else {
+        value = (record.ratings as Record<string, number | undefined>)?.[trait];
+      }
       if (typeof value === "number" && Number.isFinite(value)) {
         out.push({
           personId: record.id,
@@ -121,10 +134,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="wrap" ref="wrapRef">
-    <div class="header">
-      <div class="title">Trait distribution (beeswarm)</div>
-    </div>
-
     <div class="chartArea" ref="chartAreaRef">
       <svg ref="svgRef"></svg>
 
@@ -148,17 +157,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.title {
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .chartArea {

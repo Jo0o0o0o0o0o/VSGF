@@ -4,6 +4,7 @@ const HOBBY_TAG_COLOR_MAP: Record<string, { bg: string; text: string; border: st
   tech_making: { bg: "#dcfce7", text: "#14532d", border: "#86efac" },
   food: { bg: "#fef3c7", text: "#78350f", border: "#fcd34d" },
   sports_outdoors: { bg: "#ffe4b5", text: "#7c2d12", border: "#fdba74" },
+  music: { bg: "#ede9fe", text: "#4c1d95", border: "#c4b5fd" },
   reading_writing: { bg: "#f3e8ff", text: "#581c87", border: "#d8b4fe" },
   languages_culture: { bg: "#cffafe", text: "#155e75", border: "#67e8f9" },
   travel: { bg: "#fde68a", text: "#78350f", border: "#fbbf24" },

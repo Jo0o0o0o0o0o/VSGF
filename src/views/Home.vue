@@ -101,6 +101,7 @@ const selectedGroupId = ref<number | null>(null);
 const selectedComparePersonId = ref<number | null>(null);
 const selectedBeeswarmPersonId = ref<number | null>(null);
 const compareDrawerOpen = ref(false);
+const beeswarmUseCategoryX = ref(false);
 function readStoredConfirmedGroupIds() {
   try {
     const raw = localStorage.getItem(GROUPING_CONFIRM_STORAGE_KEY);
@@ -224,9 +225,9 @@ function onSelectBeeswarmPerson(personId: number) {
   selectedBeeswarmPersonId.value = personId;
   selectedComparePersonId.value = personId;
   writeComparePersonId(personId);
+  compareDrawerOpen.value = true;
 }
 
-const beeswarmTraits = computed(() => [...IVIS_RATING_KEYS]);
 const beeswarmTraitLabels: Record<string, string> = {
   information_visualization: "Information Visualization",
   statistical: "Statistical",
@@ -241,6 +242,33 @@ const beeswarmTraitLabels: Record<string, string> = {
   collaboration: "Collaboration",
   code_repository: "Code Repository",
 };
+const beeswarmCategoryTraitGroups: Record<string, readonly (typeof IVIS_RATING_KEYS)[number][]> = {
+  build: [
+    "programming",
+    "code_repository",
+    "computer_graphics_programming",
+    "human_computer_interaction_programming",
+    "computer_usage",
+  ],
+  think_vis: ["statistical", "mathematics", "information_visualization"],
+  design: ["user_experience_evaluation", "drawing_and_artistic"],
+  team_collaboration: ["communication", "collaboration"],
+};
+const beeswarmCategoryLabels: Record<string, string> = {
+  build: "Build",
+  think_vis: "Think + Vis",
+  design: "Design",
+  team_collaboration: "Team Collaboration",
+};
+const beeswarmTraits = computed(() =>
+  beeswarmUseCategoryX.value ? Object.keys(beeswarmCategoryTraitGroups) : [...IVIS_RATING_KEYS],
+);
+const beeswarmTraitGroups = computed(() =>
+  beeswarmUseCategoryX.value ? beeswarmCategoryTraitGroups : undefined,
+);
+const beeswarmXAxisLabels = computed(() =>
+  beeswarmUseCategoryX.value ? beeswarmCategoryLabels : beeswarmTraitLabels,
+);
 
 onMounted(() => {
   storedGrouping.value = readStoredGrouping();
@@ -284,7 +312,7 @@ function closeCompareDrawer() {
       <div class="card right">
         <div class="title">Temperament traits</div>
         <div class="traitArea">
-          <TraitLineChart />
+          <TraitLineChart @selectPerson="onSelectBeeswarmPerson" />
         </div>
       </div>
     </section>
@@ -348,12 +376,33 @@ function closeCompareDrawer() {
     </section>
     <section id="beeswarm-section" ref="beeswarmSectionRef" class="beeswarmSection">
       <div class="card beeswarm">
-
+        <div class="beeswarmHeader">
+          <div class="title">Trait distribution (beeswarm)</div>
+          <div class="heatmapToggle" role="group" aria-label="toggle beeswarm x-axis mode">
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: !beeswarmUseCategoryX }"
+              type="button"
+              @click="beeswarmUseCategoryX = false"
+            >
+              Current
+            </button>
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: beeswarmUseCategoryX }"
+              type="button"
+              @click="beeswarmUseCategoryX = true"
+            >
+              4D Set
+            </button>
+          </div>
+        </div>
         <div class="plotArea beeswarmArea">
           <BeeswarmPlot
             :records="ivisRecords"
             :traits="beeswarmTraits"
-            :traitLabels="beeswarmTraitLabels"
+            :traitLabels="beeswarmXAxisLabels"
+            :traitGroups="beeswarmTraitGroups"
             :highlightId="selectedBeeswarmPersonId"
             
             @selectPerson="onSelectBeeswarmPerson"
@@ -432,6 +481,18 @@ function closeCompareDrawer() {
 }
 
 .heatmapHeader .title {
+  margin-bottom: 0;
+}
+
+.beeswarmHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.beeswarmHeader .title {
   margin-bottom: 0;
 }
 

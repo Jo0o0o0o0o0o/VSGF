@@ -31,6 +31,12 @@ const slotRadarColors = computed(() => {
   });
 });
 
+const slotsGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${Math.max(1, props.max)}, minmax(0, 1fr))`,
+}));
+
+const isSingleSlot = computed(() => props.max === 1);
+
 function toSoftBackground(color: string, alpha = 0.24) {
   if (/^#([\da-f]{3}|[\da-f]{6})$/i.test(color)) {
     const hex = color.slice(1);
@@ -98,7 +104,7 @@ function filteredList(currentIndex: number) {
 </script>
 
 <template>
-  <section class="topSlots" ref="root">
+  <section class="topSlots" :class="{ single: isSingleSlot }" :style="slotsGridStyle" ref="root">
     <div
       v-for="i in props.max"
       :key="i"
@@ -125,8 +131,9 @@ function filteredList(currentIndex: number) {
         role="button"
         tabindex="0"
       >
+        <button class="singleClearBtn" type="button" @click.stop="clear(i - 1)">x</button>
         <div class="picked-placeholder">
-          <span>{{ props.slots[i - 1]!.alias.slice(0, 1).toUpperCase() }}</span>
+          <span>{{ props.slots[i - 1]!.alias }}</span>
         </div>
       </div>
 
@@ -166,8 +173,9 @@ function filteredList(currentIndex: number) {
 <style scoped>
 .topSlots {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
+  min-width: 0;
 }
 
 .slot {
@@ -178,6 +186,7 @@ function filteredList(currentIndex: number) {
   gap: 12px;
   min-height: 160px;
   position: relative;
+  min-width: 0;
 }
 
 .slot.focused {
@@ -228,8 +237,10 @@ function filteredList(currentIndex: number) {
   color: #475569;
   display: grid;
   place-items: center;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
+  text-align: center;
+  padding: 0 8px;
 }
 
 .trigger {
@@ -255,11 +266,13 @@ function filteredList(currentIndex: number) {
 
 .dropdownWrap {
   position: relative;
+  min-width: 0;
 }
 
 .txt {
   opacity: 0.9;
   font-weight: 600;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -334,4 +347,69 @@ function filteredList(currentIndex: number) {
   padding: 12px;
   opacity: 0.7;
 }
+
+.topSlots.single .slot {
+  grid-template-columns: 1fr;
+  align-items: start;
+  row-gap: 10px;
+  min-height: 0;
+  padding: 12px;
+}
+
+.topSlots.single .visual {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1.15 / 1;
+  border-radius: 14px;
+}
+
+.topSlots.single .selectRow {
+  width: 100%;
+}
+
+.topSlots.single .dropdownWrap {
+  width: 100%;
+}
+
+.topSlots.single .trigger {
+  height: 42px;
+  border-radius: 12px;
+}
+
+@media (max-width: 760px) {
+  .topSlots.single .slot {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .topSlots.single .visual {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .topSlots.single .picked-placeholder {
+    font-size: 20px;
+  }
+
+  .topSlots.single .txt {
+    font-size: 12px;
+  }
+}
+
+.singleClearBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(55, 65, 81, 0.9);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
 </style>

@@ -144,7 +144,8 @@ const keywordScoringMode = ref<"rule" | "embedding" | "hybrid">("hybrid");
 const embeddingStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
 const embeddingScores = ref<Record<number, number>>({});
 const embeddingErrorMessage = ref("");
-const EMBEDDING_WEIGHT = 120;
+const EMBEDDING_SCORE_MAX = 20;
+const EMBEDDING_SCORE_GAMMA = 2.1;
 const studentEmbeddingById = new Map<number, number[]>(
   precomputedEmbeddings.embeddings.map((item) => [item.id, item.vector]) ?? []
 );
@@ -475,18 +476,37 @@ function computeKeywordScore(student: Student, keywordRaw: string) {
   return score;
 }
 
+function remapEmbeddingScore(raw: number, minRaw: number, maxRaw: number) {
+  if (raw <= 0) return 0;
+  if (maxRaw <= minRaw + 1e-9) return EMBEDDING_SCORE_MAX;
+  const normalized = Math.max(0, Math.min(1, (raw - minRaw) / (maxRaw - minRaw)));
+  const contrasted = normalized ** EMBEDDING_SCORE_GAMMA;
+  return contrasted * EMBEDDING_SCORE_MAX;
+}
+
 const keywordScoredAvailableStudents = computed(() => {
   const keyword = hobbyKeywordQuery.value.trim();
   if (!keyword) {
     return availableStudents.value.map((student) => ({ student, score: 0 }));
   }
 
+  const rawEmbeddingValues = availableStudents.value
+    .filter((student) => hasSearchableHobbyRaw(student))
+    .map((student) => embeddingScores.value[student.id] ?? 0)
+    .filter((score) => score > 0);
+  const minEmbeddingRaw = rawEmbeddingValues.length ? Math.min(...rawEmbeddingValues) : 0;
+  const maxEmbeddingRaw = rawEmbeddingValues.length ? Math.max(...rawEmbeddingValues) : 0;
+
   return availableStudents.value
     .map((student) => ({
       student,
       score: (() => {
         const ruleScore = computeKeywordScore(student, keyword);
-        const embeddingScore = (embeddingScores.value[student.id] ?? 0) * EMBEDDING_WEIGHT;
+        const embeddingScore = remapEmbeddingScore(
+          embeddingScores.value[student.id] ?? 0,
+          minEmbeddingRaw,
+          maxEmbeddingRaw
+        );
 
         if (keywordScoringMode.value === "rule") return ruleScore;
         if (keywordScoringMode.value === "embedding") {
