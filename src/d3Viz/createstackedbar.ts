@@ -1,5 +1,10 @@
 import * as d3 from "d3";
 import { RADAR_COLORS, type AxisItem, type RadarDog, type RadarKey } from "@/d3Viz/createRadarChart";
+import {
+  SKILL_CATEGORIES,
+  type SkillCategory,
+  type SkillCategoryKey,
+} from "@/types/skillCategory";
 
 export type StackedBarOptions = {
   width: number;
@@ -9,7 +14,7 @@ export type StackedBarOptions = {
 };
 
 export type StackedBarSegment = {
-  axisKey: RadarKey;
+  axisKey: SkillCategoryKey;
   axisLabel: string;
   dogIndex: number;
   dogName: string;
@@ -35,6 +40,17 @@ function colorAt(i: number) {
   return RADAR_COLORS[i % RADAR_COLORS.length] ?? "#f59e0b";
 }
 
+function categoryScore(
+  dog: RadarDog,
+  category: SkillCategory,
+  activeAxisKeys: Set<RadarKey>,
+) {
+  const activeDimensions = category.dimensions.filter((dimension) => activeAxisKeys.has(dimension));
+  const dimensions = activeDimensions.length ? activeDimensions : category.dimensions;
+  const sum = dimensions.reduce((acc, dimension) => acc + clampToRating(Number(dog[dimension])), 0);
+  return dimensions.length ? sum / dimensions.length : 0;
+}
+
 export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandlers = {}) {
   const svg = d3.select(svgEl);
   const root = svg.append("g").attr("class", "stacked-bar-root");
@@ -51,21 +67,25 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
     const innerH = Math.max(10, opt.height - margin.top - margin.bottom);
     root.attr("transform", `translate(${margin.left},${margin.top})`);
 
+    const categoryDomain = SKILL_CATEGORIES.map((category) => category.key);
+    const categoryByKey = new Map(SKILL_CATEGORIES.map((category) => [category.key, category]));
+    const activeAxisKeys = new Set<RadarKey>(opt.axes.map((a) => a.key));
+
     const x = d3
-      .scaleBand<RadarKey>()
-      .domain(opt.axes.map((a) => a.key))
+      .scaleBand<SkillCategoryKey>()
+      .domain(categoryDomain)
       .range([0, innerW])
       .paddingInner(0.18)
       .paddingOuter(0.08);
 
-    const totalsByAxis = opt.axes.map((axis) =>
-      dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0),
+    const totalsByAxis = SKILL_CATEGORIES.map((category) =>
+      dogs.reduce((sum, dog) => sum + categoryScore(dog, category, activeAxisKeys), 0),
     );
     const yMax = Math.max(1, d3.max(totalsByAxis) ?? 1);
     const y = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
 
     gx.attr("transform", `translate(0,${innerH})`).call(
-      d3.axisBottom(x).tickFormat((k) => opt.axes.find((a) => a.key === k)?.label ?? String(k)),
+      d3.axisBottom(x).tickFormat((key) => categoryByKey.get(key)?.label ?? String(key)),
     );
     gx.selectAll("path,line").attr("stroke", "#9ca3af");
     gx.selectAll("text")
@@ -81,16 +101,16 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
     gy.selectAll("text").attr("fill", "#374151").style("font-size", "10px");
 
     const segments: StackedBarSegment[] = [];
-    opt.axes.forEach((axis) => {
+    SKILL_CATEGORIES.forEach((category) => {
       let curr = 0;
       dogs.forEach((dog, dogIndex) => {
-        const value = clampToRating(Number(dog[axis.key]));
+        const value = categoryScore(dog, category, activeAxisKeys);
         const y0 = curr;
         const y1 = curr + value;
         curr = y1;
         segments.push({
-          axisKey: axis.key,
-          axisLabel: axis.label,
+          axisKey: category.key,
+          axisLabel: category.label,
           dogIndex,
           dogName: dog.name,
           value,
@@ -143,13 +163,13 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
         handlers.onClick?.(d.dogIndex, event as PointerEvent);
       });
 
-    const totalLabels = opt.axes.map((axis) => ({
-      axisKey: axis.key,
-      total: dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0),
+    const totalLabels = SKILL_CATEGORIES.map((category) => ({
+      axisKey: category.key,
+      total: dogs.reduce((sum, dog) => sum + categoryScore(dog, category, activeAxisKeys), 0),
     }));
 
     totals
-      .selectAll<SVGTextElement, { axisKey: RadarKey; total: number }>("text.total")
+      .selectAll<SVGTextElement, { axisKey: SkillCategoryKey; total: number }>("text.total")
       .data(totalLabels, (d) => d.axisKey)
       .join("text")
       .attr("class", "total")

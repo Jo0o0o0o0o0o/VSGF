@@ -8,6 +8,9 @@ const props = defineProps<{
   dogs: RadarDog[];
   axes: { key: RadarKey; label: string }[];
   focusIndex?: number | null;
+  min?: number;
+  max?: number;
+  levels?: number;
 }>();
 const emit = defineEmits<{
   (e: "toggleFocus", index: number): void;
@@ -111,9 +114,9 @@ function resizeAndDraw() {
   chart.update(props.dogs ?? [], {
     width: w,
     height: h,
-    min: 0,
-    max: 10,
-    levels: 10,
+    min: props.min ?? 0,
+    max: props.max ?? 10,
+    levels: props.levels ?? 10,
     axes: props.axes,
     focusIndex: props.focusIndex ?? null,
   });

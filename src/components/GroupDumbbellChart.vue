@@ -1,28 +1,29 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { RADAR_COLORS, type AxisItem, type RadarDog } from "@/d3Viz/createRadarChart";
+import { RADAR_COLORS } from "@/d3Viz/createRadarChart";
 import {
-  createStackedBar,
-  type StackedBarSegment,
-} from "@/d3Viz/createstackedbar";
+  createGroupDumbbellChart,
+  type GroupDumbbellDatum,
+} from "@/d3Viz/createGroupDumbbellChart";
 
 const props = defineProps<{
-  dogs: RadarDog[];
-  axes: AxisItem[];
+  data: GroupDumbbellDatum[];
+  groupNames: string[];
   focusIndex?: number | null;
 }>();
 
 const emit = defineEmits<{
   (e: "toggleFocus", index: number): void;
+  (e: "categoryClick", key: string): void;
 }>();
 
 const wrapRef = ref<HTMLDivElement | null>(null);
 const areaRef = ref<HTMLDivElement | null>(null);
 const svgRef = ref<SVGSVGElement | null>(null);
-const hovered = ref<StackedBarSegment | null>(null);
+const hovered = ref<GroupDumbbellDatum | null>(null);
 const tip = ref({ x: 0, y: 0, show: false });
 
-let chart: ReturnType<typeof createStackedBar> | null = null;
+let chart: ReturnType<typeof createGroupDumbbellChart> | null = null;
 let ro: ResizeObserver | null = null;
 
 function legendColor(idx: number) {
@@ -37,50 +38,43 @@ function setTipFromEvent(ev: PointerEvent) {
   tip.value.y = ev.clientY - rect.top + 12;
 }
 
-function formatScore(v: number) {
-  return Number.isFinite(v) ? v.toFixed(2).replace(/\.00$/, "") : "0";
-}
-
 function resizeAndDraw() {
   if (!chart || !areaRef.value) return;
   const rect = areaRef.value.getBoundingClientRect();
-  const width = Math.max(10, rect.width);
-  const height = Math.max(10, rect.height);
-  chart.update(props.dogs, {
-    width,
-    height,
-    axes: props.axes,
+  chart.update(props.data, {
+    width: Math.max(10, rect.width),
+    height: Math.max(10, rect.height),
     focusIndex: props.focusIndex ?? null,
   });
 }
 
 onMounted(() => {
-  chart = createStackedBar(svgRef.value!, {
-    onHover: (segment, ev) => {
-      hovered.value = segment;
+  chart = createGroupDumbbellChart(svgRef.value!, {
+    onHover: (d, ev) => {
+      hovered.value = d;
       tip.value.show = true;
       setTipFromEvent(ev);
     },
-    onMove: (segment, ev) => {
-      hovered.value = segment;
+    onMove: (d, ev) => {
+      hovered.value = d;
       setTipFromEvent(ev);
     },
     onLeave: () => {
       hovered.value = null;
       tip.value.show = false;
     },
-    onClick: (dogIndex) => emit("toggleFocus", dogIndex),
+    onClick: (groupIndex) => emit("toggleFocus", groupIndex),
+    onCategoryClick: (categoryKey) => emit("categoryClick", categoryKey),
   });
 
   resizeAndDraw();
-
   ro = new ResizeObserver(() => requestAnimationFrame(resizeAndDraw));
   if (areaRef.value) ro.observe(areaRef.value);
   window.addEventListener("resize", resizeAndDraw);
 });
 
 watch(
-  () => [props.dogs, props.axes, props.focusIndex],
+  () => [props.data, props.groupNames, props.focusIndex],
   async () => {
     await nextTick();
     requestAnimationFrame(resizeAndDraw);
@@ -105,15 +99,16 @@ onBeforeUnmount(() => {
         class="tooltip"
         :style="{ left: `${tip.x}px`, top: `${tip.y}px` }"
       >
-        <div class="title">{{ hovered.dogName }}</div>
-        <div>{{ hovered.axisLabel }}: {{ formatScore(hovered.value) }}</div>
-        <div>Total: {{ formatScore(hovered.total) }}</div>
+        <div class="title">{{ hovered.groupName }}</div>
+        <div>{{ hovered.categoryLabel }}</div>
+        <div>Min: {{ hovered.minValue.toFixed(2).replace(/\.00$/, "") }}</div>
+        <div>Max: {{ hovered.maxValue.toFixed(2).replace(/\.00$/, "") }}</div>
       </div>
 
-      <div class="legend" v-if="dogs.length">
+      <div class="legend" v-if="groupNames.length">
         <button
-          v-for="(d, idx) in dogs"
-          :key="d.name"
+          v-for="(groupName, idx) in groupNames"
+          :key="groupName"
           class="legendRow"
           :class="{
             dim:
@@ -125,7 +120,7 @@ onBeforeUnmount(() => {
           @click="emit('toggleFocus', idx)"
         >
           <span class="dot" :style="{ backgroundColor: legendColor(idx) }"></span>
-          <span class="label">{{ d.name }}</span>
+          <span class="label">{{ groupName }}</span>
         </button>
       </div>
     </div>

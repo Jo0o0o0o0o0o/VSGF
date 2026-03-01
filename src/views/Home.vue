@@ -4,7 +4,7 @@ import ivisRecordsJson from "@/data/IVIS23_final.json";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
-import CompareView from "@/views/Compare.vue";
+import CompareView from "@/views/ComparePerson.vue";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
@@ -220,7 +220,7 @@ function closeCompareDrawer() {
 
 <template>
   <div class="home">
-    <!-- 娑撳﹪娼版稉澶婃健閸楋紕澧栭敓?-->
+    <!-- 娑撳﹪娼版稉澶婃健閸楋紕澧栭�?-->
     <section class="top">
       <div class="card right">
         <div class="title">Temperament traits</div>
@@ -230,7 +230,7 @@ function closeCompareDrawer() {
       </div>
     </section>
 
-    <!-- 娑撳鏌熼敍姘亣 scatter + 閸欏厖鏅堕崚妤勩€?-->
+    <!-- 娑撳鏌熼敍姘�?scatter + 閸欏厖鏅堕崚妤勩�?-->
     <section class="bottom">
       <div class="card scatter">
         <div class="title">Groups overview</div>
@@ -584,7 +584,7 @@ function closeCompareDrawer() {
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
 }
 
-/* 闁鑵戞妯瑰瘨 */
+/* 闁鑵戞妯瑰�?*/
 .row.active {
   background: #ffdf5d;
 }

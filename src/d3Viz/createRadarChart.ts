@@ -14,6 +14,8 @@ export type RadarKey =
   | "collaboration"
   | "code_repository";
 
+export type AxisItem = { key: RadarKey; label: string };
+
 export const RADAR_AXES: AxisItem[] = [
   { key: "information_visualization", label: "Info Viz" },
   { key: "statistical", label: "Statistical" },
@@ -35,15 +37,13 @@ export type RadarDog = {
   [k in RadarKey]: number;
 };
 
-export type AxisItem = { key: RadarKey; label: string };
-
 export type RadarOptions = {
   width: number;
   height: number;
-  min?: number; // default 0
-  max?: number; // default 5
-  levels?: number; // default 5（画 1..5）
-  axes?:AxisItem [];
+  min?: number;
+  max?: number;
+  levels?: number;
+  axes?: AxisItem[];
   focusIndex?: number | null;
 };
 
@@ -64,11 +64,8 @@ export type RadarHandlers = {
   onClick?: (dogIndex: number, ev: PointerEvent) => void;
 };
 
-// 黄色主题色板：主色黄色 + 暖色系搭配
 const YELLOW_THEME = {
   primary: "#E6A800",
-  primaryLight: "rgba(230, 168, 0, 0.35)",
-  primarySubtle: "rgba(230, 168, 0, 0.18)",
   gridStroke: "rgba(198, 142, 0, 0.22)",
   spokeStroke: "rgba(198, 142, 0, 0.28)",
   tickFill: "rgba(92, 66, 16, 0.78)",
@@ -76,7 +73,6 @@ const YELLOW_THEME = {
   emptyText: "rgba(92, 66, 16, 0.55)",
 };
 
-// [ADDED] 统一颜色表：黄色为首，其余暖色/互补
 export const RADAR_COLORS: string[] = [
   YELLOW_THEME.primary,
   "#C75B39",
@@ -89,16 +85,12 @@ export const RADAR_COLORS: string[] = [
   ...d3.schemeTableau10.slice(6),
 ];
 
-
 export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers = {}) {
   const svg = d3.select(svgEl);
-
   const root = svg.append("g");
   const gridLayer = root.append("g");
   const axesLayer = root.append("g");
   const dataLayer = root.append("g");
-
-  let lastOpt: RadarOptions | null = null;
 
   function clamp(v: number, min: number, max: number) {
     if (!Number.isFinite(v)) return min;
@@ -113,15 +105,12 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
     gridLayer.selectAll("*").remove();
     axesLayer.selectAll("*").remove();
     dataLayer.selectAll("*").remove();
-    
-    lastOpt = opt;
 
     const width = Math.max(10, opt.width);
     const height = Math.max(10, opt.height);
     const minV = opt.min ?? 0;
     const maxV = opt.max ?? 5;
-    const levels = opt.levels ?? 5; // 画 1..levels
-
+    const levels = Math.max(1, Math.round(opt.levels ?? 5));
 
     svg
       .attr("viewBox", `0 0 ${width} ${height}`)
@@ -129,32 +118,30 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("width", "100%")
       .attr("height", "100%");
 
-    const AXES = opt.axes ?? RADAR_AXES;
-    if (!AXES || AXES.length < 3) {
-  axesLayer
-    .append("text")
-    .attr("text-anchor", "middle")
-    .attr("font-size", 12)
-    .attr("fill", YELLOW_THEME.emptyText)
-    .text("Select at least 3 dimensions");
-  return;
-}
+    const axes = opt.axes ?? RADAR_AXES;
+    if (!axes || axes.length < 3) {
+      axesLayer
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("font-size", 12)
+        .attr("fill", YELLOW_THEME.emptyText)
+        .text("Select at least 3 dimensions");
+      return;
+    }
 
-    const N = AXES.length;
-    // 容器中心
+    const count = axes.length;
     const outerPadding = 34;
     const axisLabelOffset = 18;
-    const r = Math.max(10, Math.min(width, height) / 2 - (outerPadding + axisLabelOffset));
+    const radius = Math.max(10, Math.min(width, height) / 2 - (outerPadding + axisLabelOffset));
     const cx = width / 2;
     const cy = height / 2;
 
     root.attr("transform", `translate(${cx},${cy})`);
 
-    const angle = (i: number) => (Math.PI * 2 * i) / N - Math.PI / 2; // 顶部开始
-    const scaleR = d3.scaleLinear().domain([minV, maxV]).range([0, r]);
-
-    // ===== 1) Grid：多边形分级网格（1..levels）
-    const levelVals = d3.range(1, levels + 1, 1);
+    const angle = (i: number) => (Math.PI * 2 * i) / count - Math.PI / 2;
+    const scaleR = d3.scaleLinear().domain([minV, maxV]).range([0, radius]);
+    const valueRange = Math.max(1e-6, maxV - minV);
+    const levelVals = d3.range(1, levels + 1, 1).map((step) => minV + (valueRange * step) / levels);
 
     gridLayer
       .selectAll("path.grid")
@@ -163,15 +150,17 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("class", "grid")
       .attr("d", (lv) => {
         const rr = scaleR(lv);
-        const pts = d3.range(N).map((i) => [Math.cos(angle(i)) * rr, Math.sin(angle(i)) * rr] as [number, number]);
+        const pts = d3
+          .range(count)
+          .map((i) => [Math.cos(angle(i)) * rr, Math.sin(angle(i)) * rr] as [number, number]);
         return polygonPath(pts);
       })
       .attr("fill", "none")
       .attr("stroke", YELLOW_THEME.gridStroke)
       .attr("stroke-width", 1.2);
 
-    // 分级文字（0..5），放在顶部轴线上
-    const tickVals = d3.range(minV, maxV + 1, 1);
+    const tickVals = [minV, ...levelVals];
+    const fmt = d3.format(".1f");
     axesLayer
       .selectAll("text.tick")
       .data(tickVals)
@@ -184,29 +173,31 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("font-size", 10)
       .attr("fill", YELLOW_THEME.tickFill)
       .attr("font-weight", 500)
-      .text((v) => String(v));
+      .text((v) => {
+        const rounded = Number(v.toFixed(2));
+        const isInt = Math.abs(rounded - Math.round(rounded)) < 1e-9;
+        return isInt ? String(Math.round(rounded)) : fmt(rounded);
+      });
 
-    // ===== 2) Spokes：放射轴线
     axesLayer
       .selectAll("line.spoke")
-      .data(d3.range(N))
+      .data(d3.range(count))
       .join("line")
       .attr("class", "spoke")
       .attr("x1", 0)
       .attr("y1", 0)
-      .attr("x2", (i) => Math.cos(angle(i)) * r)
-      .attr("y2", (i) => Math.sin(angle(i)) * r)
+      .attr("x2", (i) => Math.cos(angle(i)) * radius)
+      .attr("y2", (i) => Math.sin(angle(i)) * radius)
       .attr("stroke", YELLOW_THEME.spokeStroke)
       .attr("stroke-width", 1.2);
 
-    // 轴标签
     axesLayer
       .selectAll("text.axisLabel")
-      .data(AXES)
+      .data(axes)
       .join("text")
       .attr("class", "axisLabel")
-      .attr("x", (_d, i) => Math.cos(angle(i)) * (r + axisLabelOffset))
-      .attr("y", (_d, i) => Math.sin(angle(i)) * (r + axisLabelOffset))
+      .attr("x", (_d, i) => Math.cos(angle(i)) * (radius + axisLabelOffset))
+      .attr("y", (_d, i) => Math.sin(angle(i)) * (radius + axisLabelOffset))
       .attr("text-anchor", (_d, i) => {
         const c = Math.cos(angle(i));
         if (Math.abs(c) < 0.2) return "middle";
@@ -222,38 +213,30 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("fill", YELLOW_THEME.axisLabelFill)
       .text((d) => d.label);
 
-    // ===== 3) Data：多只狗 polygon 叠加
-    const colorAt = (i: number): string => {
-      const c = RADAR_COLORS[i % RADAR_COLORS.length];
-      return c ?? "#898989"; // 理论上不会触发，纯兜底
-    };
-
-    const keyOf = (d: RadarDog) => d.name;
+    const colorAt = (i: number) => RADAR_COLORS[i % RADAR_COLORS.length] ?? "#898989";
 
     const groups = dataLayer
       .selectAll<SVGGElement, RadarDog>("g.dog")
-      .data(dogs, keyOf)
+      .data(dogs, (d: RadarDog) => d.name)
       .join("g")
       .attr("class", "dog");
 
-    // polygon points
-    function pointsOf(d: RadarDog) {
-      const pts = AXES.map((a, i) => {
-        const v = clamp((d as any)[a.key], minV, maxV);
+    function pointsOf(dog: RadarDog) {
+      return axes.map((axis, i) => {
+        const v = clamp((dog as Record<RadarKey, number>)[axis.key], minV, maxV);
         const rr = scaleR(v);
         return [Math.cos(angle(i)) * rr, Math.sin(angle(i)) * rr] as [number, number];
       });
-      return pts;
     }
 
     function hoverDatumOf(dog: RadarDog, dogIndex: number): RadarHoverDatum {
       return {
         dogIndex,
         dogName: dog.name,
-        dimensions: AXES.map((axis) => ({
+        dimensions: axes.map((axis) => ({
           axisKey: axis.key,
           axisLabel: axis.label,
-          value: clamp((dog as any)[axis.key], minV, maxV),
+          value: clamp((dog as Record<RadarKey, number>)[axis.key], minV, maxV),
         })),
       };
     }
@@ -269,37 +252,23 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("stroke", (d) => colorAt(d.dogIndex))
       .attr("stroke-width", 2.2)
       .style("cursor", "pointer")
-      .on("pointerenter", (event, d) => {
-        handlers.onHover?.(hoverDatumOf(d.dog, d.dogIndex), event as PointerEvent);
-      })
-      .on("pointermove", (event, d) => {
-        handlers.onMove?.(hoverDatumOf(d.dog, d.dogIndex), event as PointerEvent);
-      })
-      .on("pointerleave", (event) => {
-        handlers.onLeave?.(event as PointerEvent);
-      })
-      .on("click", (event, d) => {
-        handlers.onClick?.(d.dogIndex, event as PointerEvent);
-      });
+      .on("pointerenter", (event, d) => handlers.onHover?.(hoverDatumOf(d.dog, d.dogIndex), event as PointerEvent))
+      .on("pointermove", (event, d) => handlers.onMove?.(hoverDatumOf(d.dog, d.dogIndex), event as PointerEvent))
+      .on("pointerleave", (event) => handlers.onLeave?.(event as PointerEvent))
+      .on("click", (event, d) => handlers.onClick?.(d.dogIndex, event as PointerEvent));
 
-    // 点（可选，但有助于“分级明确”）
     groups
       .selectAll("circle.pt")
       .data((dog, dogIndex) =>
-       AXES.map((axis, i) => {
-         const value = clamp((dog as any)[axis.key], minV, maxV);
-         const rr = scaleR(value);
-         return {
-           p: [Math.cos(angle(i)) * rr, Math.sin(angle(i)) * rr] as [number, number],
-           i,
-           dogIndex,
-           dogName: dog.name,
-           axisKey: axis.key,
-           axisLabel: axis.label,
-           value,
-         };
-       })
-       )
+        axes.map((axis, i) => {
+          const value = clamp((dog as Record<RadarKey, number>)[axis.key], minV, maxV);
+          const rr = scaleR(value);
+          return {
+            p: [Math.cos(angle(i)) * rr, Math.sin(angle(i)) * rr] as [number, number],
+            dogIndex,
+          };
+        }),
+      )
       .join("circle")
       .attr("class", "pt")
       .attr("cx", (d) => d.p[0])
@@ -310,42 +279,27 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("stroke-width", 0.8)
       .attr("opacity", 0.95)
       .style("cursor", "pointer")
-      .on("click", (event, d) => {
-        handlers.onClick?.(d.dogIndex, event as PointerEvent);
-      });
+      .on("click", (event, d) => handlers.onClick?.(d.dogIndex, event as PointerEvent));
 
     const focus = opt.focusIndex ?? null;
-const hasFocus = focus !== null && focus >= 0 && focus < dogs.length;
+    const hasFocus = focus !== null && focus >= 0 && focus < dogs.length;
 
-console.log("[RadarD3] focusIndex =", focus, "dogs =", dogs.length);
+    if (!hasFocus) {
+      groups.attr("opacity", 1);
+      groups.selectAll<SVGPathElement, { dog: RadarDog; dogIndex: number }>("path.area")
+        .attr("fill-opacity", 0.22)
+        .attr("stroke-opacity", 1);
+      groups.selectAll<SVGCircleElement, { dogIndex: number }>("circle.pt").attr("opacity", 0.95);
+      return;
+    }
 
-if (!hasFocus) {
-  // 正常态
-  groups.attr("opacity", 1);
-
-  groups.selectAll<SVGPathElement, { dog: RadarDog; dogIndex: number }>("path.area")
-    .attr("fill-opacity", 0.22)
-    .attr("stroke-opacity", 1);
-
-  groups.selectAll<SVGCircleElement, any>("circle.pt")
-    .attr("opacity", 0.95);
-} else {
-  // 让“非 focus”的组整体变淡（但不要淡到看不见）
-  groups.attr("opacity", (_d, gi) => (gi === focus ? 1 : 0.65));
-
-  // ✅ 重点：path.area 的 datum 里有 dogIndex
-  groups.selectAll<SVGPathElement, { dog: RadarDog; dogIndex: number }>("path.area")
-    .attr("fill-opacity", (d) => (d.dogIndex === focus ? 0.28 : 0.14))
-    .attr("stroke-opacity", (d) => (d.dogIndex === focus ? 1 : 0.6));
-
-  // ✅ 重点：circle.pt 的 datum 里也要带 dogIndex（你前面 data 已经这么做了）
-  groups.selectAll<SVGCircleElement, any>("circle.pt")
-    .attr("opacity", (d) => (d.dogIndex === focus ? 0.95 : 0.35));
-
-  // 置顶：这一步用 groups 的 index 才是对的
-  groups.filter((_d, gi) => gi === focus).raise();
-
-}
+    groups.attr("opacity", (_d, gi) => (gi === focus ? 1 : 0.65));
+    groups.selectAll<SVGPathElement, { dog: RadarDog; dogIndex: number }>("path.area")
+      .attr("fill-opacity", (d) => (d.dogIndex === focus ? 0.28 : 0.14))
+      .attr("stroke-opacity", (d) => (d.dogIndex === focus ? 1 : 0.6));
+    groups.selectAll<SVGCircleElement, { dogIndex: number }>("circle.pt")
+      .attr("opacity", (d) => (d.dogIndex === focus ? 0.95 : 0.35));
+    groups.filter((_d, gi) => gi === focus).raise();
   }
 
   function destroy() {

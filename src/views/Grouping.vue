@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
-import CompareView from "@/views/Compare.vue";
+import CompareView from "@/views/ComparePerson.vue";
 import studentsRaw from "../data/IVIS23_final.json";
 import type { IvisRecord } from "@/types/ivis23";
 import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
