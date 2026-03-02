@@ -68,18 +68,26 @@ function buildDefaultGrouping(totalStudents: number): StoredGrouping {
   };
 }
 
+function buildEmptyGrouping(): StoredGrouping {
+  return {
+    version: 2,
+    preferredGroupSize: 5,
+    groups: [],
+  };
+}
+
 function readStoredGrouping(): StoredGrouping {
   try {
     const raw = localStorage.getItem(GROUPING_STORAGE_KEY);
-    if (!raw) return buildDefaultGrouping(ivisRecords.length);
+    if (!raw) return buildEmptyGrouping();
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return buildDefaultGrouping(ivisRecords.length);
+    if (!parsed || typeof parsed !== "object") return buildEmptyGrouping();
     const maybeV2 = parsed as Partial<StoredGrouping>;
     const maybeV1 = parsed as Partial<LegacyStoredGrouping>;
     const isV2 = maybeV2.version === 2 && Array.isArray(maybeV2.groups);
     const isV1 = maybeV1.version === 1 && Array.isArray(maybeV1.groups);
     if (!isV2 && !isV1) {
-      return buildDefaultGrouping(ivisRecords.length);
+      return buildEmptyGrouping();
     }
     const rawGroups = (isV2 ? maybeV2.groups : maybeV1.groups) ?? [];
     return {
@@ -93,13 +101,13 @@ function readStoredGrouping(): StoredGrouping {
         })),
     };
   } catch {
-    return buildDefaultGrouping(ivisRecords.length);
+    return buildEmptyGrouping();
   }
 }
 
 const storedGrouping = ref<StoredGrouping>(buildDefaultGrouping(ivisRecords.length));
 const confirmedGroupIds = ref<number[]>([]);
-const heatmapGroupMode = ref<"all" | "confirmed">("all");
+const heatmapGroupMode = ref<"all" | "confirmed" | "people">("people");
 const selectedGroupId = ref<number | null>(null);
 const selectedComparePersonId = ref<number | null>(null);
 const selectedBeeswarmPersonId = ref<number | null>(null);
@@ -141,6 +149,10 @@ const groupedMembersById = computed(() => {
 });
 
 const heatmapRecords = computed<IvisRecord[]>(() => {
+  if (heatmapGroupMode.value === "people") {
+    return ivisRecords;
+  }
+
   const confirmedOnly = heatmapGroupMode.value === "confirmed";
   const confirmedSet = new Set(confirmedGroupIds.value);
   const grouped: IvisRecord[] = [];
@@ -191,11 +203,19 @@ const heatmapRecords = computed<IvisRecord[]>(() => {
 
 const selectedGroupMembers = computed<IvisRecord[]>(() => {
   if (selectedGroupId.value === null) return [];
+  if (heatmapGroupMode.value === "people") {
+    const person = ivisRecords.find((item) => item.id === selectedGroupId.value);
+    return person ? [person] : [];
+  }
   return groupedMembersById.value.get(selectedGroupId.value) ?? [];
 });
 
 const selectedGroupLabel = computed(() => {
-  if (selectedGroupId.value === null) return "Group";
+  if (selectedGroupId.value === null) return heatmapGroupMode.value === "people" ? "Person" : "Group";
+  if (heatmapGroupMode.value === "people") {
+    const person = ivisRecords.find((item) => item.id === selectedGroupId.value);
+    return person?.alias ?? `Person ${selectedGroupId.value}`;
+  }
   const group = heatmapRecords.value.find((item) => item.id === selectedGroupId.value);
   return group?.alias ?? `Group ${selectedGroupId.value}`;
 });
@@ -443,6 +463,14 @@ function onGlobalEsc(event: KeyboardEvent) {
             >
               Confirmed only
             </button>
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: heatmapGroupMode === 'people' }"
+              type="button"
+              @click="heatmapGroupMode = 'people'"
+            >
+              All people
+            </button>
           </div>
         </div>
 
@@ -458,7 +486,13 @@ function onGlobalEsc(event: KeyboardEvent) {
       <div class="card level-1 list">
         <div class="listHeader">
           <div class="title">{{ selectedGroupLabel }}</div>
-          <div class="subtitle">{{ selectedGroupMembers.length }} members</div>
+          <div class="subtitle">
+            {{
+              heatmapGroupMode === "people"
+                ? `${selectedGroupMembers.length} ${selectedGroupMembers.length === 1 ? "person" : "people"}`
+                : `${selectedGroupMembers.length} members`
+            }}
+          </div>
         </div>
 
         <div class="listBody">
@@ -476,7 +510,11 @@ function onGlobalEsc(event: KeyboardEvent) {
           </div>
 
           <div v-if="selectedGroupMembers.length === 0" class="empty">
-            Click a group row in the heatmap to see members.
+            {{
+              heatmapGroupMode === "people"
+                ? "Click a person row in the heatmap to see details."
+                : "Click a group row in the heatmap to see members."
+            }}
           </div>
         </div>
       </div>
