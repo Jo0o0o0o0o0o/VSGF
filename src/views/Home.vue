@@ -105,6 +105,7 @@ const selectedComparePersonId = ref<number | null>(null);
 const selectedBeeswarmPersonId = ref<number | null>(null);
 const compareDrawerOpen = ref(false);
 const beeswarmUseCategoryX = ref(false);
+const moveMenu = ref<{ studentId: number; alias: string; x: number; y: number } | null>(null);
 function readStoredConfirmedGroupIds() {
   try {
     const raw = localStorage.getItem(GROUPING_CONFIRM_STORAGE_KEY);
@@ -224,6 +225,89 @@ function onChooseGroupMember(memberId: number) {
   compareDrawerOpen.value = true;
 }
 
+function findMemberLocation(studentId: number) {
+  for (const group of storedGrouping.value.groups) {
+    const slotIndex = group.memberIds.findIndex((id) => id === studentId);
+    if (slotIndex >= 0) return { groupId: group.id, slotIndex };
+  }
+  return null;
+}
+
+function openMoveMenu(member: IvisRecord, ev: MouseEvent) {
+  ev.preventDefault();
+  const menuWidth = 240;
+  const menuHeight = 280;
+  const pad = 12;
+  const x = Math.min(ev.clientX + 8, window.innerWidth - menuWidth - pad);
+  const y = Math.min(ev.clientY + 8, window.innerHeight - menuHeight - pad);
+  moveMenu.value = {
+    studentId: member.id,
+    alias: member.alias,
+    x: Math.max(pad, x),
+    y: Math.max(pad, y),
+  };
+}
+
+function closeMoveMenu() {
+  moveMenu.value = null;
+}
+
+const moveMenuStyle = computed(() => {
+  if (!moveMenu.value) return {};
+  return {
+    left: `${moveMenu.value.x}px`,
+    top: `${moveMenu.value.y}px`,
+  };
+});
+
+const moveMenuTargets = computed(() => {
+  const studentId = moveMenu.value?.studentId;
+  return storedGrouping.value.groups.map((group) => {
+    const used = group.memberIds.filter((id) => typeof id === "number").length;
+    const emptySlotIndex = group.memberIds.findIndex((id) => id === null);
+    const isCurrent = typeof studentId === "number" && group.memberIds.includes(studentId);
+    const isFull = emptySlotIndex < 0;
+    const disabled = isCurrent || isFull;
+    const statusText = isCurrent ? "Current" : isFull ? "Full" : `${used}/${group.memberIds.length}`;
+    return { id: group.id, disabled, emptySlotIndex, statusText };
+  });
+});
+
+function moveMemberToGroup(targetGroupId: number) {
+  const menu = moveMenu.value;
+  if (!menu) return;
+
+  const source = findMemberLocation(menu.studentId);
+  if (!source) {
+    closeMoveMenu();
+    return;
+  }
+  if (source.groupId === targetGroupId) {
+    closeMoveMenu();
+    return;
+  }
+
+  const targetGroup = storedGrouping.value.groups.find((g) => g.id === targetGroupId);
+  if (!targetGroup) return;
+  const emptySlotIndex = targetGroup.memberIds.findIndex((id) => id === null);
+  if (emptySlotIndex < 0) return;
+
+  const sourceGroup = storedGrouping.value.groups.find((g) => g.id === source.groupId);
+  if (!sourceGroup) return;
+
+  sourceGroup.memberIds[source.slotIndex] = null;
+  targetGroup.memberIds[emptySlotIndex] = menu.studentId;
+
+  try {
+    localStorage.setItem(GROUPING_STORAGE_KEY, JSON.stringify(storedGrouping.value));
+    window.dispatchEvent(new Event(GROUPING_UPDATED_EVENT));
+  } catch {
+    // ignore storage failures
+  }
+
+  closeMoveMenu();
+}
+
 function onSelectBeeswarmPerson(personId: number) {
   selectedBeeswarmPersonId.value = personId;
   selectedComparePersonId.value = personId;
@@ -282,6 +366,8 @@ onMounted(() => {
   window.addEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
   window.addEventListener(GROUPING_CONFIRMED_EVENT, onGroupingStorageChanged);
   window.addEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
+  document.addEventListener("mousedown", onGlobalPointerDown);
+  document.addEventListener("keydown", onGlobalEsc);
 });
 
 onBeforeUnmount(() => {
@@ -289,6 +375,8 @@ onBeforeUnmount(() => {
   window.removeEventListener(GROUPING_UPDATED_EVENT, onGroupingStorageChanged);
   window.removeEventListener(GROUPING_CONFIRMED_EVENT, onGroupingStorageChanged);
   window.removeEventListener(COMPARE_PERSON_EVENT, onCompareSelectionChanged);
+  document.removeEventListener("mousedown", onGlobalPointerDown);
+  document.removeEventListener("keydown", onGlobalEsc);
 });
 
 function onGroupingStorageChanged() {
@@ -296,6 +384,7 @@ function onGroupingStorageChanged() {
   confirmedGroupIds.value = readStoredConfirmedGroupIds();
   selectedComparePersonId.value = readComparePersonId();
   selectedBeeswarmPersonId.value = selectedComparePersonId.value;
+  closeMoveMenu();
 }
 
 function onCompareSelectionChanged() {
@@ -305,6 +394,18 @@ function onCompareSelectionChanged() {
 
 function closeCompareDrawer() {
   compareDrawerOpen.value = false;
+}
+
+function onGlobalPointerDown(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (target?.closest(".globalMoveTip")) return;
+  closeMoveMenu();
+}
+
+function onGlobalEsc(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeMoveMenu();
+  }
 }
 </script>
 
@@ -367,7 +468,10 @@ function closeCompareDrawer() {
             class="row memberRow"
             @click="onChooseGroupMember(member.id)"
           >
-            <div class="name">{{ member.alias }}</div>
+            <div
+              class="name"
+              @contextmenu.prevent.stop="openMoveMenu(member, $event)"
+            >{{ member.alias }}</div>
             <div class="memberMeta">{{ member.hobby_area.join(", ") || "No hobby area" }}</div>
           </div>
 
@@ -425,6 +529,28 @@ function closeCompareDrawer() {
       </button>
       <CompareView />
     </aside>
+
+    <div
+      v-if="moveMenu"
+      class="globalMoveTip"
+      :style="moveMenuStyle"
+      @click.stop
+    >
+      <div class="globalMoveTitle">Move {{ moveMenu.alias }} to group</div>
+      <div class="globalMoveList">
+        <button
+          v-for="target in moveMenuTargets"
+          :key="target.id"
+          class="globalMoveItem"
+          :disabled="target.disabled"
+          type="button"
+          @click="moveMemberToGroup(target.id)"
+        >
+          <span>Move to Group {{ target.id }}</span>
+          <span class="globalMoveMeta">{{ target.statusText }}</span>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -828,6 +954,67 @@ function closeCompareDrawer() {
   display: grid;
   place-items: center;
   z-index: 3;
+}
+
+.globalMoveTip {
+  position: fixed;
+  width: 240px;
+  max-height: 320px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.globalMoveTitle {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.globalMoveList {
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.globalMoveItem {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.globalMoveItem:hover:not(:disabled) {
+  background: #e6eef7;
+}
+
+.globalMoveItem:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+
+.globalMoveMeta {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 

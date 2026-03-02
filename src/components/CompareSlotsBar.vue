@@ -4,6 +4,7 @@ import type { IvisRecord } from "@/types/ivis23";
 import { getActiveRecords } from "@/types/dataSource";
 import { fuzzyFilter } from "@/utils/fuzzySearch";
 import { RADAR_COLORS } from "@/d3Viz/createRadarChart";
+import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
 
 const props = defineProps<{
   slots: (IvisRecord | null)[];
@@ -74,6 +75,18 @@ function openFromPlus(i: number) {
   focusSearch();
 }
 
+function onPickedClick(i: number) {
+  emit("toggle-focus", i);
+  openIndex.value = i;
+  query.value = "";
+  focusSearch();
+}
+
+function onVisualContextMenu(i: number, event: MouseEvent) {
+  event.preventDefault();
+  openFromPlus(i);
+}
+
 function pick(i: number, person: IvisRecord) {
   emit("update-slot", i, person);
   openIndex.value = null;
@@ -119,7 +132,12 @@ function filteredList(currentIndex: number) {
         dim: props.focusIndex !== null && props.focusIndex !== undefined && props.focusIndex !== i - 1,
       }"
     >
-      <button v-if="!props.slots[i - 1]" class="visual addArea" @click="openFromPlus(i - 1)">
+      <button
+        v-if="!props.slots[i - 1]"
+        class="visual addArea"
+        @click="openFromPlus(i - 1)"
+        @contextmenu.stop.prevent="onVisualContextMenu(i - 1, $event)"
+      >
         <span class="plus">+</span>
         <span class="label">Add</span>
       </button>
@@ -127,13 +145,27 @@ function filteredList(currentIndex: number) {
       <div
         v-else
         class="visual picked"
-        @click.stop="emit('toggle-focus', i - 1)"
+        @click.stop="onPickedClick(i - 1)"
+        @contextmenu.stop.prevent="onVisualContextMenu(i - 1, $event)"
         role="button"
         tabindex="0"
       >
         <button class="singleClearBtn" type="button" @click.stop="clear(i - 1)">x</button>
         <div class="picked-placeholder">
-          <span>{{ props.slots[i - 1]!.alias }}</span>
+          <span class="pickedAlias">{{ props.slots[i - 1]!.alias }}</span>
+          <div class="pickedHobbyRow">
+            <span
+              v-for="hobby in props.slots[i - 1]!.hobby_area"
+              :key="`slot-${i - 1}-${props.slots[i - 1]!.id}-${hobby}`"
+              class="pickedHobbyChip"
+              :style="getHobbyTagStyle(hobby)"
+            >
+              {{ formatHobbyLabel(hobby) }}
+            </span>
+            <span v-if="props.slots[i - 1]!.hobby_area.length === 0" class="pickedHobbyChip pickedHobbyEmpty">
+              No hobby
+            </span>
+          </div>
         </div>
       </div>
 
@@ -235,12 +267,50 @@ function filteredList(currentIndex: number) {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   color: #475569;
-  display: grid;
-  place-items: center;
-  font-size: 22px;
-  font-weight: 700;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 0 8px;
+  padding: 10px 10px 56px;
+}
+
+.pickedAlias {
+  font-size: clamp(10px, 2.4vw, 30px);
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.pickedHobbyRow {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pickedHobbyChip {
+  min-height: 20px;
+  border-radius: 999px;
+  border: none;
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.pickedHobbyEmpty {
+  color: #666;
+  background: #ececec;
 }
 
 .trigger {

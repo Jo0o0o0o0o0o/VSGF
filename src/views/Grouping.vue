@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
@@ -115,6 +115,7 @@ const groups = ref<Group[]>(
 );
 
 const activeTip = ref<{ groupId: number; slotIndex: number } | null>(null);
+const moveMenu = ref<{ studentId: number; alias: string; x: number; y: number } | null>(null);
 const detailsGroupId = ref<number | null>(null);
 const detailsOpen = ref(false);
 const compareDrawerOpen = ref(false);
@@ -567,6 +568,7 @@ function toggleTip(groupId: number, slotIndex: number) {
   }
   slotSearchQuery.value[slotKey(groupId, slotIndex)] = "";
   activeTip.value = { groupId, slotIndex };
+  moveMenu.value = null;
 }
 
 function addMember(groupId: number, slotIndex: number, student: Student) {
@@ -575,12 +577,112 @@ function addMember(groupId: number, slotIndex: number, student: Student) {
   group.members[slotIndex] = student;
   slotSearchQuery.value[slotKey(groupId, slotIndex)] = "";
   activeTip.value = null;
+  moveMenu.value = null;
 }
 
 function removeMember(groupId: number, slotIndex: number) {
   const group = groups.value.find((item) => item.id === groupId);
   if (!group) return;
   group.members[slotIndex] = null;
+}
+
+function findStudentLocation(studentId: number) {
+  for (const group of groups.value) {
+    const slotIndex = group.members.findIndex((member) => member?.id === studentId);
+    if (slotIndex >= 0) return { groupId: group.id, slotIndex };
+  }
+  return null;
+}
+
+function openMoveMenu(student: Student, ev: MouseEvent) {
+  ev.preventDefault();
+  const menuWidth = 240;
+  const menuHeight = 280;
+  const pad = 12;
+  const x = Math.min(ev.clientX + 8, window.innerWidth - menuWidth - pad);
+  const y = Math.min(ev.clientY + 8, window.innerHeight - menuHeight - pad);
+  moveMenu.value = {
+    studentId: student.id,
+    alias: student.alias,
+    x: Math.max(pad, x),
+    y: Math.max(pad, y),
+  };
+  activeTip.value = null;
+}
+
+function closeMoveMenu() {
+  moveMenu.value = null;
+}
+
+const moveMenuStyle = computed(() => {
+  if (!moveMenu.value) return {};
+  return {
+    left: `${moveMenu.value.x}px`,
+    top: `${moveMenu.value.y}px`,
+  };
+});
+
+const moveMenuTargets = computed(() => {
+  const studentId = moveMenu.value?.studentId;
+  return groups.value.map((group) => {
+    const used = group.members.filter((member) => Boolean(member)).length;
+    const emptySlotIndex = group.members.findIndex((member) => member === null);
+    const isFull = emptySlotIndex < 0;
+    const isCurrent = typeof studentId === "number" && group.members.some((member) => member?.id === studentId);
+    const disabled = isFull || isCurrent;
+    const statusText = isCurrent ? "Current" : isFull ? "Full" : `${used}/${group.members.length}`;
+    return {
+      id: group.id,
+      emptySlotIndex,
+      disabled,
+      statusText,
+    };
+  });
+});
+
+function moveStudentToGroup(targetGroupId: number) {
+  const menu = moveMenu.value;
+  if (!menu) return;
+  const student = students.find((item) => item.id === menu.studentId);
+  if (!student) {
+    closeMoveMenu();
+    return;
+  }
+
+  const targetGroup = groups.value.find((group) => group.id === targetGroupId);
+  if (!targetGroup) {
+    closeMoveMenu();
+    return;
+  }
+
+  const currentLocation = findStudentLocation(student.id);
+  if (currentLocation?.groupId === targetGroupId) {
+    closeMoveMenu();
+    return;
+  }
+
+  const emptySlotIndex = targetGroup.members.findIndex((member) => member === null);
+  if (emptySlotIndex < 0) return;
+
+  if (currentLocation) {
+    const sourceGroup = groups.value.find((group) => group.id === currentLocation.groupId);
+    if (sourceGroup) sourceGroup.members[currentLocation.slotIndex] = null;
+  }
+
+  targetGroup.members[emptySlotIndex] = student;
+  closeMoveMenu();
+}
+
+function onGlobalPointerDown(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (target?.closest(".globalMoveTip")) return;
+  closeMoveMenu();
+}
+
+function onGlobalEsc(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeMoveMenu();
+  }
 }
 
 function onStudentDragStart(studentId: number, ev: DragEvent) {
@@ -920,6 +1022,13 @@ onMounted(() => {
   }
   persistCollapsedGrouping();
   persistGrouping();
+  document.addEventListener("mousedown", onGlobalPointerDown);
+  document.addEventListener("keydown", onGlobalEsc);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("mousedown", onGlobalPointerDown);
+  document.removeEventListener("keydown", onGlobalEsc);
 });
 
 watch(
@@ -1016,7 +1125,10 @@ watch(
           @dragend="onStudentDragEnd"
           @click="onUnassignedStudentClick(entry.student.id)"
         >
-          <span class="personAlias">{{ entry.student.alias }}</span>
+          <span
+            class="personAlias"
+            @contextmenu.prevent.stop="openMoveMenu(entry.student, $event)"
+          >{{ entry.student.alias }}</span>
           <span v-if="hobbyKeywordQuery.trim()" class="personScore">score {{ Math.round(entry.score) }}</span>
         </div>
         <div v-if="keywordScoredAvailableStudents.length === 0" class="unassignedEmpty">
@@ -1103,7 +1215,10 @@ watch(
             @click="member && openCompareDrawer(member.id)"
           >
             <div v-if="member" class="memberContent">
-              <span class="memberAlias">{{ member.alias }}</span>
+              <span
+                class="memberAlias"
+                @contextmenu.prevent.stop="openMoveMenu(member, $event)"
+              >{{ member.alias }}</span>
               <div class="memberHobbyRow">
                 <span
                   v-for="hobby in member.hobby_area"
@@ -1213,6 +1328,28 @@ watch(
       </button>
       <CompareView />
     </aside>
+
+    <div
+      v-if="moveMenu"
+      class="globalMoveTip"
+      :style="moveMenuStyle"
+      @click.stop
+    >
+      <div class="globalMoveTitle">Move {{ moveMenu.alias }} to group</div>
+      <div class="globalMoveList">
+        <button
+          v-for="target in moveMenuTargets"
+          :key="target.id"
+          class="globalMoveItem"
+          :disabled="target.disabled"
+          type="button"
+          @click="moveStudentToGroup(target.id)"
+        >
+          <span>Move to Group {{ target.id }}</span>
+          <span class="globalMoveMeta">{{ target.statusText }}</span>
+        </button>
+      </div>
+    </div>
   </main>
   
 </template>
@@ -1847,6 +1984,67 @@ watch(
   display: grid;
   place-items: center;
   z-index: 3;
+}
+
+.globalMoveTip {
+  position: fixed;
+  width: 240px;
+  max-height: 320px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.globalMoveTitle {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.globalMoveList {
+  padding: 6px;
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.globalMoveItem {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.globalMoveItem:hover:not(:disabled) {
+  background: #e6eef7;
+}
+
+.globalMoveItem:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.95;
+}
+
+.globalMoveMeta {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 @media (max-width: 920px) {
