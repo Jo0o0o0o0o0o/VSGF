@@ -561,6 +561,12 @@ function onGlobalEsc(event: KeyboardEvent) {
   gap: 18px;
 }
 
+.beeswarmSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .top {
   display: grid;
   grid-template-columns: 1fr;

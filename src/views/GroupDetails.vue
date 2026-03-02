@@ -6,15 +6,17 @@ import GroupDetailsHeatmap from "@/components/GroupDetailsHeatmap.vue";
 import StackBar from "@/components/stackbar.vue";
 import EmbeddingAreaBarChart from "@/components/EmbeddingAreaBarChart.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
+import ParallelSetsChart from "@/components/ParallelSetsChart.vue";
 import type { EmbeddingAreaDatum } from "@/d3Viz/createEmbeddingAreaBarChart";
 import {
   RADAR_AXES,
+  type AxisItem,
   type RadarDog,
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
-import type { IvisRecord } from "@/types/ivis23";
+import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { getActiveEmbeddings, makeYearStorageKey } from "@/types/dataSource";
 import { formatHobbyLabel } from "@/utils/hobbyTagColorMap";
 
@@ -33,13 +35,62 @@ const props = withDefaults(
 
 const MAX = 5;
 const allAxes = RADAR_AXES;
-const reducedDefaultKeys = new Set<RadarKey>([
-  "computer_graphics_programming",
-  "human_computer_interaction_programming",
-  "user_experience_evaluation",
-  "code_repository",
-]);
-const activeAxes = ref(allAxes.filter((a) => !reducedDefaultKeys.has(a.key)));
+const activeAxes = ref(allAxes);
+const heatmapUseCategoryX = ref(false);
+const heatmapCategoryAxes: AxisItem[] = [
+  {
+    key: "programming",
+    label: "Build",
+    hint: "Programming, Code Repository, CG Programming, HCI Programming, Computer Usage",
+  },
+  {
+    key: "information_visualization",
+    label: "Think + Vis",
+    hint: "Statistical, Mathematics, Information Visualization",
+  },
+  {
+    key: "drawing_and_artistic",
+    label: "Design",
+    hint: "UX Evaluation, Drawing/Art",
+  },
+  {
+    key: "communication",
+    label: "Team Collaboration",
+    hint: "Communication, Collaboration",
+  },
+];
+const HEATMAP_CATEGORY_KEYS = {
+  build: [
+    "programming",
+    "code_repository",
+    "computer_graphics_programming",
+    "human_computer_interaction_programming",
+    "computer_usage",
+  ] as const,
+  thinkVis: ["statistical", "mathematics", "information_visualization"] as const,
+  design: ["user_experience_evaluation", "drawing_and_artistic"] as const,
+  team: ["communication", "collaboration"] as const,
+};
+const parallelSetsSkillLabels: Record<string, string> = {
+  information_visualization: "Information Visualization",
+  statistical: "Statistical",
+  mathematics: "Mathematics",
+  drawing_and_artistic: "Drawing and Artistic",
+  computer_usage: "Computer Usage",
+  programming: "Programming",
+  computer_graphics_programming: "Computer Graphics Programming",
+  human_computer_interaction_programming: "HCI Programming",
+  user_experience_evaluation: "UX Evaluation",
+  communication: "Communication",
+  collaboration: "Collaboration",
+  code_repository: "Code Repository",
+};
+const parallelSetsCategorySkillLabels: Record<string, string> = {
+  programming: "Build",
+  information_visualization: "Think + Vis",
+  drawing_and_artistic: "Design",
+  communication: "Team Collaboration",
+};
 
 const focusIndex = ref<number | null>(null);
 const slots = ref<(IvisRecord | null)[]>(Array.from({ length: MAX }, () => null));
@@ -107,11 +158,15 @@ function setActiveAxes(v: { key: RadarKey; label: string }[]) {
   activeAxes.value = v;
 }
 
-const isBoundGroupMode = computed(() => props.groupMembers.length > 0);
+function buildSlotsFromMembers(members: IvisRecord[]) {
+  const next: (IvisRecord | null)[] = Array.from({ length: MAX }, () => null);
+  for (let i = 0; i < Math.min(MAX, members.length); i += 1) {
+    next[i] = members[i] ?? null;
+  }
+  return next;
+}
 
-const selectedPeople = computed(() =>
-  isBoundGroupMode.value ? props.groupMembers : (slots.value.filter(Boolean) as IvisRecord[]),
-);
+const selectedPeople = computed(() => slots.value.filter(Boolean) as IvisRecord[]);
 
 const selectedRadarPeople = computed<RadarDog[]>(() =>
   selectedPeople.value.map((p) => ({
@@ -131,8 +186,71 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
   })),
 );
 
+function averageRating(record: IvisRecord, keys: readonly RadarKey[]) {
+  if (!keys.length) return 0;
+  const total = keys.reduce((sum, key) => sum + Number(record.ratings[key] ?? 0), 0);
+  return Number((total / keys.length).toFixed(2));
+}
+
+const modeDogs = computed<RadarDog[]>(() => {
+  if (!heatmapUseCategoryX.value) return selectedRadarPeople.value;
+  return selectedPeople.value.map((p) => {
+    const base: RadarDog = {
+      name: p.alias,
+      information_visualization: p.ratings.information_visualization,
+      statistical: p.ratings.statistical,
+      mathematics: p.ratings.mathematics,
+      drawing_and_artistic: p.ratings.drawing_and_artistic,
+      computer_usage: p.ratings.computer_usage,
+      programming: p.ratings.programming,
+      computer_graphics_programming: p.ratings.computer_graphics_programming,
+      human_computer_interaction_programming: p.ratings.human_computer_interaction_programming,
+      user_experience_evaluation: p.ratings.user_experience_evaluation,
+      communication: p.ratings.communication,
+      collaboration: p.ratings.collaboration,
+      code_repository: p.ratings.code_repository,
+    };
+    base.programming = averageRating(p, HEATMAP_CATEGORY_KEYS.build);
+    base.information_visualization = averageRating(p, HEATMAP_CATEGORY_KEYS.thinkVis);
+    base.drawing_and_artistic = averageRating(p, HEATMAP_CATEGORY_KEYS.design);
+    base.communication = averageRating(p, HEATMAP_CATEGORY_KEYS.team);
+    return base;
+  });
+});
+
+const modeAxes = computed(() => (heatmapUseCategoryX.value ? heatmapCategoryAxes : activeAxes.value));
+const parallelSetsSkillKeys = computed(() =>
+  heatmapUseCategoryX.value
+    ? (["programming", "information_visualization", "drawing_and_artistic", "communication"] as const)
+    : IVIS_RATING_KEYS,
+);
+const parallelSetsAxisLabels = computed(() =>
+  heatmapUseCategoryX.value ? parallelSetsCategorySkillLabels : parallelSetsSkillLabels,
+);
+const parallelSetsRecords = computed<IvisRecord[]>(() => {
+  if (!heatmapUseCategoryX.value) return selectedPeople.value;
+  return selectedPeople.value.map((p) => ({
+    ...p,
+    ratings: {
+      ...p.ratings,
+      programming: averageRating(p, HEATMAP_CATEGORY_KEYS.build),
+      information_visualization: averageRating(p, HEATMAP_CATEGORY_KEYS.thinkVis),
+      drawing_and_artistic: averageRating(p, HEATMAP_CATEGORY_KEYS.design),
+      communication: averageRating(p, HEATMAP_CATEGORY_KEYS.team),
+    },
+  }));
+});
+
 const groupAreaChartMaxScore = computed(() =>
   Math.max(AREA_EMBED_SCORE_MAX_PER_PERSON, selectedPeople.value.length * AREA_EMBED_SCORE_MAX_PER_PERSON),
+);
+
+watch(
+  () => props.groupMembers.map((p) => p.id).join(","),
+  () => {
+    slots.value = buildSlotsFromMembers(props.groupMembers);
+  },
+  { immediate: true },
 );
 
 watch(
@@ -370,7 +488,6 @@ onBeforeUnmount(() => {
     <h2 class="detailsTitle">{{ panelTitle }}</h2>
 
     <CompareSlotsBar
-      v-if="!isBoundGroupMode"
       :slots="slots"
       :max="MAX"
       :focusIndex="focusIndex"
@@ -378,13 +495,43 @@ onBeforeUnmount(() => {
       @toggle-focus="toggleFocus"
     />
 
+    <section class="dimensionSection">
+      <div class="panel level-1 narrow">
+        <AxisSelector
+          :allAxes="allAxes"
+          :activeAxes="activeAxes"
+          @update:activeAxes="setActiveAxes"
+        />
+      </div>
+    </section>
+
     <section class="grid">
       <div class="panel level-1 big">
         <h3>Ratings Heatmap</h3>
+        <div class="heatmapToolbar">
+          <div class="heatmapToggle" role="group" aria-label="toggle heatmap dimension mode">
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: !heatmapUseCategoryX }"
+              type="button"
+              @click="heatmapUseCategoryX = false"
+            >
+              Details
+            </button>
+            <button
+              class="heatmapToggleBtn"
+              :class="{ active: heatmapUseCategoryX }"
+              type="button"
+              @click="heatmapUseCategoryX = true"
+            >
+              4D Set
+            </button>
+          </div>
+        </div>
         <div class="heatmapChartWrap">
           <GroupDetailsHeatmap
-            :dogs="selectedRadarPeople"
-            :axes="activeAxes"
+            :dogs="modeDogs"
+            :axes="modeAxes"
             :focusIndex="focusIndex"
             @toggleFocus="toggleFocus"
           />
@@ -393,8 +540,8 @@ onBeforeUnmount(() => {
         <h3>Ratings Stacked Bar</h3>
         <div class="stackBarWrap">
           <StackBar
-            :dogs="selectedRadarPeople"
-            :axes="activeAxes"
+            :dogs="modeDogs"
+            :axes="modeAxes"
             :focusIndex="focusIndex"
             @toggleFocus="toggleFocus"
           />
@@ -403,24 +550,26 @@ onBeforeUnmount(() => {
         <h3>Ratings Radar Compare</h3>
         <div class="radarChartWrap">
           <RadarChart
-            :dogs="selectedRadarPeople"
-            :axes="activeAxes"
+            :dogs="modeDogs"
+            :axes="modeAxes"
             :focusIndex="focusIndex"
             @toggleFocus="toggleFocus"
+          />
+        </div>
+
+        <h3>Parallel Sets: Person -> Skills</h3>
+        <div class="parallelSetsWrap">
+          <ParallelSetsChart
+            :records="parallelSetsRecords"
+            :skillKeys="parallelSetsSkillKeys"
+            :skillLabels="parallelSetsAxisLabels"
+            :topN="heatmapUseCategoryX ? null : 3"
           />
         </div>
       </div>
     </section>
 
     <section class="embeddingSection">
-      <div class="panel level-1 narrow">
-        <AxisSelector
-          :allAxes="allAxes"
-          :activeAxes="activeAxes"
-          @update:activeAxes="setActiveAxes"
-        />
-      </div>
-
       <div class="panel level-1 embeddingPanel">
         <h3>Hobby Area Embedding (Group Sum)</h3>
         <div class="embeddingAreaWrap">
@@ -477,6 +626,12 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
+.dimensionSection {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
 .panel {
   background: #f4f4f4;
   border-radius: 12px;
@@ -499,6 +654,16 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 
+.heatmapToolbar {
+  margin: 0 0 8px;
+}
+
+.heatmapToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .stackBarWrap {
   height: 280px;
   min-height: 240px;
@@ -508,6 +673,12 @@ onBeforeUnmount(() => {
 .radarChartWrap {
   height: 420px;
   min-height: 360px;
+  margin-bottom: 12px;
+}
+
+.parallelSetsWrap {
+  height: 560px;
+  min-height: 420px;
   margin-bottom: 12px;
 }
 

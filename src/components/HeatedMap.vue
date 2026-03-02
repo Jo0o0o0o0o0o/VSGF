@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { createHeatedMap, type HeatedCell } from "@/d3Viz/createHeatedMap";
 import type { IvisRatingKey, IvisRecord } from "@/types/ivis23";
 
@@ -17,6 +17,12 @@ const svgRef = ref<SVGSVGElement | null>(null);
 
 const hovered = ref<HeatedCell | null>(null);
 const tip = ref({ x: 0, y: 0, show: false });
+const tipTone = computed(() => {
+  if (!hovered.value) return "normal";
+  if (hovered.value.value < 5) return "low";
+  if (hovered.value.value > 5) return "high";
+  return "normal";
+});
 
 let chart: ReturnType<typeof createHeatedMap> | null = null;
 let ro: ResizeObserver | null = null;
@@ -89,6 +95,7 @@ onBeforeUnmount(() => {
       <div
         v-if="tip.show && hovered"
         class="tooltip"
+        :class="tipTone"
         :style="{ left: `${tip.x}px`, top: `${tip.y}px` }"
       >
         <div class="title">{{ hovered.rowLabel }}</div>
@@ -119,7 +126,7 @@ svg {
 .tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.92);
   color: #f8fafc;
   border-radius: 8px;
   padding: 8px 10px;
@@ -127,6 +134,16 @@ svg {
   line-height: 1.25;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   max-width: 280px;
+}
+
+.tooltip.low {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.tooltip.high {
+  background: #dcfce7;
+  color: #14532d;
 }
 
 .title {

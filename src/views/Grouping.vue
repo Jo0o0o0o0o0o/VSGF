@@ -201,6 +201,21 @@ function countWholeWordOccurrences(text: string, token: string) {
   return (text.match(regex) ?? []).length;
 }
 
+function formatSkillLabel(key: string) {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getTopSkillLabels(student: Student, count = 2) {
+  return Object.entries(student.ratings)
+    .map(([key, value]) => ({ key, value: Number(value) }))
+    .filter((item) => Number.isFinite(item.value))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, count)
+    .map((item) => formatSkillLabel(item.key));
+}
+
 function dot(a: number[], b: number[]) {
   const len = Math.min(a.length, b.length);
   let sum = 0;
@@ -421,6 +436,78 @@ const tokenAreaAffinity = (() => {
   return inferredAreasByToken;
 })();
 
+const hobbyAreaDisplayKeys = Array.from(
+  new Set(
+    hobbyAreaRules
+      .map((rule) => normalizeKeyword(rule.hobby_area))
+      .filter((area) => area && area !== "other"),
+  ),
+);
+const keywordsByArea = new Map<string, string[]>(
+  hobbyAreaRules.map((rule) => [normalizeKeyword(rule.hobby_area), rule.keywords ?? []]),
+);
+const memberTopHobbyAreasById = ref<Record<number, string[]>>({});
+
+function buildAreaEmbeddingQuery(areaKey: string) {
+  const areaLabel = formatHobbyLabel(areaKey);
+  const keywords = (keywordsByArea.get(areaKey) ?? []).slice(0, 14);
+  if (!keywords.length) return areaLabel;
+  return `${areaLabel} hobbies: ${keywords.join(", ")}`;
+}
+
+async function getTopEmbeddingHobbyAreas(member: Student) {
+  if (member.hobby_area.length <= 3) return member.hobby_area;
+  if (!precomputedEmbeddingsCompatible.value) return member.hobby_area.slice(0, 3);
+
+  const studentVec = studentEmbeddingById.value.get(member.id);
+  if (!studentVec?.length) return member.hobby_area.slice(0, 3);
+
+  const scored = await Promise.all(
+    hobbyAreaDisplayKeys.map(async (areaKey) => {
+      const queryVec = await ensureQueryEmbedding(buildAreaEmbeddingQuery(areaKey));
+      const score = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
+      return { areaKey, score };
+    }),
+  );
+
+  const top = scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((row) => row.areaKey);
+  return top.length ? top : member.hobby_area.slice(0, 3);
+}
+
+async function refreshMemberTopHobbyAreas() {
+  const members = groups.value
+    .flatMap((group) => group.members)
+    .filter((member): member is Student => Boolean(member));
+  if (!members.length) {
+    memberTopHobbyAreasById.value = {};
+    return;
+  }
+
+  const uniqueById = new Map<number, Student>();
+  members.forEach((member) => uniqueById.set(member.id, member));
+  const uniqueMembers = Array.from(uniqueById.values());
+
+  const next: Record<number, string[]> = {};
+  await Promise.all(
+    uniqueMembers.map(async (member) => {
+      try {
+        next[member.id] = await getTopEmbeddingHobbyAreas(member);
+      } catch {
+        next[member.id] = member.hobby_area.length <= 3 ? member.hobby_area : member.hobby_area.slice(0, 3);
+      }
+    }),
+  );
+  memberTopHobbyAreasById.value = next;
+}
+
+function displayedHobbyAreas(member: Student) {
+  if (member.hobby_area.length <= 3) return member.hobby_area;
+  return memberTopHobbyAreasById.value[member.id] ?? member.hobby_area.slice(0, 3);
+}
+
 function inferQueryAreas(tokens: string[]) {
   const targetAreas = new Set<string>();
   for (const token of tokens) {
@@ -545,6 +632,23 @@ const keywordScoredAvailableStudents = computed(() => {
 watch([hobbyKeywordQuery, keywordScoringMode], () => {
   updateEmbeddingScores();
 });
+
+watch(
+  () => groups.value.map((group) => group.members.map((member) => member?.id ?? "x").join(",")).join("|"),
+  () => {
+    refreshMemberTopHobbyAreas();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => embeddingStatus.value,
+  (status) => {
+    if (status === "ready") {
+      refreshMemberTopHobbyAreas();
+    }
+  },
+);
 
 function slotKey(groupId: number, slotIndex: number) {
   return `${groupId}-${slotIndex}`;
@@ -773,15 +877,20 @@ const selectedGroupMembers = computed<IvisRecord[]>(() =>
 const groupHobbiesMap = computed(() => {
   const byGroupId = new Map<number, string[]>();
   groups.value.forEach((group) => {
-    const hobbies = new Set<string>();
+    const hobbyCount = new Map<string, number>();
     group.members.forEach((member) => {
       if (!member) return;
       member.hobby_area.forEach((hobby) => {
         const key = hobby.trim().toLowerCase();
-        if (key) hobbies.add(key);
+        if (!key) return;
+        hobbyCount.set(key, (hobbyCount.get(key) ?? 0) + 1);
       });
     });
-    byGroupId.set(group.id, Array.from(hobbies).sort((a, b) => a.localeCompare(b)));
+    const shared = Array.from(hobbyCount.entries())
+      .filter(([, count]) => count > 2)
+      .map(([hobby]) => hobby)
+      .sort((a, b) => a.localeCompare(b));
+    byGroupId.set(group.id, shared);
   });
   return byGroupId;
 });
@@ -1130,6 +1239,23 @@ watch(
             @contextmenu.prevent.stop="openMoveMenu(entry.student, $event)"
           >{{ entry.student.alias }}</span>
           <span v-if="hobbyKeywordQuery.trim()" class="personScore">score {{ Math.round(entry.score) }}</span>
+          <div v-if="getTopSkillLabels(entry.student, 1).length > 0" class="personTopSkills" aria-hidden="true">
+            <span
+              v-for="skill in getTopSkillLabels(entry.student, 1)"
+              :key="`skill-${entry.student.id}-${skill}`"
+              class="personTopSkill"
+            >
+              {{ skill }}
+            </span>
+          </div>
+          <div v-if="displayedHobbyAreas(entry.student).length > 0" class="personHobbyDots" aria-hidden="true">
+            <span
+              v-for="hobby in displayedHobbyAreas(entry.student)"
+              :key="`dot-${entry.student.id}-${hobby}`"
+              class="personHobbyDot"
+              :style="{ backgroundColor: String(getHobbyTagStyle(hobby).backgroundColor ?? '#e5e7eb') }"
+            ></span>
+          </div>
         </div>
         <div v-if="keywordScoredAvailableStudents.length === 0" class="unassignedEmpty">
           {{ availableStudents.length === 0 ? "All people are grouped." : "No people match this keyword." }}
@@ -1221,14 +1347,14 @@ watch(
               >{{ member.alias }}</span>
               <div class="memberHobbyRow">
                 <span
-                  v-for="hobby in member.hobby_area"
+                  v-for="hobby in displayedHobbyAreas(member)"
                   :key="`member-${member.id}-${hobby}`"
                   class="memberHobbyChip"
                   :style="getHobbyTagStyle(hobby)"
                 >
                   {{ formatHobbyLabel(hobby) }}
                 </span>
-                <span v-if="member.hobby_area.length === 0" class="memberHobbyChip memberHobbyEmpty">
+                <span v-if="displayedHobbyAreas(member).length === 0" class="memberHobbyChip memberHobbyEmpty">
                   No hobby
                 </span>
               </div>
@@ -1311,7 +1437,7 @@ watch(
 
       <GroupDetails
         v-if="selectedGroup"
-        compact
+        :key="selectedGroup.id"
         :panelTitle="`Group ${selectedGroup.id} Details`"
         :groupMembers="selectedGroupMembers"
       />
@@ -1509,6 +1635,7 @@ watch(
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 8px;
+  position: relative;
   width: 92px;
   aspect-ratio: 1 / 1;
   display: grid;
@@ -1540,6 +1667,44 @@ watch(
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
+}
+
+.personHobbyDots {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.personHobbyDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.personTopSkills {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 34px);
+}
+
+.personTopSkill {
+  min-height: 12px;
+  border-radius: 999px;
+  padding: 1px 4px;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  color: #334155;
+  background: #eef3f8;
+  white-space: nowrap;
 }
 
 .personBlock.dragging {

@@ -14,7 +14,7 @@ export type RadarKey =
   | "collaboration"
   | "code_repository";
 
-export type AxisItem = { key: RadarKey; label: string };
+export type AxisItem = { key: RadarKey; label: string; hint?: string };
 
 export const RADAR_AXES: AxisItem[] = [
   { key: "information_visualization", label: "Info Viz" },

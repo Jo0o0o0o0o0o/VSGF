@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   createGroupDetailsHeatmap,
   type GroupDetailsHeatCell,
@@ -21,6 +21,12 @@ const areaRef = ref<HTMLDivElement | null>(null);
 const svgRef = ref<SVGSVGElement | null>(null);
 const hovered = ref<GroupDetailsHeatCell | null>(null);
 const tip = ref({ x: 0, y: 0, show: false });
+const tipTone = computed(() => {
+  if (!hovered.value) return "normal";
+  if (hovered.value.value < 5) return "low";
+  if (hovered.value.value > 5) return "high";
+  return "normal";
+});
 
 let chart: ReturnType<typeof createGroupDetailsHeatmap> | null = null;
 let ro: ResizeObserver | null = null;
@@ -95,6 +101,7 @@ onBeforeUnmount(() => {
       <div
         v-if="tip.show && hovered"
         class="tooltip"
+        :class="tipTone"
         :style="{ left: `${tip.x}px`, top: `${tip.y}px` }"
       >
         <div class="title">{{ hovered.rowLabel }}</div>
@@ -133,6 +140,16 @@ svg {
   line-height: 1.25;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   max-width: 280px;
+}
+
+.tooltip.low {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.tooltip.high {
+  background: #dcfce7;
+  color: #14532d;
 }
 
 .title {

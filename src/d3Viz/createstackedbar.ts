@@ -1,10 +1,5 @@
 import * as d3 from "d3";
 import { RADAR_COLORS, type AxisItem, type RadarDog, type RadarKey } from "@/d3Viz/createRadarChart";
-import {
-  SKILL_CATEGORIES,
-  type SkillCategory,
-  type SkillCategoryKey,
-} from "@/types/skillCategory";
 
 export type StackedBarOptions = {
   width: number;
@@ -14,7 +9,7 @@ export type StackedBarOptions = {
 };
 
 export type StackedBarSegment = {
-  axisKey: SkillCategoryKey;
+  axisKey: RadarKey;
   axisLabel: string;
   dogIndex: number;
   dogName: string;
@@ -40,17 +35,6 @@ function colorAt(i: number) {
   return RADAR_COLORS[i % RADAR_COLORS.length] ?? "#f59e0b";
 }
 
-function categoryScore(
-  dog: RadarDog,
-  category: SkillCategory,
-  activeAxisKeys: Set<RadarKey>,
-) {
-  const activeDimensions = category.dimensions.filter((dimension) => activeAxisKeys.has(dimension));
-  const dimensions = activeDimensions.length ? activeDimensions : category.dimensions;
-  const sum = dimensions.reduce((acc, dimension) => acc + clampToRating(Number(dog[dimension])), 0);
-  return dimensions.length ? sum / dimensions.length : 0;
-}
-
 export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandlers = {}) {
   const svg = d3.select(svgEl);
   const root = svg.append("g").attr("class", "stacked-bar-root");
@@ -62,55 +46,61 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
   function update(dogs: RadarDog[], opt: StackedBarOptions) {
     svg.attr("viewBox", `0 0 ${opt.width} ${opt.height}`).attr("preserveAspectRatio", "none");
 
-    const margin = { top: 14, right: 14, bottom: 94, left: 52 };
+    // Reserve space for the top-right legend so bars are never covered by it.
+    const margin = { top: 14, right: 170, bottom: 94, left: 52 };
     const innerW = Math.max(10, opt.width - margin.left - margin.right);
     const innerH = Math.max(10, opt.height - margin.top - margin.bottom);
     root.attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const categoryDomain = SKILL_CATEGORIES.map((category) => category.key);
-    const categoryByKey = new Map(SKILL_CATEGORIES.map((category) => [category.key, category]));
-    const activeAxisKeys = new Set<RadarKey>(opt.axes.map((a) => a.key));
+    const axisDomain = opt.axes.map((axis) => axis.key);
+    const axisByKey = new Map(opt.axes.map((axis) => [axis.key, axis] as const));
 
     const x = d3
-      .scaleBand<SkillCategoryKey>()
-      .domain(categoryDomain)
+      .scaleBand<RadarKey>()
+      .domain(axisDomain)
       .range([0, innerW])
       .paddingInner(0.18)
       .paddingOuter(0.08);
 
-    const totalsByAxis = SKILL_CATEGORIES.map((category) =>
-      dogs.reduce((sum, dog) => sum + categoryScore(dog, category, activeAxisKeys), 0),
+    const totalsByAxis = opt.axes.map((axis) =>
+      dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0),
     );
     const yMax = Math.max(1, d3.max(totalsByAxis) ?? 1);
     const y = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
 
     gx.attr("transform", `translate(0,${innerH})`).call(
-      d3.axisBottom(x).tickFormat((key) => categoryByKey.get(key)?.label ?? String(key)),
+      d3.axisBottom(x).tickFormat((key) => axisByKey.get(key)?.label ?? String(key)),
     );
     gx.selectAll("path,line").attr("stroke", "#9ca3af");
-    gx.selectAll("text")
+    const xTickText = gx
+      .selectAll<SVGTextElement, RadarKey>("text")
       .attr("fill", "#374151")
       .style("font-size", "10px")
       .attr("text-anchor", "end")
       .attr("transform", "rotate(-30)")
       .attr("dx", "-0.45em")
       .attr("dy", "0.2em");
+    xTickText.selectAll("title").remove();
+    xTickText
+      .filter((key) => Boolean(axisByKey.get(key)?.hint))
+      .append("title")
+      .text((key) => axisByKey.get(key)?.hint ?? "");
 
     gy.call(d3.axisLeft(y).ticks(5).tickSizeOuter(0));
     gy.selectAll("path,line").attr("stroke", "#9ca3af");
     gy.selectAll("text").attr("fill", "#374151").style("font-size", "10px");
 
     const segments: StackedBarSegment[] = [];
-    SKILL_CATEGORIES.forEach((category) => {
+    opt.axes.forEach((axis) => {
       let curr = 0;
       dogs.forEach((dog, dogIndex) => {
-        const value = categoryScore(dog, category, activeAxisKeys);
+        const value = clampToRating(Number(dog[axis.key]));
         const y0 = curr;
         const y1 = curr + value;
         curr = y1;
         segments.push({
-          axisKey: category.key,
-          axisLabel: category.label,
+          axisKey: axis.key,
+          axisLabel: axis.label,
           dogIndex,
           dogName: dog.name,
           value,
@@ -163,13 +153,13 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
         handlers.onClick?.(d.dogIndex, event as PointerEvent);
       });
 
-    const totalLabels = SKILL_CATEGORIES.map((category) => ({
-      axisKey: category.key,
-      total: dogs.reduce((sum, dog) => sum + categoryScore(dog, category, activeAxisKeys), 0),
+    const totalLabels = opt.axes.map((axis) => ({
+      axisKey: axis.key,
+      total: dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0),
     }));
 
     totals
-      .selectAll<SVGTextElement, { axisKey: SkillCategoryKey; total: number }>("text.total")
+      .selectAll<SVGTextElement, { axisKey: RadarKey; total: number }>("text.total")
       .data(totalLabels, (d) => d.axisKey)
       .join("text")
       .attr("class", "total")

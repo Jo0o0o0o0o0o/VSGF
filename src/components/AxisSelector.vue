@@ -82,10 +82,10 @@ function addAxis(key: RadarKey) {
 .axisPanel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   margin-top: 4px;
-  min-height: 360px;
+  min-height: 0;
 }
 
 .sectionTitle {
@@ -124,8 +124,9 @@ function addAxis(key: RadarKey) {
 }
 
 .activeChip {
-  background: #fff8e1;
-  border-color: rgba(234, 179, 8, 0.55);
+  background: #dbe8f5;
+  border-color: rgba(77, 134, 191, 0.55);
+  color: #1f3f5f;
 }
 
 .activeChip.disabled {
@@ -139,8 +140,8 @@ function addAxis(key: RadarKey) {
 }
 
 .reducedChip:hover {
-  border-color: rgba(234, 179, 8, 0.7);
-  background: #fffdf3;
+  border-color: rgba(77, 134, 191, 0.7);
+  background: #eef4fa;
 }
 
 .chip .x,
@@ -154,9 +155,9 @@ function addAxis(key: RadarKey) {
   width: 100%;
   background: linear-gradient(
     90deg,
-    rgba(234, 179, 8, 0.2) 0%,
-    rgba(234, 179, 8, 0.95) 50%,
-    rgba(234, 179, 8, 0.2) 100%
+    rgba(77, 134, 191, 0.2) 0%,
+    rgba(77, 134, 191, 0.95) 50%,
+    rgba(77, 134, 191, 0.2) 100%
   );
   border-radius: 999px;
 }

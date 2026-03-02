@@ -33,8 +33,19 @@ function setTipFromEvent(ev: PointerEvent) {
   const host = wrapRef.value;
   if (!host) return;
   const rect = host.getBoundingClientRect();
-  tip.value.x = ev.clientX - rect.left + 12;
-  tip.value.y = ev.clientY - rect.top + 12;
+  const offset = 12;
+  const tipW = 210;
+  const tipH = 86;
+  let nextX = ev.clientX - rect.left + offset;
+  let nextY = ev.clientY - rect.top + offset;
+  if (nextX + tipW > rect.width - 8) {
+    nextX = ev.clientX - rect.left - tipW - offset;
+  }
+  if (nextY + tipH > rect.height - 8) {
+    nextY = ev.clientY - rect.top - tipH - offset;
+  }
+  tip.value.x = Math.max(8, nextX);
+  tip.value.y = Math.max(8, nextY);
 }
 
 function formatScore(v: number) {

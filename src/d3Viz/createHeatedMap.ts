@@ -87,6 +87,18 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
     gy.select("path").attr("stroke", "#94a3b8");
     gy.selectAll("text").attr("fill", "#334155").style("font-size", "10px");
 
+    function isLowAverageCell(cell: HeatedCell) {
+      return cell.rowId === -1 && Number.isFinite(cell.value) && cell.value < 5;
+    }
+
+    function baseStroke(cell: HeatedCell) {
+      return isLowAverageCell(cell) ? "#ef4444" : "rgba(255,255,255,0.7)";
+    }
+
+    function baseDash(cell: HeatedCell) {
+      return isLowAverageCell(cell) ? "3,2" : null;
+    }
+
     const rects = grid
       .selectAll<SVGRectElement, HeatedCell>("rect.cell")
       .data(cells, (d) => `${d.rowLabel}__${d.ratingKey}`);
@@ -102,16 +114,23 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
       .attr("height", Math.max(1, y.bandwidth()))
       .attr("rx", 2)
       .attr("fill", (d) => (Number.isFinite(d.value) ? color(d.value) : "#e2e8f0"))
-      .attr("stroke", "rgba(255,255,255,0.7)")
+      .attr("stroke", (d) => baseStroke(d))
+      .attr("stroke-dasharray", (d) => baseDash(d))
       .on("pointerenter", function (event, d) {
-        d3.select(this).attr("stroke", "#0f172a").attr("stroke-width", 1.2);
+        d3.select(this)
+          .attr("stroke", isLowAverageCell(d) ? "#dc2626" : "#0f172a")
+          .attr("stroke-dasharray", baseDash(d))
+          .attr("stroke-width", 1.2);
         handlers.onHover?.(d, event as PointerEvent);
       })
       .on("pointermove", function (event, d) {
         handlers.onMove?.(d, event as PointerEvent);
       })
       .on("pointerleave", function (event, d) {
-        d3.select(this).attr("stroke", "rgba(255,255,255,0.7)").attr("stroke-width", null);
+        d3.select(this)
+          .attr("stroke", baseStroke(d))
+          .attr("stroke-dasharray", baseDash(d))
+          .attr("stroke-width", null);
         handlers.onLeave?.(d, event as PointerEvent);
       })
       .on("click", function (event, d) {

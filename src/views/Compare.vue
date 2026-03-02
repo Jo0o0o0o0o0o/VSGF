@@ -24,13 +24,7 @@ const COMPARE_GROUP_SLOTS_KEY = makeYearStorageKey("compare_group_slots_v1");
 
 const MAX = 5;
 const allAxes = RADAR_AXES;
-const reducedDefaultKeys = new Set<RadarKey>([
-  "computer_graphics_programming",
-  "human_computer_interaction_programming",
-  "user_experience_evaluation",
-  "code_repository",
-]);
-const activeAxes = ref(allAxes.filter((a) => !reducedDefaultKeys.has(a.key)));
+const activeAxes = ref(allAxes);
 
 type StoredGrouping = {
   version: 1;
@@ -593,4 +587,3 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 </style>
-

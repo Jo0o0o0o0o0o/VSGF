@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { IvisRecord } from "@/types/ivis23";
-import { getActiveRecords } from "@/types/dataSource";
+import { getActiveEmbeddings, getActiveRecords, type PrecomputedEmbeddingsFile } from "@/types/dataSource";
 import { fuzzyFilter } from "@/utils/fuzzySearch";
 import { RADAR_COLORS } from "@/d3Viz/createRadarChart";
 import { formatHobbyLabel, getHobbyTagStyle } from "@/utils/hobbyTagColorMap";
+import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
+import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 
 const props = defineProps<{
   slots: (IvisRecord | null)[];
   max: number;
   focusIndex?: number | null;
+  compact?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -21,6 +24,42 @@ const people = getActiveRecords() as IvisRecord[];
 const openIndex = ref<number | null>(null);
 const query = ref("");
 const root = ref<HTMLElement | null>(null);
+const personTopAreaLabels = ref<Record<number, string[]>>({});
+
+type HobbyAreaRule = {
+  hobby_area: string;
+  keywords: string[];
+};
+
+const hobbyAreaRules = hobbyAreaRulesRaw as HobbyAreaRule[];
+const hobbyAreaKeys = Array.from(
+  new Set(
+    hobbyAreaRules
+      .map((rule) => rule.hobby_area.trim().toLowerCase())
+      .filter((area) => area && area !== "other"),
+  ),
+);
+const keywordsByArea = new Map<string, string[]>(
+  hobbyAreaRules.map((rule) => [rule.hobby_area.trim().toLowerCase(), rule.keywords ?? []]),
+);
+const precomputedEmbeddings = getActiveEmbeddings() as PrecomputedEmbeddingsFile | null;
+const precomputedEmbeddingsCompatible =
+  !!precomputedEmbeddings &&
+  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
+  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
+const studentEmbeddingById = new Map<number, number[]>(
+  precomputedEmbeddings?.embeddings.map((item) => [item.id, normalizeVector(item.vector)]) ?? [],
+);
+const areaQueryEmbeddingCache = new Map<string, number[]>();
+let embeddingWorker: Worker | null = null;
+let workerRequestId = 0;
+const workerPending = new Map<
+  number,
+  {
+    resolve: (value: unknown) => void;
+    reject: (reason?: unknown) => void;
+  }
+>();
 
 const slotRadarColors = computed(() => {
   let colorIdx = 0;
@@ -114,14 +153,142 @@ function filteredList(currentIndex: number) {
   const available = people.filter((p) => !selectedIds.has(p.id));
   return fuzzyFilter(available, query.value, (p) => `${p.alias} ${p.id}`, { limit: available.length });
 }
+
+function dot(a: number[], b: number[]) {
+  const len = Math.min(a.length, b.length);
+  let sum = 0;
+  for (let i = 0; i < len; i += 1) sum += (a[i] ?? 0) * (b[i] ?? 0);
+  return sum;
+}
+
+function normalizeVector(vec: number[]) {
+  const norm = Math.sqrt(dot(vec, vec)) || 1;
+  return vec.map((v) => v / norm);
+}
+
+function ensureEmbeddingWorker() {
+  if (embeddingWorker) return embeddingWorker;
+  embeddingWorker = new Worker(new URL("../workers/embeddingWorker.ts", import.meta.url), {
+    type: "module",
+  });
+  embeddingWorker.onmessage = (event: MessageEvent) => {
+    const msg = event.data as
+      | { type: "query"; requestId: number; payload: { query: string; vector: number[] } }
+      | { type: "error"; requestId: number; payload: { message: string } };
+
+    const pending = workerPending.get(msg.requestId);
+    if (!pending) return;
+    workerPending.delete(msg.requestId);
+
+    if (msg.type === "error") {
+      pending.reject(new Error(msg.payload.message));
+      return;
+    }
+    pending.resolve(msg.payload);
+  };
+  return embeddingWorker;
+}
+
+function callEmbeddingWorker<T>(request: { type: string; payload: unknown }): Promise<T> {
+  const worker = ensureEmbeddingWorker();
+  const requestId = ++workerRequestId;
+  return new Promise<T>((resolve, reject) => {
+    workerPending.set(requestId, { resolve: resolve as (value: unknown) => void, reject });
+    worker.postMessage({ ...request, requestId });
+  });
+}
+
+function buildAreaEmbeddingQuery(areaKey: string) {
+  const areaLabel = formatHobbyLabel(areaKey);
+  const keywords = (keywordsByArea.get(areaKey) ?? []).slice(0, 14);
+  if (!keywords.length) return areaLabel;
+  return `${areaLabel} hobbies: ${keywords.join(", ")}`;
+}
+
+async function ensureAreaQueryEmbedding(areaKey: string) {
+  if (areaQueryEmbeddingCache.has(areaKey)) {
+    return areaQueryEmbeddingCache.get(areaKey) ?? [];
+  }
+  const query = buildAreaEmbeddingQuery(areaKey);
+  const result = await callEmbeddingWorker<{ query: string; vector: number[] }>({
+    type: "embed-query",
+    payload: { query },
+  });
+  const normalized = normalizeVector(result.vector ?? []);
+  areaQueryEmbeddingCache.set(areaKey, normalized);
+  return normalized;
+}
+
+async function getTopEmbeddingAreasForPerson(person: IvisRecord) {
+  if (person.hobby_area.length <= 3) return person.hobby_area;
+  if (!precomputedEmbeddingsCompatible) return person.hobby_area.slice(0, 3);
+  const studentVec = studentEmbeddingById.get(person.id);
+  if (!studentVec?.length) return person.hobby_area.slice(0, 3);
+
+  const areaVectors = await Promise.all(
+    hobbyAreaKeys.map(async (areaKey) => ({
+      areaKey,
+      vec: await ensureAreaQueryEmbedding(areaKey),
+    })),
+  );
+  const ranked = areaVectors
+    .map((item) => ({
+      areaKey: item.areaKey,
+      score: item.vec.length ? Math.max(0, dot(studentVec, item.vec)) : 0,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((item) => item.areaKey);
+  return ranked.length ? ranked : person.hobby_area.slice(0, 3);
+}
+
+async function refreshDisplayedTopAreas() {
+  const members = props.slots.filter((p): p is IvisRecord => Boolean(p));
+  if (!members.length) {
+    personTopAreaLabels.value = {};
+    return;
+  }
+
+  const next: Record<number, string[]> = {};
+  await Promise.all(
+    members.map(async (member) => {
+      try {
+        next[member.id] = await getTopEmbeddingAreasForPerson(member);
+      } catch {
+        next[member.id] = member.hobby_area.slice(0, 3);
+      }
+    }),
+  );
+  personTopAreaLabels.value = next;
+}
+
+function displayedHobbyAreas(person: IvisRecord) {
+  if (person.hobby_area.length <= 3) return person.hobby_area;
+  return personTopAreaLabels.value[person.id] ?? person.hobby_area.slice(0, 3);
+}
+
+watch(
+  () => props.slots.map((slot) => slot?.id ?? "x").join(","),
+  () => {
+    refreshDisplayedTopAreas();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  workerPending.forEach((pending) => pending.reject(new Error("Embedding worker terminated.")));
+  workerPending.clear();
+  embeddingWorker?.terminate();
+  embeddingWorker = null;
+});
 </script>
 
 <template>
-  <section class="topSlots" :class="{ single: isSingleSlot }" :style="slotsGridStyle" ref="root">
+  <section class="topSlots" :class="{ single: isSingleSlot, compact: !!props.compact }" :style="slotsGridStyle" ref="root">
     <div
       v-for="i in props.max"
       :key="i"
-      class="slot"
+      class="slot level-1"
       :style="
         props.focusIndex === i - 1 && slotRadarColors[i - 1]
           ? { backgroundColor: toSoftBackground(slotRadarColors[i - 1]!) }
@@ -151,18 +318,18 @@ function filteredList(currentIndex: number) {
         tabindex="0"
       >
         <button class="singleClearBtn" type="button" @click.stop="clear(i - 1)">x</button>
-        <div class="picked-placeholder">
+        <div class="picked-placeholder level-2">
           <span class="pickedAlias">{{ props.slots[i - 1]!.alias }}</span>
           <div class="pickedHobbyRow">
             <span
-              v-for="hobby in props.slots[i - 1]!.hobby_area"
+              v-for="hobby in displayedHobbyAreas(props.slots[i - 1]!)"
               :key="`slot-${i - 1}-${props.slots[i - 1]!.id}-${hobby}`"
               class="pickedHobbyChip"
               :style="getHobbyTagStyle(hobby)"
             >
               {{ formatHobbyLabel(hobby) }}
             </span>
-            <span v-if="props.slots[i - 1]!.hobby_area.length === 0" class="pickedHobbyChip pickedHobbyEmpty">
+            <span v-if="displayedHobbyAreas(props.slots[i - 1]!).length === 0" class="pickedHobbyChip pickedHobbyEmpty">
               No hobby
             </span>
           </div>
@@ -258,54 +425,62 @@ function filteredList(currentIndex: number) {
 
 .picked {
   padding: 0;
-  background: #ffffff;
+  background: transparent;
+  min-height: 132px;
 }
 
 .picked-placeholder {
   width: 100%;
   height: 100%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
   color: #475569;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 10px 10px 56px;
+  padding: 8px;
+  overflow: hidden;
 }
 
 .pickedAlias {
-  font-size: clamp(10px, 2.4vw, 30px);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: clamp(10px, 1.3vw, 16px);
   font-weight: 700;
   line-height: 1.15;
-  max-width: 100%;
+  max-width: calc(100% - 20px);
   word-break: break-word;
+  z-index: 1;
 }
 
 .pickedHobbyRow {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
+  right: 12px;
+  bottom: 14px;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  align-items: flex-end;
+  justify-content: flex-end;
+  align-content: flex-end;
+  flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  z-index: 2;
 }
 
 .pickedHobbyChip {
-  min-height: 20px;
+  min-height: 16px;
   border-radius: 999px;
   border: none;
-  padding: 2px 8px;
-  font-size: 10px;
+  padding: 1px 7px;
+  font-size: 9px;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .pickedHobbyEmpty {
@@ -424,6 +599,35 @@ function filteredList(currentIndex: number) {
   row-gap: 10px;
   min-height: 0;
   padding: 12px;
+}
+
+.topSlots.compact .slot {
+  min-height: 118px;
+  padding: 10px;
+  gap: 8px;
+}
+
+.topSlots.compact .visual {
+  aspect-ratio: 1.6 / 1;
+  border-radius: 12px;
+}
+
+.topSlots.compact .picked-placeholder {
+  padding: 8px 8px 34px;
+}
+
+.topSlots.compact .pickedAlias {
+  font-size: clamp(10px, 1.6vw, 18px);
+}
+
+.topSlots.compact .pickedHobbyChip {
+  min-height: 17px;
+  padding: 1px 7px;
+  font-size: 9px;
+}
+
+.topSlots.compact .trigger {
+  height: 34px;
 }
 
 .topSlots.single .visual {
