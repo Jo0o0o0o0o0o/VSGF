@@ -84,12 +84,22 @@ export function makeYearStorageKey(suffix: string) {
 
 export const GROUPING_UPDATED_EVENT = "ivis-grouping-updated";
 export const GROUPING_CONFIRMED_EVENT = "ivis-grouping-confirmed";
+export const GROUPING_HYDRATED_EVENT = "ivis-grouping-hydrated";
 
 export function clearYearScopedLocalStoragePreserveYear() {
   try {
-    const preservedYear = activeDatasetYear.value;
-    localStorage.clear();
-    localStorage.setItem(DATASET_YEAR_KEY, preservedYear);
+    const keysToDelete: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const isYearScoped = key.startsWith("ivis");
+      const isCompareTransient = key === "compare_add_queue" || key === "compare_single_person_id";
+      if (isYearScoped || isCompareTransient) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(DATASET_YEAR_KEY, activeDatasetYear.value);
   } catch {
     // ignore storage failures
   }

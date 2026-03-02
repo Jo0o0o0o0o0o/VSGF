@@ -98,6 +98,36 @@ onBeforeUnmount(() => {
         <h2>{{ section.title }}</h2>
         <div v-if="section.id === 'project-overview'" class="overviewText">
           <p>
+            Research on team composition and team formation consistently highlights that assembling
+            effective teams requires more than the sum of individual abilities. Team composition
+            studies emphasize that collective attributes and diversity across skills, roles, and
+            interpersonal traits significantly influence team processes and outcomes (<a
+              href="#ref-kozlowski-bell-2004"
+              >Kozlowski &amp; Bell, 2004</a
+            >; <a href="#ref-cooke-hilton-2015">Cooke &amp; Hilton, 2015</a>). This suggests that
+            teams with balanced representation across critical functions are better equipped to
+            integrate expertise, coordinate work, and solve multifaceted problems. Systematic
+            reviews further indicate that team formation is a multi-attribute process, involving
+            both the selection of individual characteristics and the allocation of members based on
+            task demands (<a href="#ref-stavrou-2023">Stavrou et al., 2023</a>; <a
+              href="#ref-lyutskanova-2024"
+              >Lyutskanova, 2024</a
+            >). Findings from educational and collaborative settings show that intentionally
+            structured teams, including approaches based on formal role frameworks such as Belbin's
+            role theory, often outperform ad-hoc or self-selected teams in performance, engagement,
+            and collaboration (<a href="#ref-aranzabal-2022">Aranzabal, 2022</a>; <a
+              href="#ref-vasquez-guardado-2020"
+              >Vasquez-Guardado et al., 2020</a
+            >). Research in organizational and implementation science also underscores that team
+            effectiveness depends not only on individual competence but also on coordination,
+            leadership, and relational dynamics (<a href="#ref-mcguier-2023"
+              >McGuier et al., 2023</a
+            >). Together, these studies support a team formation approach that emphasizes coverage
+            of key skill domains, balanced task roles, stable communication and collaboration, and
+            built-in redundancy to improve robustness and reduce process breakdowns in team-based
+            projects.
+          </p>
+          <p>
             DogViz Dashboard is an interactive information visualization designed to support
             prospective dog owners and enthusiasts in exploring and comparing dog breeds through an
             integrated visual interface. The system combines physical characteristics, lifespan
@@ -142,26 +172,41 @@ onBeforeUnmount(() => {
           </p>
         </div>
         <div v-else-if="section.id === 'resources'" class="resourceList">
-          <p id="ref-asp-2015">
-            Asp, H.E., Fikse, W.F., Nilsson, K. and Strandberg, E. (2015) Breed differences in
-            everyday behaviour of dogs. Applied Animal Behaviour Science, 169, pp. 69-77.
+          <p id="ref-aranzabal-2022">
+            Aranzabal, A. (2022) Team formation on the basis of Belbin's roles to enhance
+            students' performance in project based learning. Education for Chemical Engineers, 38,
+            pp. 22-37. Available at:
+            <a href="https://doi.org/10.1016/j.ece.2021.09.001" target="_blank" rel="noopener noreferrer">
+              https://doi.org/10.1016/j.ece.2021.09.001
+            </a>
           </p>
-          <p id="ref-maclean-2019">
-            MacLean, E.L., Snyder-Mackler, N., vonHoldt, B.M. and Serpell, J.A. (2019) Highly
-            heritable and functionally relevant breed differences in dog behaviour. Proceedings of
-            the Royal Society B, 286(1912).
+          <p id="ref-cooke-hilton-2015">
+            Cooke, N.J. and Hilton, M.L. (eds.) (2015) Enhancing the Effectiveness of Team Science:
+            Overview of Research on Team Effectiveness. Washington, DC: National Academies Press.
           </p>
-          <p id="ref-morrill-2022">
-            Morrill, K. et al. (2022) Ancestry-inclusive dog genomics challenges popular assumptions
-            about breed and behaviour. Science, 376(6592), pp. eabk0639.
+          <p id="ref-kozlowski-bell-2004">
+            Kozlowski, S.W.J. and Bell, B.S. (2004) Team composition. In: Encyclopedia of Applied
+            Psychology. Elsevier.
           </p>
-          <p id="ref-petkova-2024">
-            Petkova, B. et al. (2024) Variations in canine behavioural characteristics and the role
-            of context and education. Animals, 14(18).
+          <p id="ref-lyutskanova-2024">
+            Lyutskanova, G. (2024) Systematic Literature Review on the Team Formation. University
+            of Twente.
           </p>
-          <p id="ref-mcmillan-2024">
-            McMillan, K. et al. (2024) Longevity patterns across dog breeds: interactions of size,
-            morphology and sex. Scientific Reports.
+          <p id="ref-mcguier-2023">
+            McGuier, E.A. et al. (2023) Advancing research on teams and team effectiveness:
+            Overview. Available at:
+            <a href="https://www.ncbi.nlm.nih.gov/articles/PMC10387676/" target="_blank" rel="noopener noreferrer">
+              https://www.ncbi.nlm.nih.gov/articles/PMC10387676/
+            </a>
+          </p>
+          <p id="ref-stavrou-2023">
+            Stavrou, G. et al. (2023) Team Formation: A Systematic Literature Review. International
+            Journal of Business Science and Applied Management, 18(2), pp. 17-34.
+          </p>
+          <p id="ref-vasquez-guardado-2020">
+            Vasquez-Guardado, E.S. et al. (2020) Impact of team formation approach on teamwork
+            effectiveness and performance in an undergraduate laboratory course. International
+            Journal of Engineering Education, 36(1B), pp. 491-501.
           </p>
         </div>
         <div v-else class="placeholder"></div>

@@ -21,7 +21,7 @@ import {
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
-import { GROUPING_UPDATED_EVENT, getActiveEmbeddings, makeYearStorageKey } from "@/types/dataSource";
+import { GROUPING_UPDATED_EVENT, getActiveEmbeddings, getActiveRecords, makeYearStorageKey } from "@/types/dataSource";
 import { formatHobbyLabel } from "@/utils/hobbyTagColorMap";
 import { writeComparePersonId } from "@/utils/compareSelection";
 
@@ -295,6 +295,51 @@ function addEmptySlot() {
 }
 
 const selectedPeople = computed(() => slots.value.filter(Boolean) as IvisRecord[]);
+const allYearPeople = getActiveRecords() as IvisRecord[];
+const stackBarAxisAverages = computed<Partial<Record<RadarKey, number>>>(() => {
+  const out: Partial<Record<RadarKey, number>> = {};
+  if (!allYearPeople.length) return out;
+  const groupSize = selectedPeople.value.length;
+  if (!groupSize) return out;
+
+  if (!heatmapUseCategoryX.value) {
+    for (const axis of modeAxes.value) {
+      const total = allYearPeople.reduce((sum, person) => sum + Number(person.ratings[axis.key] ?? 0), 0);
+      out[axis.key] = Number(((total / allYearPeople.length) * groupSize).toFixed(2));
+    }
+    return out;
+  }
+
+  out.programming = Number(
+    (
+      (allYearPeople.reduce((sum, person) => sum + averageRating(person, HEATMAP_CATEGORY_KEYS.build), 0) /
+        allYearPeople.length) *
+      groupSize
+    ).toFixed(2),
+  );
+  out.information_visualization = Number(
+    (
+      (allYearPeople.reduce((sum, person) => sum + averageRating(person, HEATMAP_CATEGORY_KEYS.thinkVis), 0) /
+        allYearPeople.length) *
+      groupSize
+    ).toFixed(2),
+  );
+  out.drawing_and_artistic = Number(
+    (
+      (allYearPeople.reduce((sum, person) => sum + averageRating(person, HEATMAP_CATEGORY_KEYS.design), 0) /
+        allYearPeople.length) *
+      groupSize
+    ).toFixed(2),
+  );
+  out.communication = Number(
+    (
+      (allYearPeople.reduce((sum, person) => sum + averageRating(person, HEATMAP_CATEGORY_KEYS.team), 0) /
+        allYearPeople.length) *
+      groupSize
+    ).toFixed(2),
+  );
+  return out;
+});
 const thresholdPersonColors = computed<Record<number, string>>(() =>
   Object.fromEntries(
     selectedPeople.value.map((person, idx) => [person.id, RADAR_COLORS[idx % RADAR_COLORS.length] ?? "#0f766e"]),
@@ -873,7 +918,7 @@ onBeforeUnmount(() => {
 
     <section class="thresholdSection">
       <div class="panel level-1 thresholdPanel">
-        <h3>Dimension Role Table</h3>
+        <h3>Assign Responsibilities</h3>
         <p v-for="warn in thresholdLeaderWarnings" :key="warn" class="thresholdWarning">
           Warning: {{ warn }}
         </p>
@@ -951,6 +996,7 @@ onBeforeUnmount(() => {
             :dogs="modeDogs"
             :axes="modeAxes"
             :focusIndex="focusIndex"
+            :axisAverages="stackBarAxisAverages"
             @toggleFocus="toggleFocus"
           />
         </div>
@@ -979,7 +1025,7 @@ onBeforeUnmount(() => {
 
     <section class="embeddingSection">
       <div class="panel level-1 embeddingPanel">
-        <h3>Hobby Area Embedding (Group Sum)</h3>
+        <h3>Group Hobby Sum</h3>
         <div class="embeddingAreaWrap">
           <EmbeddingAreaBarChart
             :data="groupAreaEmbeddingScores"

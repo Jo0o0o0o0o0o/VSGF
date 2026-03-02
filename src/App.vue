@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink, RouterView } from "vue-router";
+import { useRouter } from "vue-router";
 import {
   activeYear,
   clearYearScopedLocalStoragePreserveYear,
   datasetYearOptions,
+  GROUPING_CONFIRMED_EVENT,
+  GROUPING_HYDRATED_EVENT,
+  GROUPING_UPDATED_EVENT,
   setActiveDatasetYear,
   type DatasetYear,
 } from "@/types/dataSource";
+import { currentUser, logout } from "@/utils/authSession";
+import { restoreGroupingYearFromCloud, saveGroupingYearToCloud } from "@/utils/groupingCloudSync";
 
 const compareCount = ref(0);
+const router = useRouter();
+const userEmail = computed(() => currentUser.value?.email ?? "");
+const syncingYear = ref(false);
+const cloudHydrationReady = ref(false);
 
 function updateCompareCount() {
   try {
@@ -28,22 +38,88 @@ onMounted(() => {
   updateCompareCount();
   window.addEventListener("storage", updateCompareCount);
   window.addEventListener("compare-queue-updated", updateCompareCount);
+  window.addEventListener(GROUPING_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
+  window.addEventListener(GROUPING_CONFIRMED_EVENT, saveCurrentYearGroupingToCloud);
 });
 
 onUnmounted(() => {
   window.removeEventListener("storage", updateCompareCount);
   window.removeEventListener("compare-queue-updated", updateCompareCount);
+  window.removeEventListener(GROUPING_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
+  window.removeEventListener(GROUPING_CONFIRMED_EVENT, saveCurrentYearGroupingToCloud);
 });
 
-function onChangeDatasetYear(event: Event) {
+async function hydrateGroupingFromCloudForYear(year: DatasetYear) {
+  const uid = currentUser.value?.uid;
+  if (!uid) return;
+  let restored = false;
+  try {
+    restored = await restoreGroupingYearFromCloud(uid, year);
+  } catch (err) {
+    console.warn("[year-switch] restore grouping from cloud failed", err);
+    restored = false;
+  }
+  if (!restored) return;
+  window.dispatchEvent(new Event(GROUPING_HYDRATED_EVENT));
+  window.dispatchEvent(new Event(GROUPING_UPDATED_EVENT));
+  window.dispatchEvent(new Event(GROUPING_CONFIRMED_EVENT));
+}
+
+async function saveCurrentYearGroupingToCloud() {
+  const uid = currentUser.value?.uid;
+  if (!uid || !cloudHydrationReady.value) return;
+  try {
+    await saveGroupingYearToCloud(uid, activeYear.value);
+  } catch (err) {
+    console.warn("[grouping-sync] save current year grouping failed", err);
+  }
+}
+
+watch(
+  [() => currentUser.value?.uid, () => activeYear.value],
+  async ([uid]) => {
+    cloudHydrationReady.value = false;
+    if (!uid) return;
+    await hydrateGroupingFromCloudForYear(activeYear.value);
+    cloudHydrationReady.value = true;
+  },
+  { immediate: true },
+);
+
+async function onChangeDatasetYear(event: Event) {
   const target = event.target as HTMLSelectElement | null;
-  if (!target) return;
+  if (!target || syncingYear.value) return;
   const nextYear = target.value as DatasetYear;
   if (nextYear === activeYear.value) return;
-  setActiveDatasetYear(nextYear);
-  clearYearScopedLocalStoragePreserveYear();
-  window.dispatchEvent(new Event("compare-queue-updated"));
-  window.location.reload();
+  syncingYear.value = true;
+  const currentYear = activeYear.value;
+  const uid = currentUser.value?.uid;
+  try {
+    cloudHydrationReady.value = false;
+    if (uid) {
+      try {
+        await Promise.race([
+          saveGroupingYearToCloud(uid, currentYear),
+          new Promise<void>((resolve) => {
+            window.setTimeout(() => resolve(), 1500);
+          }),
+        ]);
+      } catch (err) {
+        console.warn("[year-switch] save current year grouping failed", err);
+      }
+    }
+    setActiveDatasetYear(nextYear);
+    clearYearScopedLocalStoragePreserveYear();
+    window.dispatchEvent(new Event("compare-queue-updated"));
+  } finally {
+    syncingYear.value = false;
+    window.location.reload();
+  }
+}
+
+async function onLogout() {
+  await logout();
+  await router.replace("/auth");
 }
 </script>
 
@@ -51,7 +127,7 @@ function onChangeDatasetYear(event: Event) {
   <div class="app">
     <header class="topbar">
       <div class="logo">
-        <img class="logo-icon" src="/dogtitle.png" alt="TheDogs icon" />
+        <img class="logo-icon" src="/Grouptitle.png" alt="Grouping icon" />
         <span class="logo-mark">Grouping</span>
         <span class="logo-text">Dashboard</span>
         <label class="yearSwitch" for="dataset-year-select">
@@ -77,6 +153,11 @@ function onChangeDatasetYear(event: Event) {
           <span v-if="compareCount > 0" class="badge">{{ compareCount }}</span>
         </RouterLink>
         <RouterLink class="link" to="/about">About</RouterLink>
+        <template v-if="currentUser">
+          <span class="userEmail">{{ userEmail }}</span>
+          <button class="authBtn" type="button" @click="onLogout">Logout</button>
+        </template>
+        <RouterLink v-else class="link authLink" to="/auth">Login</RouterLink>
       </nav>
     </header>
 
@@ -165,7 +246,29 @@ function onChangeDatasetYear(event: Event) {
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 20px;
+}
+
+.authLink {
+  font-weight: 600;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: var(--academic-text-muted);
+}
+
+.authBtn {
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .link {
@@ -233,4 +336,3 @@ body,
   padding: 0;
 }
 </style>
-

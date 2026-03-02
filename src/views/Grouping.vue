@@ -10,6 +10,7 @@ import {
   getActiveEmbeddings,
   getActiveRecords,
   GROUPING_CONFIRMED_EVENT,
+  GROUPING_HYDRATED_EVENT,
   GROUPING_UPDATED_EVENT,
   makeYearStorageKey,
 } from "@/types/dataSource";
@@ -1417,39 +1418,50 @@ function persistGrouping() {
   }
 }
 
-onMounted(() => {
-  restoreEmbeddingCaches();
-  startEmbeddingPreload();
+function hydrateGroupingStateFromLocalStorage() {
   const stored = readStoredGrouping();
   if (stored) {
     preferredGroupSize.value = stored.preferredGroupSize;
     rebuildGroups(preferredGroupSize.value, false);
     applyStoredGrouping(stored);
+  } else {
+    rebuildGroups(preferredGroupSize.value, false);
   }
+
   unassignedSlotBuffer.value = readStoredUnassignedSlotBuffer();
+
   const confirmedStored = readStoredConfirmedGrouping();
-  if (confirmedStored) {
-    const restored: Record<number, boolean> = {};
-    for (const group of groups.value) {
-      restored[group.id] = confirmedStored.confirmedGroupIds.includes(group.id);
-    }
-    confirmedGroupState.value = restored;
+  const restoredConfirmed: Record<number, boolean> = {};
+  for (const group of groups.value) {
+    restoredConfirmed[group.id] = confirmedStored
+      ? confirmedStored.confirmedGroupIds.includes(group.id)
+      : false;
   }
+  confirmedGroupState.value = restoredConfirmed;
+
   const collapsedStored = readStoredCollapsedGrouping();
-  if (collapsedStored) {
-    const restored: Record<number, boolean> = {};
-    for (const group of groups.value) {
-      restored[group.id] = collapsedStored.collapsedGroupIds.includes(group.id);
-    }
-    groupCollapsedState.value = restored;
+  const restoredCollapsed: Record<number, boolean> = {};
+  for (const group of groups.value) {
+    restoredCollapsed[group.id] = collapsedStored
+      ? collapsedStored.collapsedGroupIds.includes(group.id)
+      : false;
   }
+  groupCollapsedState.value = restoredCollapsed;
+
   loadGroupLeaderLabels();
   loadGroupRoleAssignments();
+}
+
+onMounted(() => {
+  restoreEmbeddingCaches();
+  startEmbeddingPreload();
+  hydrateGroupingStateFromLocalStorage();
   persistCollapsedGrouping();
   persistGrouping();
   document.addEventListener("mousedown", onGlobalPointerDown);
   document.addEventListener("keydown", onGlobalEsc);
   window.addEventListener("storage", onStorageChanged);
+  window.addEventListener(GROUPING_HYDRATED_EVENT, hydrateGroupingStateFromLocalStorage);
   window.addEventListener(GROUPING_UPDATED_EVENT, loadGroupLeaderLabels);
   window.addEventListener(GROUPING_UPDATED_EVENT, loadGroupRoleAssignments);
 });
@@ -1458,6 +1470,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onGlobalPointerDown);
   document.removeEventListener("keydown", onGlobalEsc);
   window.removeEventListener("storage", onStorageChanged);
+  window.removeEventListener(GROUPING_HYDRATED_EVENT, hydrateGroupingStateFromLocalStorage);
   window.removeEventListener(GROUPING_UPDATED_EVENT, loadGroupLeaderLabels);
   window.removeEventListener(GROUPING_UPDATED_EVENT, loadGroupRoleAssignments);
 });

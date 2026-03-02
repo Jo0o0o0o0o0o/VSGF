@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { RADAR_COLORS, type AxisItem, type RadarDog } from "@/d3Viz/createRadarChart";
+import { RADAR_COLORS, type AxisItem, type RadarDog, type RadarKey } from "@/d3Viz/createRadarChart";
 import {
   createStackedBar,
   type StackedBarSegment,
@@ -10,6 +10,7 @@ const props = defineProps<{
   dogs: RadarDog[];
   axes: AxisItem[];
   focusIndex?: number | null;
+  axisAverages?: Partial<Record<RadarKey, number>>;
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +63,7 @@ function resizeAndDraw() {
     height,
     axes: props.axes,
     focusIndex: props.focusIndex ?? null,
+    axisAverages: props.axisAverages,
   });
 }
 
@@ -91,7 +93,7 @@ onMounted(() => {
 });
 
 watch(
-  () => [props.dogs, props.axes, props.focusIndex],
+  () => [props.dogs, props.axes, props.focusIndex, props.axisAverages],
   async () => {
     await nextTick();
     requestAnimationFrame(resizeAndDraw);

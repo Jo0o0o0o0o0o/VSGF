@@ -6,6 +6,7 @@ export type StackedBarOptions = {
   height: number;
   axes: AxisItem[];
   focusIndex?: number | null;
+  axisAverages?: Partial<Record<RadarKey, number>>;
 };
 
 export type StackedBarSegment = {
@@ -40,6 +41,7 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
   const root = svg.append("g").attr("class", "stacked-bar-root");
   const gx = root.append("g").attr("class", "x-axis");
   const gy = root.append("g").attr("class", "y-axis");
+  const avgLayer = root.append("g").attr("class", "avg-bars");
   const bars = root.append("g").attr("class", "bars");
   const totals = root.append("g").attr("class", "totals");
 
@@ -65,7 +67,11 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
     const totalsByAxis = opt.axes.map((axis) =>
       dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0),
     );
-    const yMax = Math.max(1, d3.max(totalsByAxis) ?? 1);
+    const averageTargets = opt.axes.map((axis) => {
+      const raw = Number(opt.axisAverages?.[axis.key]);
+      return Number.isFinite(raw) ? Math.max(0, raw) : 0;
+    });
+    const yMax = Math.max(1, d3.max([...totalsByAxis, ...averageTargets]) ?? 1);
     const y = d3.scaleLinear().domain([0, yMax]).nice().range([innerH, 0]);
 
     gx.attr("transform", `translate(0,${innerH})`).call(
@@ -117,6 +123,28 @@ export function createStackedBar(svgEl: SVGSVGElement, handlers: StackedBarHandl
     });
 
     const focused = opt.focusIndex ?? null;
+
+    const averageBars = opt.axes.map((axis) => {
+      const fallbackTotal = dogs.reduce((sum, dog) => sum + clampToRating(Number(dog[axis.key])), 0);
+      const fallbackAvg = dogs.length > 0 ? fallbackTotal / dogs.length : 0;
+      const avg = Math.max(0, Number(opt.axisAverages?.[axis.key] ?? fallbackAvg));
+      return { axisKey: axis.key, avg };
+    });
+
+    avgLayer
+      .selectAll<SVGRectElement, { axisKey: RadarKey; avg: number }>("rect.avg-bar")
+      .data(averageBars, (d) => d.axisKey)
+      .join("rect")
+      .attr("class", "avg-bar")
+      .attr("x", (d) => x(d.axisKey) ?? 0)
+      .attr("y", (d) => y(d.avg))
+      .attr("width", Math.max(2, x.bandwidth()))
+      .attr("height", (d) => Math.max(0.5, innerH - y(d.avg)))
+      .attr("fill", "none")
+      .attr("stroke", "#6b7280")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "4,3")
+      .attr("pointer-events", "none");
 
     const rects = bars
       .selectAll<SVGRectElement, StackedBarSegment>("rect.segment")
