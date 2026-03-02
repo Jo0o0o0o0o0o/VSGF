@@ -64,17 +64,17 @@ export type RadarHandlers = {
   onClick?: (dogIndex: number, ev: PointerEvent) => void;
 };
 
-const YELLOW_THEME = {
-  primary: "#E6A800",
-  gridStroke: "rgba(198, 142, 0, 0.22)",
-  spokeStroke: "rgba(198, 142, 0, 0.28)",
-  tickFill: "rgba(92, 66, 16, 0.78)",
-  axisLabelFill: "rgba(72, 52, 12, 0.88)",
-  emptyText: "rgba(92, 66, 16, 0.55)",
+const BLUE_THEME = {
+  primary: "#3B82F6",
+  gridStroke: "rgba(59, 130, 246, 0.24)",
+  spokeStroke: "rgba(59, 130, 246, 0.3)",
+  tickFill: "rgba(30, 64, 175, 0.85)",
+  axisLabelFill: "rgba(30, 58, 138, 0.92)",
+  emptyText: "rgba(30, 64, 175, 0.56)",
 };
 
 export const RADAR_COLORS: string[] = [
-  YELLOW_THEME.primary,
+  BLUE_THEME.primary,
   "#C75B39",
   "#7B68A6",
   "#4A9B8E",
@@ -126,7 +126,7 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
         .append("text")
         .attr("text-anchor", "middle")
         .attr("font-size", 12)
-        .attr("fill", YELLOW_THEME.emptyText)
+        .attr("fill", BLUE_THEME.emptyText)
         .text("Select at least 3 dimensions");
       return;
     }
@@ -159,7 +159,7 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
         return polygonPath(pts);
       })
       .attr("fill", "none")
-      .attr("stroke", YELLOW_THEME.gridStroke)
+      .attr("stroke", BLUE_THEME.gridStroke)
       .attr("stroke-width", 1.2);
 
     const tickVals = [minV, ...levelVals];
@@ -174,7 +174,7 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("dy", "-0.25em")
       .attr("text-anchor", "middle")
       .attr("font-size", 10)
-      .attr("fill", YELLOW_THEME.tickFill)
+      .attr("fill", BLUE_THEME.tickFill)
       .attr("font-weight", 500)
       .text((v) => {
         const rounded = Number(v.toFixed(2));
@@ -191,7 +191,7 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       .attr("y1", 0)
       .attr("x2", (i) => Math.cos(angle(i)) * radius)
       .attr("y2", (i) => Math.sin(angle(i)) * radius)
-      .attr("stroke", YELLOW_THEME.spokeStroke)
+      .attr("stroke", BLUE_THEME.spokeStroke)
       .attr("stroke-width", 1.2);
 
     axesLayer
@@ -213,7 +213,7 @@ export function createRadarChart(svgEl: SVGSVGElement, handlers: RadarHandlers =
       })
       .attr("font-size", 11)
       .attr("font-weight", 600)
-      .attr("fill", YELLOW_THEME.axisLabelFill)
+      .attr("fill", BLUE_THEME.axisLabelFill)
       .text((d) => d.label);
 
     const colorAt = (dog: RadarDog, i: number) =>

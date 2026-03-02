@@ -111,7 +111,7 @@ function filteredList(currentIndex: number) {
         role="button"
         tabindex="0"
       >
-        <div class="picked-placeholder">
+        <div class="picked-placeholder level-2">
           <span>G{{ props.slots[i - 1]!.id }}</span>
         </div>
       </div>
@@ -209,8 +209,8 @@ function filteredList(currentIndex: number) {
 .picked-placeholder {
   width: 100%;
   height: 100%;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: none;
   color: #475569;
   display: grid;
   place-items: center;

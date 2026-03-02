@@ -27,6 +27,7 @@ type Group = {
 type StoredGrouping = {
   version: 2;
   preferredGroupSize: PreferredGroupSize;
+  unassignedSlotBuffer?: number;
   groups: Array<{
     id: number;
     memberIds: Array<number | null>;
@@ -49,6 +50,20 @@ type StoredCollapsedGrouping = {
   collapsedGroupIds: number[];
 };
 
+type StoredGroupLeaderLabels = {
+  version: 1;
+  groups: Record<string, Record<string, string[]>>;
+};
+type DimensionRoleAssignmentRow = {
+  leaders: Array<number | null>;
+  supports: Array<number | null>;
+};
+type DimensionRoleAssignments = Record<string, DimensionRoleAssignmentRow>;
+type StoredGroupRoleAssignments = {
+  version: 1;
+  groups: Record<string, DimensionRoleAssignments>;
+};
+
 type HobbyAreaRule = {
   hobby_area: string;
   keywords: string[];
@@ -66,6 +81,8 @@ type PrecomputedEmbeddingsFile = {
 const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
 const GROUPING_CONFIRM_STORAGE_KEY = makeYearStorageKey("grouping_confirmed_v1");
 const GROUPING_COLLAPSED_STORAGE_KEY = makeYearStorageKey("grouping_collapsed_v1");
+const GROUP_LEADER_LABELS_STORAGE_KEY = makeYearStorageKey("group_leader_labels_v1");
+const GROUP_ROLE_ASSIGNMENTS_STORAGE_KEY = makeYearStorageKey("group_role_assignments_v1");
 
 const students = getActiveRecords() as Student[];
 
@@ -125,6 +142,44 @@ const dragOverSlot = ref<
 >(null);
 const groupCollapsedState = ref<Record<number, boolean>>({});
 const confirmedGroupState = ref<Record<number, boolean>>({});
+const groupLeaderLabelsByGroup = ref<Record<number, Record<number, string[]>>>({});
+const groupRoleAssignmentsByGroup = ref<Record<number, DimensionRoleAssignments>>({});
+const unassignedSlotBuffer = ref(0);
+const GROUP_MIN_SLOTS = 4;
+const GROUP_MAX_SLOTS = 5;
+const GROUP_SCORE_WARN_THRESHOLD = 7;
+const GROUP_THRESHOLD_DIMENSIONS: Array<{
+  key: "build" | "think_vis" | "design" | "team_collaboration";
+  label: string;
+  ratingKeys: string[];
+}> = [
+  {
+    key: "build",
+    label: "Build",
+    ratingKeys: [
+      "programming",
+      "code_repository",
+      "computer_graphics_programming",
+      "human_computer_interaction_programming",
+      "computer_usage",
+    ],
+  },
+  {
+    key: "think_vis",
+    label: "Think + Vis",
+    ratingKeys: ["statistical", "mathematics", "information_visualization"],
+  },
+  {
+    key: "design",
+    label: "Design",
+    ratingKeys: ["user_experience_evaluation", "drawing_and_artistic"],
+  },
+  {
+    key: "team_collaboration",
+    label: "Team Collaboration",
+    ratingKeys: ["communication", "collaboration"],
+  },
+];
 
 const usedStudentIds = computed(() => {
   const ids = new Set<number>();
@@ -456,25 +511,49 @@ function buildAreaEmbeddingQuery(areaKey: string) {
 }
 
 async function getTopEmbeddingHobbyAreas(member: Student) {
-  if (member.hobby_area.length <= 3) return member.hobby_area;
-  if (!precomputedEmbeddingsCompatible.value) return member.hobby_area.slice(0, 3);
+  const normalizedAreas = member.hobby_area
+    .map((area) => normalizeKeyword(area))
+    .filter(Boolean);
+  const hasOther = normalizedAreas.includes("other");
+  const useAllAreasTop2 = normalizedAreas.length < 2 || hasOther;
+
+  if (!precomputedEmbeddingsCompatible.value) {
+    if (useAllAreasTop2) return member.hobby_area.slice(0, 2);
+    if (member.hobby_area.length >= 3) return member.hobby_area.slice(0, 3);
+    return member.hobby_area;
+  }
 
   const studentVec = studentEmbeddingById.value.get(member.id);
-  if (!studentVec?.length) return member.hobby_area.slice(0, 3);
+  if (!studentVec?.length) {
+    if (useAllAreasTop2) return member.hobby_area.slice(0, 2);
+    if (member.hobby_area.length >= 3) return member.hobby_area.slice(0, 3);
+    return member.hobby_area;
+  }
+
+  const candidateAreaKeys = useAllAreasTop2
+    ? hobbyAreaDisplayKeys
+    : normalizedAreas.filter((area) => area !== "other");
+
+  if (!candidateAreaKeys.length) return member.hobby_area.slice(0, 2);
 
   const scored = await Promise.all(
-    hobbyAreaDisplayKeys.map(async (areaKey) => {
+    candidateAreaKeys.map(async (areaKey) => {
       const queryVec = await ensureQueryEmbedding(buildAreaEmbeddingQuery(areaKey));
       const score = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
       return { areaKey, score };
     }),
   );
 
+  const topLimit = useAllAreasTop2 ? 2 : member.hobby_area.length >= 3 ? 3 : member.hobby_area.length;
   const top = scored
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
+    .slice(0, topLimit)
     .map((row) => row.areaKey);
-  return top.length ? top : member.hobby_area.slice(0, 3);
+
+  if (top.length) return top;
+  if (useAllAreasTop2) return member.hobby_area.slice(0, 2);
+  if (member.hobby_area.length >= 3) return member.hobby_area.slice(0, 3);
+  return member.hobby_area;
 }
 
 async function refreshMemberTopHobbyAreas() {
@@ -496,7 +575,17 @@ async function refreshMemberTopHobbyAreas() {
       try {
         next[member.id] = await getTopEmbeddingHobbyAreas(member);
       } catch {
-        next[member.id] = member.hobby_area.length <= 3 ? member.hobby_area : member.hobby_area.slice(0, 3);
+        const normalizedAreas = member.hobby_area
+          .map((area) => normalizeKeyword(area))
+          .filter(Boolean);
+        const hasOther = normalizedAreas.includes("other");
+        if (normalizedAreas.length < 2 || hasOther) {
+          next[member.id] = member.hobby_area.slice(0, 2);
+        } else if (member.hobby_area.length >= 3) {
+          next[member.id] = member.hobby_area.slice(0, 3);
+        } else {
+          next[member.id] = member.hobby_area;
+        }
       }
     }),
   );
@@ -504,8 +593,18 @@ async function refreshMemberTopHobbyAreas() {
 }
 
 function displayedHobbyAreas(member: Student) {
-  if (member.hobby_area.length <= 3) return member.hobby_area;
-  return memberTopHobbyAreasById.value[member.id] ?? member.hobby_area.slice(0, 3);
+  const normalizedAreas = member.hobby_area
+    .map((area) => normalizeKeyword(area))
+    .filter(Boolean);
+  const hasOther = normalizedAreas.includes("other");
+  const useAllAreasTop2 = normalizedAreas.length < 2 || hasOther;
+  if (useAllAreasTop2) {
+    return memberTopHobbyAreasById.value[member.id] ?? member.hobby_area.slice(0, 2);
+  }
+  if (member.hobby_area.length >= 3) {
+    return memberTopHobbyAreasById.value[member.id] ?? member.hobby_area.slice(0, 3);
+  }
+  return member.hobby_area;
 }
 
 function inferQueryAreas(tokens: string[]) {
@@ -873,6 +972,29 @@ const selectedGroupMembers = computed<IvisRecord[]>(() =>
     ? (selectedGroup.value.members.filter((member) => Boolean(member)) as IvisRecord[])
     : [],
 );
+const selectedGroupSlots = computed<(IvisRecord | null)[]>(() => selectedGroup.value?.members.slice() ?? []);
+const selectedGroupSlotCount = computed(() => selectedGroupSlots.value.length);
+const selectedGroupEmptySlotCount = computed(
+  () => selectedGroupSlots.value.filter((member) => member === null).length,
+);
+const canSelectedGroupAddSlot = computed(
+  () => selectedGroupSlotCount.value < GROUP_MAX_SLOTS && unassignedSlotBuffer.value > 0,
+);
+const canSelectedGroupRemoveEmptySlot = computed(
+  () => selectedGroupSlotCount.value > GROUP_MIN_SLOTS && selectedGroupEmptySlotCount.value > 0,
+);
+const selectedGroupAddSlotWarning = computed(() => {
+  if (!selectedGroup.value) return "";
+  if (selectedGroupSlotCount.value >= GROUP_MAX_SLOTS) return "Cannot add more than 5 slots.";
+  if (unassignedSlotBuffer.value <= 0) return "No unassigned slot available to add.";
+  return "";
+});
+const selectedGroupRemoveSlotWarning = computed(() => {
+  if (!selectedGroup.value) return "";
+  if (selectedGroupSlotCount.value <= GROUP_MIN_SLOTS) return "Cannot reduce below 4 slots.";
+  if (selectedGroupEmptySlotCount.value <= 0) return "Only empty slots can be removed.";
+  return "";
+});
 
 const groupHobbiesMap = computed(() => {
   const byGroupId = new Map<number, string[]>();
@@ -880,16 +1002,17 @@ const groupHobbiesMap = computed(() => {
     const hobbyCount = new Map<string, number>();
     group.members.forEach((member) => {
       if (!member) return;
-      member.hobby_area.forEach((hobby) => {
+      displayedHobbyAreas(member).forEach((hobby) => {
         const key = hobby.trim().toLowerCase();
         if (!key) return;
         hobbyCount.set(key, (hobbyCount.get(key) ?? 0) + 1);
       });
     });
     const shared = Array.from(hobbyCount.entries())
-      .filter(([, count]) => count > 2)
-      .map(([hobby]) => hobby)
-      .sort((a, b) => a.localeCompare(b));
+      .filter(([, count]) => count >= 2)
+      .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+      .slice(0, 3)
+      .map(([hobby]) => hobby);
     byGroupId.set(group.id, shared);
   });
   return byGroupId;
@@ -914,6 +1037,49 @@ function openCompareDrawer(memberId: number) {
 
 function closeCompareDrawer() {
   compareDrawerOpen.value = false;
+}
+
+function onGroupDetailsUpdateSlots(payload: { groupId: number; memberIds: Array<number | null> }) {
+  const group = groups.value.find((item) => item.id === payload.groupId);
+  if (!group || !Array.isArray(payload.memberIds)) return;
+
+  const nextLen = payload.memberIds.length;
+  const prevLen = group.members.length;
+  if (nextLen < GROUP_MIN_SLOTS || nextLen > GROUP_MAX_SLOTS) return;
+
+  const byId = new Map(students.map((s) => [s.id, s] as const));
+  const otherUsedIds = new Set<number>();
+  for (const other of groups.value) {
+    if (other.id === group.id) continue;
+    for (const member of other.members) {
+      if (member) otherUsedIds.add(member.id);
+    }
+  }
+
+  const nextMembers: Array<Student | null> = [];
+  for (const memberId of payload.memberIds) {
+    if (memberId === null) {
+      nextMembers.push(null);
+      continue;
+    }
+    if (typeof memberId !== "number" || otherUsedIds.has(memberId)) return;
+    const student = byId.get(memberId);
+    if (!student) return;
+    nextMembers.push(student);
+  }
+
+  if (nextLen > prevLen) {
+    const delta = nextLen - prevLen;
+    if (unassignedSlotBuffer.value < delta) return;
+    unassignedSlotBuffer.value -= delta;
+  } else if (nextLen < prevLen) {
+    const delta = prevLen - nextLen;
+    const removedTail = group.members.slice(nextLen);
+    if (removedTail.some((member) => member !== null)) return;
+    unassignedSlotBuffer.value += delta;
+  }
+
+  group.members = nextMembers;
 }
 
 function isGroupCollapsed(groupId: number) {
@@ -955,6 +1121,20 @@ function readStoredGrouping(): { preferredGroupSize: PreferredGroupSize; groups:
     };
   } catch {
     return null;
+  }
+}
+
+function readStoredUnassignedSlotBuffer() {
+  try {
+    const raw = localStorage.getItem(GROUPING_STORAGE_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return 0;
+    const maybe = parsed as Partial<StoredGrouping>;
+    const value = Number(maybe.unassignedSlotBuffer ?? 0);
+    return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -1073,6 +1253,138 @@ function readStoredCollapsedGrouping(): StoredCollapsedGrouping | null {
   }
 }
 
+function loadGroupLeaderLabels() {
+  try {
+    const raw = localStorage.getItem(GROUP_LEADER_LABELS_STORAGE_KEY);
+    if (!raw) {
+      groupLeaderLabelsByGroup.value = {};
+      return;
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      groupLeaderLabelsByGroup.value = {};
+      return;
+    }
+    const maybe = parsed as Partial<StoredGroupLeaderLabels>;
+    if (maybe.version !== 1 || !maybe.groups || typeof maybe.groups !== "object") {
+      groupLeaderLabelsByGroup.value = {};
+      return;
+    }
+
+    const out: Record<number, Record<number, string[]>> = {};
+    for (const [groupIdRaw, memberMap] of Object.entries(maybe.groups)) {
+      const groupId = Number(groupIdRaw);
+      if (!Number.isFinite(groupId) || !memberMap || typeof memberMap !== "object") continue;
+      const memberOut: Record<number, string[]> = {};
+      for (const [memberIdRaw, labels] of Object.entries(memberMap)) {
+        const memberId = Number(memberIdRaw);
+        if (!Number.isFinite(memberId) || !Array.isArray(labels)) continue;
+        memberOut[memberId] = labels
+          .map((label) => String(label).trim())
+          .filter((label) => label.length > 0);
+      }
+      out[groupId] = memberOut;
+    }
+    groupLeaderLabelsByGroup.value = out;
+  } catch {
+    groupLeaderLabelsByGroup.value = {};
+  }
+}
+
+function getMemberLeaderLabels(groupId: number, memberId: number) {
+  return groupLeaderLabelsByGroup.value[groupId]?.[memberId] ?? [];
+}
+
+function loadGroupRoleAssignments() {
+  try {
+    const raw = localStorage.getItem(GROUP_ROLE_ASSIGNMENTS_STORAGE_KEY);
+    if (!raw) {
+      groupRoleAssignmentsByGroup.value = {};
+      return;
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      groupRoleAssignmentsByGroup.value = {};
+      return;
+    }
+    const maybe = parsed as Partial<StoredGroupRoleAssignments>;
+    if (maybe.version !== 1 || !maybe.groups || typeof maybe.groups !== "object") {
+      groupRoleAssignmentsByGroup.value = {};
+      return;
+    }
+    const out: Record<number, DimensionRoleAssignments> = {};
+    for (const [groupIdRaw, assignment] of Object.entries(maybe.groups)) {
+      const groupId = Number(groupIdRaw);
+      if (!Number.isFinite(groupId) || !assignment || typeof assignment !== "object") continue;
+      out[groupId] = assignment as DimensionRoleAssignments;
+    }
+    groupRoleAssignmentsByGroup.value = out;
+  } catch {
+    groupRoleAssignmentsByGroup.value = {};
+  }
+}
+
+function averageGroupMemberDimensionScore(member: Student, keys: string[]) {
+  if (!keys.length) return 0;
+  const ratings = member.ratings as Record<string, number>;
+  const total = keys.reduce((sum, key) => sum + Number(ratings[key] ?? 0), 0);
+  return total / keys.length;
+}
+
+const groupDimensionScoreWarnings = computed(() => {
+  const out = new Map<number, string[]>();
+  for (const group of groups.value) {
+    const assignment = groupRoleAssignmentsByGroup.value[group.id] ?? {};
+    const memberById = new Map<number, Student>();
+    group.members.forEach((member) => {
+      if (member) memberById.set(member.id, member);
+    });
+
+    const warnings: string[] = [];
+    for (const dimension of GROUP_THRESHOLD_DIMENSIONS) {
+      const row = assignment[dimension.key];
+      const leaderScores = (row?.leaders ?? [])
+        .filter((id): id is number => typeof id === "number")
+        .map((id) => {
+          const member = memberById.get(id);
+          return member ? averageGroupMemberDimensionScore(member, dimension.ratingKeys) : 0;
+        });
+      const supportScores = (row?.supports ?? [])
+        .filter((id): id is number => typeof id === "number")
+        .map((id) => {
+          const member = memberById.get(id);
+          return member ? averageGroupMemberDimensionScore(member, dimension.ratingKeys) : 0;
+        });
+
+      const leaderBest = leaderScores.length ? Math.max(...leaderScores) : 0;
+      const supportBest = supportScores.length ? Math.max(...supportScores) : 0;
+      const bothInsufficient =
+        leaderBest < GROUP_SCORE_WARN_THRESHOLD && supportBest < GROUP_SCORE_WARN_THRESHOLD;
+      if (bothInsufficient) {
+        warnings.push(
+          `${dimension.label}: both leader and support are below ${GROUP_SCORE_WARN_THRESHOLD}`,
+        );
+      }
+    }
+    out.set(group.id, warnings);
+  }
+  return out;
+});
+
+function getGroupScoreWarnings(groupId: number) {
+  return groupDimensionScoreWarnings.value.get(groupId) ?? [];
+}
+
+function onStorageChanged(event: StorageEvent) {
+  if (event.key === GROUP_LEADER_LABELS_STORAGE_KEY) {
+    loadGroupLeaderLabels();
+    return;
+  }
+  if (event.key === GROUP_ROLE_ASSIGNMENTS_STORAGE_KEY) {
+    loadGroupRoleAssignments();
+  }
+}
+
 function persistCollapsedGrouping() {
   try {
     const collapsedGroupIds = groups.value
@@ -1092,6 +1404,7 @@ function persistGrouping() {
     const payload: StoredGrouping = {
       version: 2,
       preferredGroupSize: preferredGroupSize.value,
+      unassignedSlotBuffer: unassignedSlotBuffer.value,
       groups: groups.value.map((group) => ({
         id: group.id,
         memberIds: group.members.map((member) => member?.id ?? null),
@@ -1113,6 +1426,7 @@ onMounted(() => {
     rebuildGroups(preferredGroupSize.value, false);
     applyStoredGrouping(stored);
   }
+  unassignedSlotBuffer.value = readStoredUnassignedSlotBuffer();
   const confirmedStored = readStoredConfirmedGrouping();
   if (confirmedStored) {
     const restored: Record<number, boolean> = {};
@@ -1129,15 +1443,23 @@ onMounted(() => {
     }
     groupCollapsedState.value = restored;
   }
+  loadGroupLeaderLabels();
+  loadGroupRoleAssignments();
   persistCollapsedGrouping();
   persistGrouping();
   document.addEventListener("mousedown", onGlobalPointerDown);
   document.addEventListener("keydown", onGlobalEsc);
+  window.addEventListener("storage", onStorageChanged);
+  window.addEventListener(GROUPING_UPDATED_EVENT, loadGroupLeaderLabels);
+  window.addEventListener(GROUPING_UPDATED_EVENT, loadGroupRoleAssignments);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", onGlobalPointerDown);
   document.removeEventListener("keydown", onGlobalEsc);
+  window.removeEventListener("storage", onStorageChanged);
+  window.removeEventListener(GROUPING_UPDATED_EVENT, loadGroupLeaderLabels);
+  window.removeEventListener(GROUPING_UPDATED_EVENT, loadGroupRoleAssignments);
 });
 
 watch(
@@ -1153,6 +1475,10 @@ watch(
   },
   { deep: true }
 );
+
+watch(unassignedSlotBuffer, () => {
+  persistGrouping();
+});
 </script>
 
 <template>
@@ -1338,9 +1664,18 @@ watch(
             class="slotCard"
             :class="{ filled: Boolean(member) }"
             type="button"
-            @click="member && openCompareDrawer(member.id)"
+            @click="member ? openCompareDrawer(member.id) : toggleTip(group.id, slotIndex)"
           >
             <div v-if="member" class="memberContent">
+              <div v-if="getMemberLeaderLabels(group.id, member.id).length" class="memberLeadTagWrap">
+                <span
+                  v-for="label in getMemberLeaderLabels(group.id, member.id)"
+                  :key="`member-lead-${group.id}-${member.id}-${label}`"
+                  class="memberLeadTag"
+                >
+                  {{ label }}
+                </span>
+              </div>
               <span
                 class="memberAlias"
                 @contextmenu.prevent.stop="openMoveMenu(member, $event)"
@@ -1418,16 +1753,22 @@ watch(
           </div>
         </div>
         <button
-          class="nextBtn"
+          class="nextBtn level-2"
           type="button"
           aria-label="open group details"
           @click="openGroupDetails(group.id)"
         >
-          &#8594;
+          <span class="nextArrowText" aria-hidden="true">&gt;</span>
         </button>
       </div>
 
-      <div v-show="!isGroupCollapsed(group.id)" class="footerBar"></div>
+      <div
+        v-if="!isGroupCollapsed(group.id) && getGroupScoreWarnings(group.id).length"
+        class="footerBar"
+      >
+        <span class="footerWarnTitle">Warning:</span>
+        <span class="footerWarnText">{{ getGroupScoreWarnings(group.id).join(" · ") }}</span>
+      </div>
     </section>
 
     <div v-if="detailsOpen" class="drawerBackdrop" @click="closeGroupDetails"></div>
@@ -1440,6 +1781,13 @@ watch(
         :key="selectedGroup.id"
         :panelTitle="`Group ${selectedGroup.id} Details`"
         :groupMembers="selectedGroupMembers"
+        :groupSlots="selectedGroupSlots"
+        :groupId="selectedGroup.id"
+        :canAddSlot="canSelectedGroupAddSlot"
+        :canRemoveEmptySlot="canSelectedGroupRemoveEmptySlot"
+        :addSlotWarning="selectedGroupAddSlotWarning"
+        :removeSlotWarning="selectedGroupRemoveSlotWarning"
+        @update-group-slots="onGroupDetailsUpdateSlots"
       />
     </aside>
 
@@ -1887,6 +2235,31 @@ watch(
   gap: 10px;
 }
 
+.memberLeadTagWrap {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+  z-index: 2;
+}
+
+.memberLeadTag {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  border-radius: 999px;
+  background: #93c5fd;
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
 .memberAlias {
   font-size: clamp(16px, 1.7vw, 24px);
   line-height: 1.2;
@@ -2051,11 +2424,34 @@ watch(
 }
 
 .nextBtn {
-  border: none;
-  background: #d2d2d4;
-  color: #111;
-  font-size: clamp(32px, 4vw, 56px);
+  border: 1px solid #bfdbfe;
+  background: #dbeafe;
+  border-radius: 12px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 132px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+
+.nextBtn:hover {
+  background: #bfdbfe;
+  border-color: #93c5fd;
+}
+
+.nextBtn:active {
+  transform: translateX(1px);
+}
+
+.nextArrowText {
+  color: #2563eb;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
 }
 
 .drawerBackdrop {
@@ -2103,8 +2499,27 @@ watch(
 }
 
 .footerBar {
-  height: 44px;
-  background: #d2d2d4;
+  min-height: 34px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.footerWarnTitle {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.footerWarnText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .compareBackdrop {
@@ -2219,6 +2634,8 @@ watch(
 
   .nextBtn {
     min-height: 90px;
+    width: 40px;
+    min-width: 40px;
   }
 
   .slotPickerText {

@@ -13,11 +13,16 @@ const props = defineProps<{
   max: number;
   focusIndex?: number | null;
   compact?: boolean;
+  openDropdownOnPickedClick?: boolean;
+  allowEmptySlotDelete?: boolean;
+  canDeleteEmptySlot?: boolean;
+  emptySlotDeleteDisabledReason?: string;
 }>();
 
 const emit = defineEmits<{
   (e: "update-slot", index: number, person: IvisRecord | null): void;
   (e: "toggle-focus", index: number): void;
+  (e: "remove-empty-slot", index: number): void;
 }>();
 
 const people = getActiveRecords() as IvisRecord[];
@@ -116,6 +121,7 @@ function openFromPlus(i: number) {
 
 function onPickedClick(i: number) {
   emit("toggle-focus", i);
+  if (props.openDropdownOnPickedClick === false) return;
   openIndex.value = i;
   query.value = "";
   focusSearch();
@@ -126,6 +132,14 @@ function onVisualContextMenu(i: number, event: MouseEvent) {
   openFromPlus(i);
 }
 
+function onPickedDragStart(i: number, ev: DragEvent) {
+  const person = props.slots[i];
+  if (!person || !ev.dataTransfer) return;
+  ev.dataTransfer.effectAllowed = "move";
+  ev.dataTransfer.setData("application/x-ivis-person-id", String(person.id));
+  ev.dataTransfer.setData("text/plain", String(person.id));
+}
+
 function pick(i: number, person: IvisRecord) {
   emit("update-slot", i, person);
   openIndex.value = null;
@@ -133,6 +147,10 @@ function pick(i: number, person: IvisRecord) {
 
 function clear(i: number) {
   emit("update-slot", i, null);
+}
+
+function removeEmptySlot(i: number) {
+  emit("remove-empty-slot", i);
 }
 
 function onDocClick(e: MouseEvent) {
@@ -299,26 +317,50 @@ onBeforeUnmount(() => {
         dim: props.focusIndex !== null && props.focusIndex !== undefined && props.focusIndex !== i - 1,
       }"
     >
-      <button
+      <div
         v-if="!props.slots[i - 1]"
         class="visual addArea"
         @click="openFromPlus(i - 1)"
         @contextmenu.stop.prevent="onVisualContextMenu(i - 1, $event)"
+        role="button"
+        tabindex="0"
       >
+        <button
+          v-if="props.allowEmptySlotDelete"
+          class="singleClearBtn emptySlotDeleteBtn"
+          type="button"
+          :disabled="!props.canDeleteEmptySlot"
+          :title="props.emptySlotDeleteDisabledReason ?? ''"
+          @click.stop="removeEmptySlot(i - 1)"
+        >
+          x
+        </button>
         <span class="plus">+</span>
         <span class="label">Add</span>
-      </button>
+      </div>
 
       <div
         v-else
         class="visual picked"
+        draggable="true"
         @click.stop="onPickedClick(i - 1)"
         @contextmenu.stop.prevent="onVisualContextMenu(i - 1, $event)"
+        @dragstart="onPickedDragStart(i - 1, $event)"
         role="button"
         tabindex="0"
       >
         <button class="singleClearBtn" type="button" @click.stop="clear(i - 1)">x</button>
-        <div class="picked-placeholder level-2">
+        <div
+          class="picked-placeholder level-2"
+          :style="
+            slotRadarColors[i - 1]
+              ? {
+                  backgroundColor: toSoftBackground(slotRadarColors[i - 1]!, 0.32),
+                  borderColor: toSoftBackground(slotRadarColors[i - 1]!, 0.55),
+                }
+              : undefined
+          "
+        >
           <span class="pickedAlias">{{ props.slots[i - 1]!.alias }}</span>
           <div class="pickedHobbyRow">
             <span
@@ -684,6 +726,11 @@ onBeforeUnmount(() => {
   line-height: 1;
   cursor: pointer;
   z-index: 2;
+}
+
+.emptySlotDeleteBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 </style>

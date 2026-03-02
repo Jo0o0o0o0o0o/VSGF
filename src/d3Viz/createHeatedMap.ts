@@ -87,16 +87,8 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
     gy.select("path").attr("stroke", "#94a3b8");
     gy.selectAll("text").attr("fill", "#334155").style("font-size", "10px");
 
-    function isLowAverageCell(cell: HeatedCell) {
-      return cell.rowId === -1 && Number.isFinite(cell.value) && cell.value < 5;
-    }
-
-    function baseStroke(cell: HeatedCell) {
-      return isLowAverageCell(cell) ? "#ef4444" : "rgba(255,255,255,0.7)";
-    }
-
-    function baseDash(cell: HeatedCell) {
-      return isLowAverageCell(cell) ? "3,2" : null;
+    function baseStroke(_cell: HeatedCell) {
+      return "rgba(255,255,255,0.7)";
     }
 
     const rects = grid
@@ -115,11 +107,9 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
       .attr("rx", 2)
       .attr("fill", (d) => (Number.isFinite(d.value) ? color(d.value) : "#e2e8f0"))
       .attr("stroke", (d) => baseStroke(d))
-      .attr("stroke-dasharray", (d) => baseDash(d))
       .on("pointerenter", function (event, d) {
         d3.select(this)
-          .attr("stroke", isLowAverageCell(d) ? "#dc2626" : "#0f172a")
-          .attr("stroke-dasharray", baseDash(d))
+          .attr("stroke", "#0f172a")
           .attr("stroke-width", 1.2);
         handlers.onHover?.(d, event as PointerEvent);
       })
@@ -129,7 +119,6 @@ export function createHeatedMap(svgEl: SVGSVGElement, handlers: HeatedMapHandler
       .on("pointerleave", function (event, d) {
         d3.select(this)
           .attr("stroke", baseStroke(d))
-          .attr("stroke-dasharray", baseDash(d))
           .attr("stroke-width", null);
         handlers.onLeave?.(d, event as PointerEvent);
       })

@@ -5,6 +5,7 @@ import RadarChart from "@/components/RadarChart.vue";
 import GroupDumbbellChart from "@/components/GroupDumbbellChart.vue";
 import GroupDetailDumbbellChart from "@/components/GroupDetailDumbbellChart.vue";
 import VarianceSdBarChart from "@/components/VarianceSdBarChart.vue";
+import GroupHobbyDonutRow from "@/components/GroupHobbyDonutRow.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
 import {
   RADAR_AXES,
@@ -21,17 +22,59 @@ import { getActiveRecords, makeYearStorageKey, GROUPING_UPDATED_EVENT } from "@/
 
 const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
 const COMPARE_GROUP_SLOTS_KEY = makeYearStorageKey("compare_group_slots_v1");
+const GROUP_ROLE_ASSIGNMENTS_STORAGE_KEY = makeYearStorageKey("group_role_assignments_v1");
 
 const MAX = 5;
 const allAxes = RADAR_AXES;
 const activeAxes = ref(allAxes);
+const radarUseCategoryX = ref(false);
+const radarUseResponsibleMode = ref(false);
+const radarCategoryAxes: { key: RadarKey; label: string }[] = [
+  { key: "programming", label: "Build" },
+  { key: "information_visualization", label: "Think + Vis" },
+  { key: "drawing_and_artistic", label: "Design" },
+  { key: "communication", label: "Team Collaboration" },
+];
+const RADAR_CATEGORY_KEYS = {
+  build: [
+    "programming",
+    "code_repository",
+    "computer_graphics_programming",
+    "human_computer_interaction_programming",
+    "computer_usage",
+  ] as const,
+  thinkVis: ["statistical", "mathematics", "information_visualization"] as const,
+  design: ["user_experience_evaluation", "drawing_and_artistic"] as const,
+  team: ["communication", "collaboration"] as const,
+};
+const RESPONSIBLE_DIMENSIONS: Array<{
+  key: "build" | "think_vis" | "design" | "team_collaboration";
+  axisKey: RadarKey;
+  keys: readonly RadarKey[];
+}> = [
+  { key: "build", axisKey: "programming", keys: RADAR_CATEGORY_KEYS.build },
+  { key: "think_vis", axisKey: "information_visualization", keys: RADAR_CATEGORY_KEYS.thinkVis },
+  { key: "design", axisKey: "drawing_and_artistic", keys: RADAR_CATEGORY_KEYS.design },
+  { key: "team_collaboration", axisKey: "communication", keys: RADAR_CATEGORY_KEYS.team },
+];
 
 type StoredGrouping = {
-  version: 1;
+  version: 1 | 2;
+  preferredGroupSize?: 4 | 5;
+  unassignedSlotBuffer?: number;
   groups: Array<{
     id: number;
     memberIds: Array<number | null>;
   }>;
+};
+type DimensionRoleAssignmentRow = {
+  leaders: Array<number | null>;
+  supports: Array<number | null>;
+};
+type DimensionRoleAssignments = Record<string, DimensionRoleAssignmentRow>;
+type StoredGroupRoleAssignments = {
+  version: 1;
+  groups: Record<string, DimensionRoleAssignments>;
 };
 
 const allPeople = getActiveRecords() as IvisRecord[];
@@ -40,9 +83,11 @@ const peopleById = new Map(allPeople.map((person) => [person.id, person] as cons
 const focusIndex = ref<number | null>(null);
 const selectedCategoryKey = ref<SkillCategoryKey | null>(null);
 const varianceUseCategoryMode = ref(false);
+const varianceUseResponsibleMode = ref(false);
 const slots = ref<(CompareGroup | null)[]>(Array.from({ length: MAX }, () => null));
 const storedGrouping = ref<StoredGrouping>({ version: 1, groups: [] });
 const hydratedCompareSlots = ref(false);
+const storedGroupRoleAssignments = ref<Record<number, DimensionRoleAssignments>>({});
 
 function buildGroupSlotSizes(totalStudents: number): number[] {
   if (totalStudents <= 0) return [5];
@@ -81,12 +126,14 @@ function readStoredGrouping(): StoredGrouping {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") return buildDefaultGrouping(allPeople.length);
     const maybe = parsed as Partial<StoredGrouping>;
-    if (maybe.version !== 1 || !Array.isArray(maybe.groups)) {
+    const isV1 = maybe.version === 1;
+    const isV2 = maybe.version === 2;
+    if ((!isV1 && !isV2) || !Array.isArray(maybe.groups)) {
       return buildDefaultGrouping(allPeople.length);
     }
 
     return {
-      version: 1,
+      version: isV2 ? 2 : 1,
       groups: maybe.groups
         .filter((group) => group && typeof group.id === "number" && Array.isArray(group.memberIds))
         .map((group) => ({
@@ -123,6 +170,7 @@ const availableGroups = computed<CompareGroup[]>(() => {
 
 function syncGroupingAndSlots() {
   storedGrouping.value = readStoredGrouping();
+  storedGroupRoleAssignments.value = readStoredGroupRoleAssignments();
 
   const availableById = new Map(availableGroups.value.map((group) => [group.id, group] as const));
 
@@ -195,12 +243,113 @@ const selectedRadarPeople = computed<RadarDog[]>(() =>
   })),
 );
 
+function averageRating(record: RadarDog, keys: readonly RadarKey[]) {
+  if (!keys.length) return 0;
+  const total = keys.reduce((sum, key) => sum + Number(record[key] ?? 0), 0);
+  return Number((total / keys.length).toFixed(2));
+}
+
+function averagePersonRating(record: IvisRecord, keys: readonly RadarKey[]) {
+  if (!keys.length) return 0;
+  const total = keys.reduce((sum, key) => sum + Number(record.ratings[key] ?? 0), 0);
+  return Number((total / keys.length).toFixed(2));
+}
+
+function readStoredGroupRoleAssignments() {
+  try {
+    const raw = localStorage.getItem(GROUP_ROLE_ASSIGNMENTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const maybe = parsed as Partial<StoredGroupRoleAssignments>;
+    if (maybe.version !== 1 || !maybe.groups || typeof maybe.groups !== "object") return {};
+    const out: Record<number, DimensionRoleAssignments> = {};
+    for (const [groupIdRaw, assignment] of Object.entries(maybe.groups)) {
+      const groupId = Number(groupIdRaw);
+      if (!Number.isFinite(groupId) || !assignment || typeof assignment !== "object") continue;
+      out[groupId] = assignment as DimensionRoleAssignments;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+const modeDogs = computed<RadarDog[]>(() => {
+  if (radarUseResponsibleMode.value) {
+    return selectedGroups.value.map((group) => {
+      const assignment = storedGroupRoleAssignments.value[group.id] ?? {};
+      const membersById = new Map(group.members.map((member) => [member.id, member] as const));
+      const hasAssignment = RESPONSIBLE_DIMENSIONS.some((dimension) => {
+        const row = assignment[dimension.key];
+        const ids = [...(row?.leaders ?? []), ...(row?.supports ?? [])].filter(
+          (id): id is number => typeof id === "number",
+        );
+        return ids.length > 0;
+      });
+      const base: RadarDog = {
+        name: group.label,
+        information_visualization: 0,
+        statistical: 0,
+        mathematics: 0,
+        drawing_and_artistic: 0,
+        computer_usage: 0,
+        programming: 0,
+        computer_graphics_programming: 0,
+        human_computer_interaction_programming: 0,
+        user_experience_evaluation: 0,
+        communication: 0,
+        collaboration: 0,
+        code_repository: 0,
+      };
+
+      for (const dimension of RESPONSIBLE_DIMENSIONS) {
+        let total = 0;
+        if (hasAssignment) {
+          const row = assignment[dimension.key];
+          const ids = new Set<number>(
+            [...(row?.leaders ?? []), ...(row?.supports ?? [])].filter(
+              (id): id is number => typeof id === "number",
+            ),
+          );
+          ids.forEach((id) => {
+            const person = membersById.get(id);
+            if (!person) return;
+            total += averagePersonRating(person, dimension.keys);
+          });
+        } else {
+          total = group.members.reduce(
+            (sum, member) => sum + averagePersonRating(member, dimension.keys),
+            0,
+          );
+        }
+        base[dimension.axisKey] = Number(total.toFixed(2));
+      }
+
+      return base;
+    });
+  }
+  if (!radarUseCategoryX.value) return selectedRadarPeople.value;
+  return selectedRadarPeople.value.map((group) => {
+    const base: RadarDog = { ...group };
+    base.programming = averageRating(group, RADAR_CATEGORY_KEYS.build);
+    base.information_visualization = averageRating(group, RADAR_CATEGORY_KEYS.thinkVis);
+    base.drawing_and_artistic = averageRating(group, RADAR_CATEGORY_KEYS.design);
+    base.communication = averageRating(group, RADAR_CATEGORY_KEYS.team);
+    return base;
+  });
+});
+
+const modeAxes = computed(() =>
+  radarUseResponsibleMode.value || radarUseCategoryX.value ? radarCategoryAxes : activeAxes.value,
+);
+
 const radarMax = computed(() => {
-  const axisKeys = activeAxes.value.map((axis) => axis.key);
+  const axisKeys = modeAxes.value.map((axis) => axis.key);
   const maxValue =
-    selectedRadarPeople.value.length && axisKeys.length
+    modeDogs.value.length && axisKeys.length
       ? Math.max(
-          ...selectedRadarPeople.value.map((group) =>
+          ...modeDogs.value.map((group) =>
             Math.max(...axisKeys.map((key) => Number(group[key]) || 0)),
           ),
         )
@@ -274,7 +423,60 @@ const detailDumbbellData = computed<GroupDetailDumbbellDatum[]>(() =>
 
 const selectedGroupNames = computed(() => selectedGroups.value.map((group) => group.label));
 
+
 const varianceSdData = computed<VarianceSdDatum[]>(() => {
+  if (varianceUseResponsibleMode.value) {
+    return RESPONSIBLE_DIMENSIONS.map((dimension) => {
+      const groupTotals = selectedGroups.value.map((group) => {
+        const assignment = storedGroupRoleAssignments.value[group.id] ?? {};
+        const membersById = new Map(group.members.map((member) => [member.id, member] as const));
+        const row = assignment[dimension.key];
+        const assignedIds = new Set<number>(
+          [...(row?.leaders ?? []), ...(row?.supports ?? [])].filter(
+            (id): id is number => typeof id === "number",
+          ),
+        );
+
+        let total = 0;
+        if (assignedIds.size > 0) {
+          assignedIds.forEach((id) => {
+            const person = membersById.get(id);
+            if (!person) return;
+            total += averagePersonRating(person, dimension.keys);
+          });
+        } else {
+          total = group.members.reduce(
+            (sum, member) => sum + averagePersonRating(member, dimension.keys),
+            0,
+          );
+        }
+        return Number(total.toFixed(4));
+      });
+
+      if (!groupTotals.length) {
+        return {
+          categoryKey: dimension.key,
+          categoryLabel: radarCategoryAxes.find((axis) => axis.key === dimension.axisKey)?.label ?? dimension.key,
+          variance: 0,
+          sd: 0,
+        };
+      }
+
+      const mean = groupTotals.reduce((sum, value) => sum + value, 0) / groupTotals.length;
+      const variance =
+        groupTotals.reduce((sum, value) => sum + (value - mean) * (value - mean), 0) /
+        groupTotals.length;
+      const sd = Math.sqrt(variance);
+
+      return {
+        categoryKey: dimension.key,
+        categoryLabel: radarCategoryAxes.find((axis) => axis.key === dimension.axisKey)?.label ?? dimension.key,
+        variance: Number(variance.toFixed(4)),
+        sd: Number(sd.toFixed(4)),
+      };
+    });
+  }
+
   if (varianceUseCategoryMode.value) {
     return SKILL_CATEGORIES.map((category) => {
       const groupTotals = selectedRadarPeople.value.map((group) => {
@@ -396,10 +598,38 @@ onBeforeUnmount(() => {
     <section class="grid">
       <div class="panel level-3 big">
         <h3>Group Ratings Radar Compare</h3>
+        <div class="radarToolbar">
+          <div class="radarToggle" role="group" aria-label="toggle radar dimension mode">
+            <button
+              class="radarToggleBtn"
+              :class="{ active: !radarUseCategoryX }"
+              type="button"
+              @click="radarUseCategoryX = false"
+            >
+              Details
+            </button>
+            <button
+              class="radarToggleBtn"
+              :class="{ active: radarUseCategoryX }"
+              type="button"
+              @click="radarUseCategoryX = true"
+            >
+              4D Set
+            </button>
+          </div>
+          <button
+            type="button"
+            class="responsibleToggleBtn"
+            :class="{ on: radarUseResponsibleMode }"
+            @click="radarUseResponsibleMode = !radarUseResponsibleMode"
+          >
+            {{ radarUseResponsibleMode ? "Responsible: ON" : "Responsible: OFF" }}
+          </button>
+        </div>
         <div class="radarChartWrap">
           <RadarChart
-            :dogs="selectedRadarPeople"
-            :axes="activeAxes"
+            :dogs="modeDogs"
+            :axes="modeAxes"
             :focusIndex="focusIndex"
             :min="0"
             :max="radarMax"
@@ -453,6 +683,14 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="varianceToggleBtn"
+            :class="{ on: varianceUseResponsibleMode }"
+            @click="varianceUseResponsibleMode = !varianceUseResponsibleMode"
+          >
+            {{ varianceUseResponsibleMode ? "Responsible: ON" : "Responsible: OFF" }}
+          </button>
+          <button
+            type="button"
+            class="varianceToggleBtn"
             :class="{ on: varianceUseCategoryMode }"
             @click="varianceUseCategoryMode = !varianceUseCategoryMode"
           >
@@ -462,6 +700,10 @@ onBeforeUnmount(() => {
         <div class="varianceChartWrap">
           <VarianceSdBarChart :data="varianceSdData" />
         </div>
+      </div>
+
+      <div class="full hobbyDonutSection">
+        <GroupHobbyDonutRow :slots="slots" />
       </div>
     </section>
   </main>
@@ -504,6 +746,38 @@ onBeforeUnmount(() => {
   margin-bottom: 12px;
 }
 
+.radarToolbar {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.radarToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radarToggleBtn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 999px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.radarToggleBtn.active {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
 .dumbbellChartWrap {
   height: 360px;
   min-height: 320px;
@@ -520,6 +794,27 @@ onBeforeUnmount(() => {
 
 .varianceToolbar {
   margin-bottom: 8px;
+}
+
+.hobbyDonutSection {
+  grid-column: 1 / -1;
+}
+
+.responsibleToggleBtn {
+  border: 1px solid #9ca3af;
+  background: #f8fafc;
+  color: #111827;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.responsibleToggleBtn.on {
+  border-color: #0ea5e9;
+  background: #e0f2fe;
+  color: #0c4a6e;
 }
 
 .varianceToggleBtn {
@@ -586,4 +881,5 @@ onBeforeUnmount(() => {
 .panel.narrow {
   min-height: 0;
 }
+
 </style>

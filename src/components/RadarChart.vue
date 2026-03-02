@@ -33,55 +33,11 @@ function legendColor(idx: number) {
   return RADAR_COLORS[idx % RADAR_COLORS.length] ?? "#f59e0b";
 }
 
-function lightenColorKeepAlpha(color: string, factor = 0.75) {
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  const lighten = (v: number) => clamp(v + (255 - v) * factor);
-
-  if (/^#([\da-f]{3}|[\da-f]{6})$/i.test(color)) {
-    const hex = color.slice(1);
-    const full =
-      hex.length === 3
-        ? hex
-            .split("")
-            .map((c) => c + c)
-            .join("")
-        : hex;
-    const r = parseInt(full.slice(0, 2), 16);
-    const g = parseInt(full.slice(2, 4), 16);
-    const b = parseInt(full.slice(4, 6), 16);
-    return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, 1)`;
-  }
-
-  const match = color.match(/^rgba?\(([^)]+)\)$/i);
-  const channelList = match?.[1];
-  if (channelList) {
-    const parts = channelList.split(",").map((p) => p.trim());
-    const r = Number(parts[0]);
-    const g = Number(parts[1]);
-    const b = Number(parts[2]);
-    const a = parts[3] !== undefined ? Number(parts[3]) : 1;
-
-    if ([r, g, b, a].every((v) => Number.isFinite(v))) {
-      return `rgba(${lighten(r)}, ${lighten(g)}, ${lighten(b)}, ${a})`;
-    }
-  }
-
-  return color;
-}
-
 const tooltipStyle = computed(() => {
-  const dogIndex = hovered.value?.dogIndex;
-  if (dogIndex === null || dogIndex === undefined) {
-    return {
-      left: `${tip.value.x}px`,
-      top: `${tip.value.y}px`,
-    };
-  }
-
   return {
     left: `${tip.value.x}px`,
     top: `${tip.value.y}px`,
-    backgroundColor: lightenColorKeepAlpha(legendColor(dogIndex)),
+    backgroundColor: "rgba(239, 246, 255, 0.96)",
   };
 });
 
@@ -229,8 +185,9 @@ svg {
 .tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.95);
-  color: #111827;
+  background: rgba(239, 246, 255, 0.96);
+  color: #0f172a;
+  border: 1px solid rgba(147, 197, 253, 0.7);
   border-radius: 10px;
   padding: 8px 10px;
   font-size: 12px;
@@ -241,6 +198,7 @@ svg {
 .tTitle {
   font-weight: 700;
   margin-bottom: 4px;
+  color: #1d4ed8;
 }
 .tRow {
   opacity: 0.92;
@@ -249,8 +207,8 @@ svg {
   position: absolute;
   right: 12px;
   bottom: 12px;
-  background: rgba(255, 248, 220, 0.95);
-  border: 1px solid rgba(198, 142, 0, 0.35);
+  background: rgba(239, 246, 255, 0.96);
+  border: 1px solid rgba(147, 197, 253, 0.78);
   border-radius: 12px;
   padding: 10px 14px;
   display: flex;
@@ -259,7 +217,7 @@ svg {
   max-width: 45%;
   pointer-events: auto;
   backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px rgba(198, 142, 0, 0.12);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.14);
 }
 
 .legendRow {
@@ -276,7 +234,7 @@ svg {
 }
 
 .legendRow:hover {
-  background: rgba(230, 168, 0, 0.12);
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .legendRow.dim {
@@ -292,13 +250,13 @@ svg {
   height: 10px;
   border-radius: 999px;
   flex: 0 0 auto;
-  box-shadow: 0 0 0 1px rgba(92, 66, 16, 0.15);
+  box-shadow: 0 0 0 1px rgba(30, 64, 175, 0.16);
 }
 
 .label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(72, 52, 12, 0.9);
+  color: rgba(30, 58, 138, 0.92);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

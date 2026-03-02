@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import CompareSlotsBar from "@/components/CompareSlotsBar.vue";
-import EmbeddingAreaBarChart from "@/components/EmbeddingAreaBarChart.vue";
+import EmbeddingAreaDonutChart from "@/components/EmbeddingAreaDonutChart.vue";
 import RadarChart from "@/components/RadarChart.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
 import type { EmbeddingAreaDatum } from "@/d3Viz/createEmbeddingAreaBarChart";
@@ -20,7 +20,38 @@ import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from 
 const MAX = 1;
 const allAxes = RADAR_AXES;
 const activeAxes = ref(allAxes);
+const radarUseCategoryX = ref(false);
 const allPeople = getActiveRecords() as IvisRecord[];
+const radarCategoryAxes: { key: RadarKey; label: string }[] = [
+  {
+    key: "programming",
+    label: "Build",
+  },
+  {
+    key: "information_visualization",
+    label: "Think + Vis",
+  },
+  {
+    key: "drawing_and_artistic",
+    label: "Design",
+  },
+  {
+    key: "communication",
+    label: "Team Collaboration",
+  },
+];
+const RADAR_CATEGORY_KEYS = {
+  build: [
+    "programming",
+    "code_repository",
+    "computer_graphics_programming",
+    "human_computer_interaction_programming",
+    "computer_usage",
+  ] as const,
+  thinkVis: ["statistical", "mathematics", "information_visualization"] as const,
+  design: ["user_experience_evaluation", "drawing_and_artistic"] as const,
+  team: ["communication", "collaboration"] as const,
+};
 
 const focusIndex = ref<number | null>(null);
 const slots = ref<(IvisRecord | null)[]>(Array.from({ length: MAX }, () => null));
@@ -171,6 +202,26 @@ const radarPeopleWithAverage = computed<RadarDog[]>(() => {
   if (!avg || base.length === 0) return base;
   return [...base, avg];
 });
+
+function averageRating(record: RadarDog, keys: readonly RadarKey[]) {
+  if (!keys.length) return 0;
+  const total = keys.reduce((sum, key) => sum + Number(record[key] ?? 0), 0);
+  return Number((total / keys.length).toFixed(2));
+}
+
+const modeDogs = computed<RadarDog[]>(() => {
+  if (!radarUseCategoryX.value) return radarPeopleWithAverage.value;
+  return radarPeopleWithAverage.value.map((p) => {
+    const base: RadarDog = { ...p };
+    base.programming = averageRating(p, RADAR_CATEGORY_KEYS.build);
+    base.information_visualization = averageRating(p, RADAR_CATEGORY_KEYS.thinkVis);
+    base.drawing_and_artistic = averageRating(p, RADAR_CATEGORY_KEYS.design);
+    base.communication = averageRating(p, RADAR_CATEGORY_KEYS.team);
+    return base;
+  });
+});
+
+const modeAxes = computed(() => (radarUseCategoryX.value ? radarCategoryAxes : activeAxes.value));
 
 function syncFromStoredSelection() {
   const selectedId = readComparePersonId();
@@ -405,7 +456,7 @@ onBeforeUnmount(() => {
       <section class="panel level-1 embeddingPanel">
         <h3>Hobby Area Embedding</h3>
         <div class="embeddingChartWrap">
-          <EmbeddingAreaBarChart :data="selectedPersonAreaEmbeddingScores" />
+          <EmbeddingAreaDonutChart :data="selectedPersonAreaEmbeddingScores" />
         </div>
         <p v-if="!selectedPerson" class="embeddingHint">
           Select a person to view area-level embedding scores.
@@ -425,10 +476,30 @@ onBeforeUnmount(() => {
     <section class="grid">
       <div class="panel level-1 big">
         <h3>Ratings Radar Compare</h3>
+        <div class="radarToolbar">
+          <div class="radarToggle" role="group" aria-label="toggle radar dimension mode">
+            <button
+              class="radarToggleBtn"
+              :class="{ active: !radarUseCategoryX }"
+              type="button"
+              @click="radarUseCategoryX = false"
+            >
+              Details
+            </button>
+            <button
+              class="radarToggleBtn"
+              :class="{ active: radarUseCategoryX }"
+              type="button"
+              @click="radarUseCategoryX = true"
+            >
+              4D Set
+            </button>
+          </div>
+        </div>
         <div class="radarChartWrap">
           <RadarChart
-            :dogs="radarPeopleWithAverage"
-            :axes="activeAxes"
+            :dogs="modeDogs"
+            :axes="modeAxes"
             :focusIndex="focusIndex"
             @toggleFocus="toggleFocus"
           />
@@ -499,6 +570,34 @@ onBeforeUnmount(() => {
   min-height: 390px;
 }
 
+.radarToolbar {
+  margin: 0 0 8px;
+}
+
+.radarToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radarToggleBtn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 999px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.radarToggleBtn.active {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
 .panel.narrow {
   min-height: 0;
 }
@@ -507,6 +606,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 260px;
+  background: transparent;
 }
 
 .embeddingChartWrap {
