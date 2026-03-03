@@ -1,0 +1,227 @@
+﻿[
+    {
+        "id":  1,
+        "alias":  "Gandabldore",
+        "aiming_raw":  "To create interactive representations of data that help people understand complex topics more easily. I hope to use the learnings in my professional career when trying to build user experiences that meaningfully translate information in a way that helps the user understand what they are doing, and what they are looking at."
+    },
+    {
+        "id":  2,
+        "alias":  "Appa ",
+        "aiming_raw":  "IV is good knowledge when it comes to programming. Every programmer should know it. Example: one important factor in systems with good IV is ‘History’ and Java is not statebased basically not optimal for this. I know Clojure would optimally handle this however JavaScript comes close. And therefore I will focus on learning how to optimise IV with D3.js. I think it will be super cool."
+    },
+    {
+        "id":  3,
+        "alias":  "Ravagers",
+        "aiming_raw":  "I expect to expand my programming skills to visualization. Usually I jump from hating programming to liking programming (based on the course structure etc.), and hopefully this course will get me motivated and enjoy the field of information visualization. I expect to use this in future projects where it is necessary to visualize information, such as future project or portfolios."
+    },
+    {
+        "id":  4,
+        "alias":  "Senjougahara",
+        "aiming_raw":  "I expect to learn about making interactive platforms to visualize various data. Since I’m into game development as well I’d also like to see how information visualization knowledge can be applied in game development."
+    },
+    {
+        "id":  5,
+        "alias":  "Björky",
+        "aiming_raw":  "I expect to learn more about representing data in a correct way without mistaking the users. I think we will learn more by ourself and with little courses."
+    },
+    {
+        "id":  6,
+        "alias":  "Sthlm",
+        "aiming_raw":  "To clearly and beautifully display information"
+    },
+    {
+        "id":  7,
+        "alias":  "Baby Yoda (Grogu)",
+        "aiming_raw":  "Best ways to display data, D3.js, make cool graphs and visualizations"
+    },
+    {
+        "id":  8,
+        "alias":  "dorp",
+        "aiming_raw":  "I expect to learn how to handle data and tools to present it"
+    },
+    {
+        "id":  9,
+        "alias":  "tigerShark",
+        "aiming_raw":  "How fancy graphics are made and how to represent data accurately and in a visually informative way"
+    },
+    {
+        "id":  10,
+        "alias":  "PorcupineLover1337",
+        "aiming_raw":  "Make colorful, informative and easy to read graphs, that can help me in future work."
+    },
+    {
+        "id":  11,
+        "alias":  "Neko27",
+        "aiming_raw":  "How to turn information into graphics with programming. Maybe it will help for future work."
+    },
+    {
+        "id":  12,
+        "alias":  "Manama Jeff",
+        "aiming_raw":  "I\u0027m very interested in visualizations overall, so I look forward to learning as much as possible here. I expect to use what I learn in the future when dealing with big data etc."
+    },
+    {
+        "id":  13,
+        "alias":  "wagame",
+        "aiming_raw":  "I would like to improve my skills in graphic design and frontend programming (interested in D3). I want to learn how to make smart AND good looking visualizations of data. Being able to sort data is always useful so I think I will have a lot of use of this course in the future."
+    },
+    {
+        "id":  14,
+        "alias":  "loooh",
+        "aiming_raw":  "I expect to get a good foundation for visualizing various types of data. I think being able to visualize information is a valuable skill to have to be able to convey ideas and information to others in a hopefully easy to understand way, and I guess that\u0027s how I\u0027m going to use it."
+    },
+    {
+        "id":  15,
+        "alias":  "Xiao",
+        "aiming_raw":  "I expect to learn how to represent data through graphs. I want to learn more about computer graphics and I may do something relevant when I graduate."
+    },
+    {
+        "id":  16,
+        "alias":  "C3I2",
+        "aiming_raw":  "To present data to decisionmakers and the public in an efficient way"
+    },
+    {
+        "id":  17,
+        "alias":  "Anchovy",
+        "aiming_raw":  "After the first lecture, I came to the conclusion that this course is about how to structure data so that it is understandable not only to you. I think that regardless of my future profession, this skill is useful in processing data that overwhelms our world."
+    },
+    {
+        "id":  18,
+        "alias":  "Jaskier",
+        "aiming_raw":  "I\u0027m hoping to learn something new and develop my programming skills. I\u0027m hoping to produce something that can also be used in my portfolio."
+    },
+    {
+        "id":  19,
+        "alias":  "SuperstitiousOtter",
+        "aiming_raw":  "I hope to learn methods and best practices for visualizing data to make it understandable for people. I\u0027m interested in working with"
+    },
+    {
+        "id":  20,
+        "alias":  "Chock",
+        "aiming_raw":  "Ive been in courses that Mario held, and they all held a high quality. I would also like some useful knowledge or even ideas for my masters thesis"
+    },
+    {
+        "id":  21,
+        "alias":  "Moony04",
+        "aiming_raw":  "Diffrent ways on how to think about information visualization. Learn how other with perspetivs think on information visualization."
+    },
+    {
+        "id":  22,
+        "alias":  "sentient_polyhedron",
+        "aiming_raw":  "to improve my skills about presenting data in a useful way; for random data i collect as hobby projects, also for future jobs where i have to analyze and discuss datasets"
+    },
+    {
+        "id":  23,
+        "alias":  "Rani",
+        "aiming_raw":  "I expect to learn how to clearly represent data of various forms, or rather, the technical aspect of displaying such representations. I hope this knowledge will be somewhat useful in my hobbies, because I don\u0027t really care too much about statistics."
+    },
+    {
+        "id":  24,
+        "alias":  "glas444",
+        "aiming_raw":  "Create infographics and obtain a better understanding of how to present information visually. Obtain a greater knowledge in different programming languages in the usecase of adapting it to visual programs."
+    },
+    {
+        "id":  25,
+        "alias":  "fvmlrvgj",
+        "aiming_raw":  "visualizing information in the most easy and informative way"
+    },
+    {
+        "id":  26,
+        "alias":  "Supporter24",
+        "aiming_raw":  "I want to learn both the how and the why of visualization. So I want to gain experience with visualization libraries and the practicality of it, but I also want to be able to decide the best visualization for a given data set."
+    },
+    {
+        "id":  27,
+        "alias":  "Frog",
+        "aiming_raw":  "I don\u0027t really know how I will use it but I excpect to learn cool ways to visualize data."
+    },
+    {
+        "id":  28,
+        "alias":  "ztekzpaden1",
+        "aiming_raw":  "I expect that I will learn more about how to visualize data effectively which I might use in future research projects or at work"
+    },
+    {
+        "id":  29,
+        "alias":  "Aiya12",
+        "aiming_raw":  "I expect to learn how we can show millions of data clearly in a visualization tool. I can use it to analyse datas to give a trend or facilitate decision-making process."
+    },
+    {
+        "id":  30,
+        "alias":  "RedMouse",
+        "aiming_raw":  "I expect to learn how to visualize abstract data via understandable forms."
+    },
+    {
+        "id":  31,
+        "alias":  "Rouy Saila",
+        "aiming_raw":  "Visualizing data in helpful ways, applies for both what I expect to learn and what I expect to use it for."
+    },
+    {
+        "id":  32,
+        "alias":  "KusinVitamin",
+        "aiming_raw":  "How to make fun and interesting diagrams."
+    },
+    {
+        "id":  33,
+        "alias":  "Kpmsd",
+        "aiming_raw":  "To learn more about different tools and methods for visualizing data. It could be useful in the future when presenting results maybe or to create nice looking visualizations."
+    },
+    {
+        "id":  34,
+        "alias":  "Oliver Queen",
+        "aiming_raw":  "learning to process various information and visualize them in an interactive and informative way"
+    },
+    {
+        "id":  35,
+        "alias":  "dez2pacito",
+        "aiming_raw":  "I expect to learn how to utilize visualization tools to convey data in an easy to understand and aesthetically pleasing manner."
+    },
+    {
+        "id":  36,
+        "alias":  "Snowflake",
+        "aiming_raw":  "As the name entails, I expect to learn how to visualize information, the methods to use ect. Something I think could be useful in most future courses and work."
+    },
+    {
+        "id":  37,
+        "alias":  "CrispyChicken",
+        "aiming_raw":  "Hopefully understand how u can create visualizations to help others understand my programs and allow non-programmers to interact data and build data pipelines."
+    },
+    {
+        "id":  38,
+        "alias":  "_no_one_",
+        "aiming_raw":  "I expect to learn how to work with different kinds of data and how to present it in a meaningful and aesthetic way. I\u0027m also hoping that this course will allow me to dive a little bit into generative art as this would be very beneficial for my job."
+    },
+    {
+        "id":  39,
+        "alias":  "gherkin",
+        "aiming_raw":  "Get some practical experience doing visualization and get and introduction to a field that on the surface level looks really really interesting"
+    },
+    {
+        "id":  40,
+        "alias":  "XÆA12",
+        "aiming_raw":  "I expect to better communicate obscure data and make it coherent to all."
+    },
+    {
+        "id":  41,
+        "alias":  "sofi",
+        "aiming_raw":  "I expecto to learn how to manage big data in order to fullfil a especific goal"
+    },
+    {
+        "id":  42,
+        "alias":  "Nier1.2247",
+        "aiming_raw":  "Platform and tools for visualization, and how to visualize data."
+    },
+    {
+        "id":  43,
+        "alias":  "Arceus",
+        "aiming_raw":  "D3.js. wish I could use this to visualize some interesting data"
+    },
+    {
+        "id":  44,
+        "alias":  "Baar",
+        "aiming_raw":  "I want to learn to use digital tools create more convenient and intuitive visual information."
+    },
+    {
+        "id":  45,
+        "alias":  "sofi",
+        "aiming_raw":  "I´m expecting to learn how to propertly visualize information in order to improve my work."
+    }
+]

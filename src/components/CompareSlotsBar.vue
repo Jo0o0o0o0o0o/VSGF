@@ -48,10 +48,14 @@ const keywordsByArea = new Map<string, string[]>(
   hobbyAreaRules.map((rule) => [rule.hobby_area.trim().toLowerCase(), rule.keywords ?? []]),
 );
 const precomputedEmbeddings = getActiveEmbeddings() as PrecomputedEmbeddingsFile | null;
+function normalizedMetaValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 const precomputedEmbeddingsCompatible =
   !!precomputedEmbeddings &&
-  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
-  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
+  normalizedMetaValue(precomputedEmbeddings.model) === normalizedMetaValue(EMBEDDING_MODEL_ID) &&
+  normalizedMetaValue(precomputedEmbeddings.textBuilderVersion) ===
+    normalizedMetaValue(EMBEDDING_TEXT_BUILDER_VERSION);
 const studentEmbeddingById = new Map<number, number[]>(
   precomputedEmbeddings?.embeddings.map((item) => [item.id, normalizeVector(item.vector)]) ?? [],
 );

@@ -3,10 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import GroupDetails from "@/views/GroupDetails.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
+import ivis21AimingJson from "@/data/IVIS21_aming.json";
+import ivis22AimingJson from "@/data/IVIS22_aming.json";
+import ivis21AimingAreaJson from "@/data/IVIS21_aiming_area.json";
+import ivis22AimingAreaJson from "@/data/IVIS22_aiming_area.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import type { IvisRecord } from "@/types/ivis23";
 import {
   activeYear,
+  type DatasetYear,
   getActiveEmbeddings,
   getActiveRecords,
   GROUPING_CONFIRMED_EVENT,
@@ -77,6 +82,20 @@ type PrecomputedEmbeddingsFile = {
   generatedAt?: string;
   datasetPath?: string;
   embeddings: Array<{ id: number; vector: number[] }>;
+};
+
+type AimingEntry = {
+  id: number;
+  alias: string;
+  aiming_raw: string;
+};
+
+type AimingAreaEntry = {
+  area_key: string;
+  area_label: string;
+  description?: string;
+  matched_count?: number;
+  member_ids?: number[];
 };
 
 const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
@@ -216,6 +235,8 @@ const studentEmbeddingById = computed(
     )
 );
 const queryEmbeddingCache = new Map<string, number[]>();
+const aimingStudentEmbeddingCache = new Map<number, number[]>();
+const embeddingScoresAlreadyScaled = ref(false);
 let embeddingTaskSeq = 0;
 let embeddingWorker: Worker | null = null;
 let workerRequestId = 0;
@@ -230,14 +251,40 @@ const workerPending = new Map<
 const QUERY_EMBED_CACHE_KEY = makeYearStorageKey(
   `query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
 );
+const AIMING_STUDENT_EMBED_CACHE_KEY = makeYearStorageKey(
+  `aiming_student_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
+);
+const AIMING_BY_YEAR: Partial<Record<DatasetYear, AimingEntry[]>> = {
+  "21": ivis21AimingJson as AimingEntry[],
+  "22": ivis22AimingJson as AimingEntry[],
+};
+const AIMING_AREAS_BY_YEAR: Partial<Record<DatasetYear, AimingAreaEntry[]>> = {
+  "21": ivis21AimingAreaJson as AimingAreaEntry[],
+  "22": ivis22AimingAreaJson as AimingAreaEntry[],
+};
+const activeAimingRows = computed<AimingEntry[]>(() => AIMING_BY_YEAR[activeYear.value] ?? []);
+const activeAimingById = computed(() => new Map<number, AimingEntry>(activeAimingRows.value.map((row) => [row.id, row])));
+const activeAimingAreas = computed<AimingAreaEntry[]>(() => AIMING_AREAS_BY_YEAR[activeYear.value] ?? []);
+const supportsAimingEmbeddingScoring = computed(
+  () => activeAimingRows.value.length > 0 && activeAimingAreas.value.length > 0,
+);
+function normalizedMetaValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 const precomputedEmbeddingsCompatible = computed(
   () =>
     !!precomputedEmbeddings.value &&
-    precomputedEmbeddings.value.model === EMBEDDING_MODEL_ID &&
-    precomputedEmbeddings.value.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION
+    normalizedMetaValue(precomputedEmbeddings.value.model) === normalizedMetaValue(EMBEDDING_MODEL_ID) &&
+    normalizedMetaValue(precomputedEmbeddings.value.textBuilderVersion) ===
+      normalizedMetaValue(EMBEDDING_TEXT_BUILDER_VERSION)
 );
 const requiresEmbeddings = computed(
   () => keywordScoringMode.value === "embedding" || keywordScoringMode.value === "hybrid"
+);
+const keywordSearchPlaceholder = computed(() =>
+  supportsAimingEmbeddingScoring.value
+    ? "Score by aiming keyword/area (e.g. ux, communication)"
+    : "Score by hobby keyword (e.g. games)",
 );
 
 function normalizeKeyword(text: string) {
@@ -288,6 +335,8 @@ function persistEmbeddingCaches() {
   try {
     const queryObject = Object.fromEntries(queryEmbeddingCache.entries());
     localStorage.setItem(QUERY_EMBED_CACHE_KEY, JSON.stringify(queryObject));
+    const aimingObject = Object.fromEntries(aimingStudentEmbeddingCache.entries());
+    localStorage.setItem(AIMING_STUDENT_EMBED_CACHE_KEY, JSON.stringify(aimingObject));
   } catch {
     // ignore storage failures
   }
@@ -301,6 +350,16 @@ function restoreEmbeddingCaches() {
       Object.entries(parsed).forEach(([query, vector]) => {
         if (!Array.isArray(vector)) return;
         queryEmbeddingCache.set(query, vector.map((v) => Number(v)));
+      });
+    }
+    const rawAiming = localStorage.getItem(AIMING_STUDENT_EMBED_CACHE_KEY);
+    if (rawAiming) {
+      const parsed = JSON.parse(rawAiming) as Record<string, number[]>;
+      Object.entries(parsed).forEach(([id, vector]) => {
+        if (!Array.isArray(vector)) return;
+        const numericId = Number(id);
+        if (!Number.isFinite(numericId)) return;
+        aimingStudentEmbeddingCache.set(numericId, normalizeVector(vector.map((v) => Number(v))));
       });
     }
   } catch {
@@ -371,10 +430,51 @@ async function ensureQueryEmbedding(query: string) {
   return normalized;
 }
 
+function hasSearchableAimingRaw(student: Student) {
+  return normalizeKeyword(activeAimingById.value.get(student.id)?.aiming_raw ?? "").length > 0;
+}
+
+function buildAimingAreaEmbeddingQuery(area: AimingAreaEntry) {
+  const label = area.area_label?.trim() || area.area_key;
+  const desc = area.description?.trim() ?? "";
+  if (!desc) return label;
+  return `${label}: ${desc}`;
+}
+
+function inferAimingAreaKeys(queryTokens: string[]) {
+  if (!queryTokens.length) return [];
+  const matched = new Set<string>();
+  for (const area of activeAimingAreas.value) {
+    const areaTokens = tokenize(`${area.area_key} ${area.area_label} ${area.description ?? ""}`);
+    for (const token of queryTokens) {
+      if (areaTokens.includes(token)) {
+        matched.add(area.area_key);
+        break;
+      }
+    }
+  }
+  return Array.from(matched);
+}
+
+async function ensureAimingStudentEmbedding(studentId: number, aimingRaw: string) {
+  if (aimingStudentEmbeddingCache.has(studentId)) {
+    return aimingStudentEmbeddingCache.get(studentId) ?? [];
+  }
+  const result = await callEmbeddingWorker<{ query: string; vector: number[] }>({
+    type: "embed-query",
+    payload: { query: aimingRaw },
+  });
+  const normalized = normalizeVector(result.vector ?? []);
+  aimingStudentEmbeddingCache.set(studentId, normalized);
+  persistEmbeddingCaches();
+  return normalized;
+}
+
 async function updateEmbeddingScores() {
   const keyword = hobbyKeywordQuery.value.trim();
   if (!requiresEmbeddings.value || !keyword) {
     embeddingScores.value = {};
+    embeddingScoresAlreadyScaled.value = false;
     if (embeddingStatus.value !== "error") embeddingStatus.value = "idle";
     return;
   }
@@ -384,6 +484,57 @@ async function updateEmbeddingScores() {
   embeddingErrorMessage.value = "";
 
   try {
+    if (supportsAimingEmbeddingScoring.value) {
+      ensureEmbeddingWorker();
+      await callEmbeddingWorker<{ ok: true }>({ type: "warmup", payload: {} });
+
+      const queryTokens = tokenize(keyword);
+      const targetAreaKeys = inferAimingAreaKeys(queryTokens);
+      const candidateAreas =
+        targetAreaKeys.length > 0
+          ? activeAimingAreas.value.filter((area) => targetAreaKeys.includes(area.area_key))
+          : activeAimingAreas.value;
+
+      const areaVectors = new Map<string, number[]>();
+      await Promise.all(
+        candidateAreas.map(async (area) => {
+          areaVectors.set(area.area_key, await ensureQueryEmbedding(buildAimingAreaEmbeddingQuery(area)));
+        }),
+      );
+      if (seq !== embeddingTaskSeq) return;
+
+      const rawScores: Record<number, number> = {};
+      await Promise.all(
+        students.map(async (student) => {
+          const aimingRaw = activeAimingById.value.get(student.id)?.aiming_raw ?? "";
+          if (!normalizeKeyword(aimingRaw)) return;
+          const studentVec = await ensureAimingStudentEmbedding(student.id, aimingRaw);
+          if (!studentVec.length) return;
+          let best = 0;
+          for (const [, queryVec] of areaVectors) {
+            if (!queryVec.length) continue;
+            const score = Math.max(0, dot(studentVec, queryVec));
+            if (score > best) best = score;
+          }
+          rawScores[student.id] = best;
+        }),
+      );
+      if (seq !== embeddingTaskSeq) return;
+
+      const rawValues = Object.values(rawScores).filter((value) => value > 0);
+      const minRaw = rawValues.length ? Math.min(...rawValues) : 0;
+      const maxRaw = rawValues.length ? Math.max(...rawValues) : 0;
+      const scaled: Record<number, number> = {};
+      Object.entries(rawScores).forEach(([id, raw]) => {
+        scaled[Number(id)] = remapEmbeddingScore(raw, minRaw, maxRaw);
+      });
+
+      embeddingScores.value = scaled;
+      embeddingScoresAlreadyScaled.value = true;
+      embeddingStatus.value = "ready";
+      return;
+    }
+
     await ensureStudentEmbeddings();
     const queryVector = await ensureQueryEmbedding(keyword);
     if (seq !== embeddingTaskSeq) return;
@@ -397,10 +548,12 @@ async function updateEmbeddingScores() {
       scored[student.id] = Math.max(0, cosine);
     }
     embeddingScores.value = scored;
+    embeddingScoresAlreadyScaled.value = false;
     embeddingStatus.value = "ready";
   } catch (error) {
     if (seq !== embeddingTaskSeq) return;
     embeddingScores.value = {};
+    embeddingScoresAlreadyScaled.value = false;
     embeddingStatus.value = "error";
     const message = error instanceof Error ? error.message : "Failed to load embedding model.";
     if (message.includes("<!DOCTYPE")) {
@@ -422,7 +575,9 @@ async function startEmbeddingPreload() {
     }
     ensureEmbeddingWorker();
     await callEmbeddingWorker<{ ok: true }>({ type: "warmup", payload: {} });
-    await ensureStudentEmbeddings();
+    if (!supportsAimingEmbeddingScoring.value) {
+      await ensureStudentEmbeddings();
+    }
     if (embeddingStatus.value !== "error") {
       embeddingStatus.value = "ready";
     }
@@ -503,6 +658,8 @@ const keywordsByArea = new Map<string, string[]>(
   hobbyAreaRules.map((rule) => [normalizeKeyword(rule.hobby_area), rule.keywords ?? []]),
 );
 const memberTopHobbyAreasById = ref<Record<number, string[]>>({});
+const memberTopAimingAreaById = ref<Record<number, string>>({});
+const groupTopAimingAreaById = ref<Record<number, string>>({});
 
 function buildAreaEmbeddingQuery(areaKey: string) {
   const areaLabel = formatHobbyLabel(areaKey);
@@ -593,6 +750,116 @@ async function refreshMemberTopHobbyAreas() {
   memberTopHobbyAreasById.value = next;
 }
 
+async function getTopEmbeddingAimingArea(member: Student) {
+  if (!supportsAimingEmbeddingScoring.value) return null;
+  const aimingRaw = activeAimingById.value.get(member.id)?.aiming_raw ?? "";
+  if (!normalizeKeyword(aimingRaw)) return null;
+
+  const studentVec = await ensureAimingStudentEmbedding(member.id, aimingRaw);
+  if (!studentVec.length || !activeAimingAreas.value.length) return null;
+
+  const scored = await Promise.all(
+    activeAimingAreas.value.map(async (area) => {
+      const queryVec = await ensureQueryEmbedding(buildAimingAreaEmbeddingQuery(area));
+      const score = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
+      return {
+        label: area.area_label?.trim() || formatSkillLabel(area.area_key),
+        score,
+      };
+    }),
+  );
+
+  const top = scored.sort((a, b) => b.score - a.score)[0];
+  return top && top.score > 0 ? top.label : null;
+}
+
+async function refreshMemberTopAimingAreas() {
+  const members = groups.value
+    .flatMap((group) => group.members)
+    .filter((member): member is Student => Boolean(member));
+  if (!members.length || !supportsAimingEmbeddingScoring.value) {
+    memberTopAimingAreaById.value = {};
+    return;
+  }
+
+  const uniqueById = new Map<number, Student>();
+  members.forEach((member) => uniqueById.set(member.id, member));
+  const uniqueMembers = Array.from(uniqueById.values());
+
+  const next: Record<number, string> = {};
+  await Promise.all(
+    uniqueMembers.map(async (member) => {
+      try {
+        const topAreaLabel = await getTopEmbeddingAimingArea(member);
+        if (topAreaLabel) next[member.id] = topAreaLabel;
+      } catch {
+        // ignore aiming embedding failures for individual students
+      }
+    }),
+  );
+  memberTopAimingAreaById.value = next;
+}
+
+async function getTopEmbeddingAimingAreaForGroup(group: Group) {
+  if (!supportsAimingEmbeddingScoring.value) return null;
+  const members = group.members.filter((member): member is Student => Boolean(member));
+  if (!members.length || !activeAimingAreas.value.length) return null;
+
+  const areaVectors = new Map<string, number[]>();
+  await Promise.all(
+    activeAimingAreas.value.map(async (area) => {
+      areaVectors.set(area.area_key, await ensureQueryEmbedding(buildAimingAreaEmbeddingQuery(area)));
+    }),
+  );
+
+  const sumByArea = new Map<string, number>(activeAimingAreas.value.map((area) => [area.area_key, 0]));
+  for (const member of members) {
+    const aimingRaw = activeAimingById.value.get(member.id)?.aiming_raw ?? "";
+    if (!normalizeKeyword(aimingRaw)) continue;
+    const studentVec = await ensureAimingStudentEmbedding(member.id, aimingRaw);
+    if (!studentVec.length) continue;
+
+    for (const area of activeAimingAreas.value) {
+      const queryVec = areaVectors.get(area.area_key) ?? [];
+      const raw = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
+      sumByArea.set(area.area_key, (sumByArea.get(area.area_key) ?? 0) + raw);
+    }
+  }
+
+  let bestAreaKey = "";
+  let bestScore = 0;
+  sumByArea.forEach((score, areaKey) => {
+    if (score > bestScore) {
+      bestScore = score;
+      bestAreaKey = areaKey;
+    }
+  });
+
+  if (!bestAreaKey || bestScore <= 0) return null;
+  const bestArea = activeAimingAreas.value.find((area) => area.area_key === bestAreaKey);
+  return bestArea?.area_label?.trim() || formatSkillLabel(bestAreaKey);
+}
+
+async function refreshGroupTopAimingAreas() {
+  if (!supportsAimingEmbeddingScoring.value || !groups.value.length) {
+    groupTopAimingAreaById.value = {};
+    return;
+  }
+
+  const next: Record<number, string> = {};
+  await Promise.all(
+    groups.value.map(async (group) => {
+      try {
+        const topAreaLabel = await getTopEmbeddingAimingAreaForGroup(group);
+        if (topAreaLabel) next[group.id] = topAreaLabel;
+      } catch {
+        // ignore group aiming embedding failures
+      }
+    }),
+  );
+  groupTopAimingAreaById.value = next;
+}
+
 function displayedHobbyAreas(member: Student) {
   const normalizedAreas = member.hobby_area
     .map((area) => normalizeKeyword(area))
@@ -606,6 +873,10 @@ function displayedHobbyAreas(member: Student) {
     return memberTopHobbyAreasById.value[member.id] ?? member.hobby_area.slice(0, 3);
   }
   return member.hobby_area;
+}
+
+function displayedAimingArea(member: Student) {
+  return memberTopAimingAreaById.value[member.id] ?? null;
 }
 
 function inferQueryAreas(tokens: string[]) {
@@ -698,7 +969,7 @@ const keywordScoredAvailableStudents = computed(() => {
   }
 
   const rawEmbeddingValues = availableStudents.value
-    .filter((student) => hasSearchableHobbyRaw(student))
+    .filter((student) => (supportsAimingEmbeddingScoring.value ? hasSearchableAimingRaw(student) : hasSearchableHobbyRaw(student)))
     .map((student) => embeddingScores.value[student.id] ?? 0)
     .filter((score) => score > 0);
   const minEmbeddingRaw = rawEmbeddingValues.length ? Math.min(...rawEmbeddingValues) : 0;
@@ -709,11 +980,13 @@ const keywordScoredAvailableStudents = computed(() => {
       student,
       score: (() => {
         const ruleScore = computeKeywordScore(student, keyword);
-        const embeddingScore = remapEmbeddingScore(
-          embeddingScores.value[student.id] ?? 0,
-          minEmbeddingRaw,
-          maxEmbeddingRaw
-        );
+        const embeddingScore = embeddingScoresAlreadyScaled.value
+          ? embeddingScores.value[student.id] ?? 0
+          : remapEmbeddingScore(
+              embeddingScores.value[student.id] ?? 0,
+              minEmbeddingRaw,
+              maxEmbeddingRaw
+            );
 
         if (keywordScoringMode.value === "rule") return ruleScore;
         if (keywordScoringMode.value === "embedding") {
@@ -737,6 +1010,8 @@ watch(
   () => groups.value.map((group) => group.members.map((member) => member?.id ?? "x").join(",")).join("|"),
   () => {
     refreshMemberTopHobbyAreas();
+    refreshMemberTopAimingAreas();
+    refreshGroupTopAimingAreas();
   },
   { immediate: true },
 );
@@ -746,7 +1021,17 @@ watch(
   (status) => {
     if (status === "ready") {
       refreshMemberTopHobbyAreas();
+      refreshMemberTopAimingAreas();
+      refreshGroupTopAimingAreas();
     }
+  },
+);
+
+watch(
+  () => activeYear.value,
+  () => {
+    refreshMemberTopAimingAreas();
+    refreshGroupTopAimingAreas();
   },
 );
 
@@ -1341,6 +1626,11 @@ const groupDimensionScoreWarnings = computed(() => {
       if (member) memberById.set(member.id, member);
     });
 
+    if (memberById.size === 0) {
+      out.set(group.id, []);
+      continue;
+    }
+
     const warnings: string[] = [];
     for (const dimension of GROUP_THRESHOLD_DIMENSIONS) {
       const row = assignment[dimension.key];
@@ -1527,7 +1817,7 @@ watch(unassignedSlotBuffer, () => {
           v-model="hobbyKeywordQuery"
           class="keywordSearchInput"
           type="text"
-          placeholder="Score by hobby keyword (e.g. games)"
+          :placeholder="keywordSearchPlaceholder"
         />
         <div class="modeSwitch" role="group" aria-label="keyword scoring mode">
           <button
@@ -1638,6 +1928,9 @@ watch(unassignedSlotBuffer, () => {
           </button>
         </div>
         <div class="chipRow">
+          <span v-if="groupTopAimingAreaById[group.id]" class="groupAimingTag">
+            {{ groupTopAimingAreaById[group.id] }}
+          </span>
           <span
             v-for="hobby in groupHobbiesMap.get(group.id) ?? []"
             :key="`group-${group.id}-${hobby}`"
@@ -1693,6 +1986,9 @@ watch(unassignedSlotBuffer, () => {
                 class="memberAlias"
                 @contextmenu.prevent.stop="openMoveMenu(member, $event)"
               >{{ member.alias }}</span>
+              <div v-if="displayedAimingArea(member)" class="memberAimingRow">
+                <span class="memberAimingChip">{{ displayedAimingArea(member) }}</span>
+              </div>
               <div class="memberHobbyRow">
                 <span
                   v-for="hobby in displayedHobbyAreas(member)"
@@ -2174,7 +2470,7 @@ watch(unassignedSlotBuffer, () => {
   min-height: 28px;
   border-radius: 999px;
   background: #d2d2d4;
-  border: 1px solid transparent;
+  border: 1px solid rgba(148, 163, 184, 0.45);
   padding: 4px 10px;
   font-size: 12px;
   line-height: 1;
@@ -2287,6 +2583,48 @@ watch(unassignedSlotBuffer, () => {
   text-align: center;
   word-break: break-word;
   z-index: 1;
+}
+
+.memberAimingRow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(-50% + 28px));
+  width: calc(100% - 24px);
+  display: flex;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.memberAimingChip {
+  min-height: 20px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.groupAimingTag {
+  min-height: 20px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  background: #ffffff;
+  color: #64748b;
 }
 
 .memberHobbyRow {

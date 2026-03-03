@@ -3,10 +3,12 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import TraitLineChart from "@/components/TraitLineChart.vue";
 import HeatedMap from "@/components/HeatedMap.vue";
 import BeeswarmPlot from "@/components/BeeWarmPlot.vue";
+import HomeHobbyParallelSets from "@/components/HomeHobbyParallelSets.vue";
 import CompareView from "@/views/ComparePerson.vue";
 import { IVIS_RATING_KEYS, type IvisRecord } from "@/types/ivis23";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 import {
+  activeYear,
   getActiveRecords,
   GROUPING_CONFIRMED_EVENT,
   GROUPING_UPDATED_EVENT,
@@ -376,6 +378,7 @@ const beeswarmTraitGroups = computed(() =>
 const beeswarmXAxisLabels = computed(() =>
   beeswarmUseCategoryX.value ? beeswarmCategoryLabels : beeswarmTraitLabels,
 );
+const showAimingParallelSets = computed(() => activeYear.value === "21" || activeYear.value === "22");
 
 onMounted(() => {
   storedGrouping.value = readStoredGrouping();
@@ -520,6 +523,14 @@ function onGlobalEsc(event: KeyboardEvent) {
       </div>
     </section>
     <section id="beeswarm-section" ref="beeswarmSectionRef" class="beeswarmSection">
+      <div class="card level-1 parallelSetsCard">
+        <div class="title">
+          {{ showAimingParallelSets ? "Parallel Sets: Aiming x Student x Hobby Area" : "Parallel Sets: Student x Hobby Area" }}
+        </div>
+        <div class="plotArea parallelSetsArea">
+          <HomeHobbyParallelSets :records="ivisRecords" :showAiming="showAimingParallelSets" />
+        </div>
+      </div>
       <div class="card level-1 beeswarm">
         <div class="beeswarmHeader">
           <div class="title">Trait distribution (beeswarm)</div>
@@ -603,6 +614,18 @@ function onGlobalEsc(event: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.parallelSetsCard {
+  height: 860px;
+  display: flex;
+  flex-direction: column;
+}
+
+.parallelSetsArea {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .top {

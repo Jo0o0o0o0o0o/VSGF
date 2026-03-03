@@ -6,6 +6,7 @@ import RadarChart from "@/components/RadarChart.vue";
 import GroupDetailsHeatmap from "@/components/GroupDetailsHeatmap.vue";
 import StackBar from "@/components/stackbar.vue";
 import EmbeddingAreaBarChart from "@/components/EmbeddingAreaBarChart.vue";
+import GroupAimingSumBar from "@/components/GroupAimingSumBar.vue";
 import AxisSelector from "@/components/AxisSelector.vue";
 import ParallelSetsChart from "@/components/ParallelSetsChart.vue";
 import ThresholdProgressBars from "@/components/ThresholdProgressBars.vue";
@@ -186,13 +187,24 @@ const hobbyAreaKeys = Array.from(
 const keywordsByArea = new Map<string, string[]>(
   hobbyAreaRules.map((rule) => [rule.hobby_area.trim().toLowerCase(), rule.keywords ?? []]),
 );
-const precomputedEmbeddings = getActiveEmbeddings() as PrecomputedEmbeddingsFile | null;
-const precomputedEmbeddingsCompatible =
-  !!precomputedEmbeddings &&
-  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
-  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
-const studentEmbeddingById = new Map<number, number[]>(
-  precomputedEmbeddings?.embeddings.map((item) => [item.id, item.vector]) ?? [],
+const precomputedEmbeddings = computed(
+  () => getActiveEmbeddings() as PrecomputedEmbeddingsFile | null,
+);
+function normalizedMetaValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+const precomputedEmbeddingsCompatible = computed(
+  () =>
+    !!precomputedEmbeddings.value &&
+    normalizedMetaValue(precomputedEmbeddings.value.model) === normalizedMetaValue(EMBEDDING_MODEL_ID) &&
+    normalizedMetaValue(precomputedEmbeddings.value.textBuilderVersion) ===
+      normalizedMetaValue(EMBEDDING_TEXT_BUILDER_VERSION),
+);
+const studentEmbeddingById = computed(
+  () =>
+    new Map<number, number[]>(
+      precomputedEmbeddings.value?.embeddings.map((item) => [item.id, item.vector]) ?? [],
+    ),
 );
 const areaQueryEmbeddingCache = new Map<string, number[]>();
 const AREA_QUERY_CACHE_KEY = makeYearStorageKey(
@@ -766,7 +778,7 @@ async function startAreaEmbeddingPreload() {
   areaEmbeddingPreloadStarted = true;
   restoreAreaQueryEmbeddingCache();
 
-  if (!precomputedEmbeddingsCompatible) {
+  if (!precomputedEmbeddingsCompatible.value) {
     groupAreaEmbeddingStatus.value = "error";
     groupAreaEmbeddingErrorMessage.value =
       "Precomputed embeddings metadata does not match configured model/version.";
@@ -803,7 +815,7 @@ async function updateGroupAreaEmbeddingScores() {
     groupAreaEmbeddingStatus.value = "idle";
     return;
   }
-  if (!precomputedEmbeddingsCompatible) {
+  if (!precomputedEmbeddingsCompatible.value) {
     groupAreaEmbeddingScores.value = [];
     groupAreaEmbeddingStatus.value = "error";
     groupAreaEmbeddingErrorMessage.value =
@@ -818,7 +830,7 @@ async function updateGroupAreaEmbeddingScores() {
     await startAreaEmbeddingPreload();
 
     const members = selectedPeople.value.filter(
-      (p) => p.hobby_raw.trim().length > 0 && (studentEmbeddingById.get(p.id)?.length ?? 0) > 0,
+      (p) => p.hobby_raw.trim().length > 0 && (studentEmbeddingById.value.get(p.id)?.length ?? 0) > 0,
     );
     if (!members.length) {
       groupAreaEmbeddingScores.value = [];
@@ -835,7 +847,7 @@ async function updateGroupAreaEmbeddingScores() {
 
     const sumByArea = new Map<string, number>(hobbyAreaKeys.map((areaKey) => [areaKey, 0]));
     for (const member of members) {
-      const studentVec = studentEmbeddingById.get(member.id) ?? [];
+      const studentVec = studentEmbeddingById.value.get(member.id) ?? [];
       const rawRows = hobbyAreaKeys.map((areaKey) => {
         const queryVec = areaVectors.get(areaKey) ?? [];
         const raw = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
@@ -1048,6 +1060,7 @@ onBeforeUnmount(() => {
           Failed to load embedding scores. {{ groupAreaEmbeddingErrorMessage }}
         </p>
       </div>
+      <GroupAimingSumBar :people="selectedPeople" />
     </section>
 
     <Teleport to="body">

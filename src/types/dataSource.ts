@@ -3,6 +3,8 @@ import ivis21RecordsJson from "@/data/IVIS21_final.json";
 import ivis22RecordsJson from "@/data/IVIS22_final.json";
 import ivis23RecordsJson from "@/data/IVIS23_final.json";
 import ivis24RecordsJson from "@/data/IVIS24_final.json";
+import ivis21EmbeddingsJson from "@/data/ivis21_student_embeddings.generated.json";
+import ivis22EmbeddingsJson from "@/data/ivis22_student_embeddings.generated.json";
 import ivis23EmbeddingsJson from "@/data/ivis23_student_embeddings.generated.json";
 import ivis24EmbeddingsJson from "@/data/ivis24_student_embeddings.generated.json";
 import type { IvisRecord } from "@/types/ivis23";
@@ -39,14 +41,29 @@ const RECORDS_BY_YEAR: Record<DatasetYear, IvisRecord[]> = {
 };
 
 const EMBEDDINGS_BY_YEAR: Partial<Record<DatasetYear, PrecomputedEmbeddingsFile>> = {
+  "21": ivis21EmbeddingsJson as PrecomputedEmbeddingsFile,
+  "22": ivis22EmbeddingsJson as PrecomputedEmbeddingsFile,
   "23": ivis23EmbeddingsJson as PrecomputedEmbeddingsFile,
   "24": ivis24EmbeddingsJson as PrecomputedEmbeddingsFile,
 };
 
+function normalizeDatasetYearKey(input: unknown): DatasetYear | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (YEAR_OPTIONS.some((option) => option.year === trimmed)) {
+    return trimmed as DatasetYear;
+  }
+  const suffix2 = trimmed.slice(-2);
+  if (YEAR_OPTIONS.some((option) => option.year === suffix2)) {
+    return suffix2 as DatasetYear;
+  }
+  return null;
+}
+
 function readStoredDatasetYear(): DatasetYear {
   try {
     const raw = localStorage.getItem(DATASET_YEAR_KEY);
-    return YEAR_OPTIONS.some((option) => option.year === raw) ? (raw as DatasetYear) : "24";
+    return normalizeDatasetYearKey(raw) ?? "24";
   } catch {
     return "24";
   }
@@ -62,9 +79,10 @@ export const activeEmbeddings = computed<PrecomputedEmbeddingsFile | null>(
 );
 
 export function setActiveDatasetYear(year: DatasetYear) {
-  activeDatasetYear.value = year;
+  const normalized = normalizeDatasetYearKey(year) ?? "24";
+  activeDatasetYear.value = normalized;
   try {
-    localStorage.setItem(DATASET_YEAR_KEY, year);
+    localStorage.setItem(DATASET_YEAR_KEY, normalized);
   } catch {
     // ignore storage failures
   }

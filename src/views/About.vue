@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import authorPhoto from "@/Image/Yuchen Zhai.jpg";
+import authorPhoto from "/public/Zhai.png";
 
 type SectionItem = {
   id: string;
@@ -9,6 +9,7 @@ type SectionItem = {
 
 const sections: SectionItem[] = [
   { id: "project-overview", title: "Project Overview" },
+  { id: "optimal-group-strategy", title: "Optimal Group Strategy" },
   { id: "how-to-use", title: "How To Use" },
   { id: "data", title: "Data" },
   { id: "resources", title: "Project Resources" },
@@ -62,7 +63,7 @@ onBeforeUnmount(() => {
   <div class="aboutPage">
     <aside class="sidebar">
       <div class="authorCard">
-        <img class="authorImage" :src="authorPhoto" alt="Yuchen Zhai" />
+        <img class="authorImage" :src="authorPhoto" alt="Zhai" />
         <div class="authorMeta">
           <div class="authorName">yuchen zhai</div>
           <a
@@ -127,51 +128,133 @@ onBeforeUnmount(() => {
             built-in redundancy to improve robustness and reduce process breakdowns in team-based
             projects.
           </p>
+        </div>
+        <div v-else-if="section.id === 'how-to-use'" class="howToUseFlow">
+          <p class="flowIntro">
+            This dashboard is structured by user workflow: <strong>Understand People -> Build Teams -> Assign Responsibilities -> Compare Group Quality -> Iterate</strong>.
+          </p>
+
+          <div class="flowStep">
+            <h3>1. Login & Select Year (Global Context)</h3>
+            <p>
+              Enter from <strong>Login</strong>, then choose a dataset year in the top bar. Year is the global context for all pages and synced grouping data.
+            </p>
+            <p class="flowWhere">Where: Top bar (all pages)</p>
+          </div>
+
+          <div class="flowStep">
+            <h3>2. Explore Cohort (Overview)</h3>
+            <p>
+              Use Heatmap/Beeswarm/Parallel Sets to understand distribution and identify candidate students.
+              Click a person to open detail view and inspect hobbies, aiming, and skill profile.
+            </p>
+            <p>
+              The person detail is shown in <strong>ComparePerson</strong>, which acts as the quick inspection panel before grouping decisions.
+            </p>
+            <p class="flowWhere">Where: Overview page</p>
+          </div>
+
+          <div class="flowStep">
+            <h3>3. Compose Teams (Grouping)</h3>
+            <p>
+              Drag students from unassigned pool into group slots. Use keyword scoring (hobby/aiming embedding) to find suitable members quickly.
+            </p>
+            <p>
+              Group cards summarize shared hobby tags and top aiming tag to support rapid team-level decisions.
+            </p>
+            <p>
+              During this step, you can click a student card to open <strong>ComparePerson</strong> and verify individual fit before placing or moving the student.
+            </p>
+            <p class="flowWhere">Where: Grouping page</p>
+          </div>
+
+          <div class="flowStep">
+            <h3>4. Assign Roles (Group Details)</h3>
+            <p>
+              Open Group Details to assign leader/support per dimension, and validate with threshold bars plus group-level embedding summaries.
+            </p>
+            <p class="flowWhere">Where: Grouping -> Group Details drawer</p>
+          </div>
+
+          <div class="flowStep">
+            <h3>5. Evaluate Across Groups (Compare)</h3>
+            <p>
+              Select groups and compare by Radar, Dumbbell, Variance/SD, and Donut views. Toggle Responsible mode to evaluate outcomes under role assignment.
+            </p>
+            <p class="flowWhere">Where: Compare page</p>
+          </div>
+
+          <div class="flowStep">
+            <h3>6. Iterate & Confirm</h3>
+            <p>
+              Return to Grouping to adjust members/roles based on comparison findings, then confirm groups.
+              The flow is intentionally cyclical for decision refinement.
+            </p>
+            <p class="flowWhere">Loop: Compare -> Grouping -> Compare</p>
+          </div>
+        </div>
+        <div v-else-if="section.id === 'data'" class="dataText">
           <p>
-            DogViz Dashboard is an interactive information visualization designed to support
-            prospective dog owners and enthusiasts in exploring and comparing dog breeds through an
-            integrated visual interface. The system combines physical characteristics, lifespan
-            indicators, and temperament traits to enable structured comparison and evidence-informed
-            decision-making.
+            The dataset consists of structured skill ratings, which were visualized directly and
+            further organized into four higher-level competency domains commonly used in
+            cross-functional team design (<a href="#ref-bell-2018">Bell et al., 2018</a>;
+            <a href="#ref-cooke-hilton-2015">Cooke &amp; Hilton, 2015</a>). These domains provide
+            an interpretable framework for evaluating team coverage and balance:
+          </p>
+          <ul>
+            <li>
+              <strong>Build:</strong> programming, code repository management, computer graphics /
+              HCI programming
+            </li>
+            <li>
+              <strong>Think &amp; Visualization:</strong> statistics, mathematics, information
+              visualization
+            </li>
+            <li>
+              <strong>Design:</strong> user experience evaluation, artistic and visual design
+            </li>
+            <li>
+              <strong>Team Collaboration:</strong> communication and collaboration
+            </li>
+          </ul>
+          <p>
+            Aggregating skills into these domains reduces dimensional complexity while supporting
+            assessment of coverage, balance, and redundancy.
           </p>
           <p>
-            Selecting a dog breed involves complex trade-offs among size, activity level,
-            behaviour, and compatibility with household needs. Research has shown that dog breeds
-            exhibit measurable behavioural differences across traits such as trainability,
-            sociability, fearfulness, and activity level (<a href="#ref-asp-2015"
-              >Asp et al., 2015</a
-            >; <a href="#ref-maclean-2019">MacLean et al., 2019</a>). At the same time,
-            behavioural tendencies are not deterministic: substantial variation exists within
-            breeds, and individual experience and environment strongly influence behaviour (<a
-              href="#ref-morrill-2022"
-              >Morrill et al., 2022</a
-            >; <a href="#ref-petkova-2024">Petkova et al., 2024</a>).
+            In addition to structured ratings, supplementary textual attributes were cleaned and
+            transformed into numerical vectors using the <code>Xenova/bge-small-en-v1.5</code>
+            embedding model. Semantic embeddings capture contextual meaning, enable
+            similarity-based grouping, and integrate qualitative descriptions into quantitative
+            analysis, thereby improving clustering robustness and supporting more informed team
+            formation decisions.
+          </p>
+        </div>
+        <div v-else-if="section.id === 'optimal-group-strategy'" class="strategyText">
+          <p>
+            An optimal team is organized across four domains: Build, Think and Visualization,
+            Design, and Team, where each domain includes a leader with a score above 7 to ensure
+            critical skill coverage, and at least one support member with similarly strong or
+            sufficiently high competence to provide redundancy and maintain balanced workload
+            distribution.
           </p>
           <p>
-            Beyond behaviour, physical characteristics and longevity also influence suitability for
-            different lifestyles. Body size, morphology, and health predispositions can affect
-            lifespan and wellbeing, with smaller and morphologically moderate breeds generally
-            associated with longer life expectancy (<a href="#ref-mcmillan-2024"
-              >McMillan et al., 2024</a
-            >).
+            Additionally, at least two members must share a common hobby area in which they also
+            perform well, strengthening communication, cohesion, and overall coordination
+            stability.
           </p>
           <p>
-            Despite the abundance of breed information available online, relevant data are often
-            fragmented across kennel club descriptions, veterinary resources, and adoption
-            platforms, making systematic comparison difficult. DogViz Dashboard addresses this
-            challenge by aggregating heterogeneous data and presenting them through coordinated
-            visual representations, including comparative charts, population benchmarks, and
-            temperament profiles. These visualizations enable users to interpret breed differences,
-            contextualize selected breeds within overall distributions, and support informed
-            decision-making.
-          </p>
-          <p>
-            Beyond prospective owners, the system may support researchers, trainers, and animal
-            welfare professionals in examining patterns in canine traits and facilitating
-            discussions about breed selection and human-dog compatibility.
+            Based on the preserved embedding data from the 2021 and 2022 cohorts regarding what
+            students expect to learn from this course, an optimal team should also include at
+            least four members with closely aligned learning aims, ensuring shared goals and
+            sustained motivation throughout the project.
           </p>
         </div>
         <div v-else-if="section.id === 'resources'" class="resourceList">
+          <p id="ref-bell-2018">
+            Bell, S.T., Brown, S.G., Colaneri, A. and Outland, N. (2018) Team composition and the
+            ABCs of teamwork. American Psychologist, 73(4), pp. 349-362.
+          </p>
           <p id="ref-aranzabal-2022">
             Aranzabal, A. (2022) Team formation on the basis of Belbin's roles to enhance
             students' performance in project based learning. Education for Chemical Engineers, 38,
@@ -208,7 +291,7 @@ onBeforeUnmount(() => {
             effectiveness and performance in an undergraduate laboratory course. International
             Journal of Engineering Education, 36(1B), pp. 491-501.
           </p>
-        </div>
+              </div>
         <div v-else class="placeholder"></div>
       </article>
     </section>
@@ -231,7 +314,7 @@ onBeforeUnmount(() => {
 }
 
 .authorCard {
-  background: #fff4be;
+  background: #dbeafe;
   border-radius: 12px;
   padding: 10px;
   display: grid;
@@ -249,7 +332,7 @@ onBeforeUnmount(() => {
 .authorMeta {
   display: grid;
   gap: 2px;
-  color: #4a3b00;
+  color: #1e3a8a;
   justify-items: center;
   text-align: center;
 }
@@ -263,7 +346,7 @@ onBeforeUnmount(() => {
 .authorEmail {
   font-size: 12px;
   opacity: 0.85;
-  color: #6f5600;
+  color: #1d4ed8;
   text-decoration: none;
 }
 
@@ -275,19 +358,20 @@ onBeforeUnmount(() => {
   height: 44px;
   border: none;
   border-radius: 10px;
-  background: #fff8d8;
-  color: #4a3b00;
+  background: #eff6ff;
+  color: #1e3a8a;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .navBtn:hover {
-  background: #fff2b3;
+  background: #dbeafe;
 }
 
 .navBtn.active {
-  background: #ffd84f;
+  background: #93c5fd;
+  color: #1e40af;
 }
 
 .content {
@@ -299,7 +383,7 @@ onBeforeUnmount(() => {
 .sectionBlock {
   scroll-margin-top: 96px;
   border: none;
-  background: #fffef7;
+  background: #f8fbff;
   border-radius: 12px;
   padding: 18px 20px 22px;
 }
@@ -308,21 +392,21 @@ onBeforeUnmount(() => {
   margin: 0 0 12px;
   font-size: 26px;
   line-height: 1.1;
-  color: #2d2500;
+  color: #1e3a8a;
 }
 
 .placeholder {
   height: 280px;
   border-radius: 10px;
   background:
-    linear-gradient(135deg, rgba(255, 230, 120, 0.08), rgba(255, 223, 58, 0.04)),
-    #fffdf3;
+    linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(59, 130, 246, 0.05)),
+    #f8fbff;
 }
 
 .overviewText {
   display: grid;
   gap: 14px;
-  color: #3f3300;
+  color: #1f3b7a;
   line-height: 1.65;
   font-size: 15px;
 }
@@ -332,13 +416,89 @@ onBeforeUnmount(() => {
 }
 
 .overviewText a {
-  color: #8a6a00;
+  color: #2563eb;
+}
+
+.dataText {
+  display: grid;
+  gap: 12px;
+  color: #1f3b7a;
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+.dataText p {
+  margin: 0;
+}
+
+.dataText ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.dataText li {
+  margin: 0;
+}
+
+.dataText a {
+  color: #2563eb;
+}
+
+.strategyText {
+  display: grid;
+  gap: 12px;
+  color: #1f3b7a;
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+.strategyText p {
+  margin: 0;
+}
+
+.howToUseFlow {
+  display: grid;
+  gap: 12px;
+  color: #1f3b7a;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.flowIntro {
+  margin: 0;
+}
+
+.flowStep {
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.flowStep h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1e3a8a;
+}
+
+.flowStep p {
+  margin: 0;
+}
+
+.flowWhere {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 600;
 }
 
 .resourceList {
   display: grid;
   gap: 12px;
-  color: #3f3300;
+  color: #1f3b7a;
   line-height: 1.6;
   font-size: 15px;
 }

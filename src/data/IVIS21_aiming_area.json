@@ -1,0 +1,51 @@
+[
+  {
+    "area_key": "visual_representation",
+    "area_label": "Visual Representation Techniques",
+    "description": "Learn ways to visualize/represent data via graphs, models, and visual formats.",
+    "matched_count": 31,
+    "member_ids": [2, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 19, 20, 21, 22, 23, 25, 27, 28, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43]
+  },
+  {
+    "area_key": "communication_storytelling",
+    "area_label": "Communication and Storytelling",
+    "description": "Present and communicate insights clearly to users, peers, or decision-makers.",
+    "matched_count": 16,
+    "member_ids": [1, 4, 6, 10, 12, 14, 15, 18, 19, 20, 23, 28, 31, 33, 36, 42]
+  },
+  {
+    "area_key": "practical_application",
+    "area_label": "Practical/Professional Application",
+    "description": "Apply visualization skills in projects, research, thesis, and future jobs.",
+    "matched_count": 14,
+    "member_ids": [4, 5, 7, 9, 15, 20, 27, 28, 29, 31, 32, 34, 37, 42]
+  },
+  {
+    "area_key": "tools_implementation",
+    "area_label": "Tools and Implementation",
+    "description": "Learn concrete tools and implementation (e.g., D3, Python/Excel, web/apps).",
+    "matched_count": 13,
+    "member_ids": [6, 9, 10, 11, 12, 14, 16, 20, 23, 28, 31, 33, 35]
+  },
+  {
+    "area_key": "design_engagement",
+    "area_label": "Design and Engagement",
+    "description": "Create visually engaging, attractive, and interesting visualizations.",
+    "matched_count": 13,
+    "member_ids": [10, 17, 20, 21, 24, 25, 26, 27, 28, 33, 38, 39, 41]
+  },
+  {
+    "area_key": "clarity_understanding",
+    "area_label": "Clarity and Understanding",
+    "description": "Make complex information easier to understand and interpret.",
+    "matched_count": 12,
+    "member_ids": [3, 11, 12, 13, 14, 15, 17, 19, 28, 38, 41, 43]
+  },
+  {
+    "area_key": "interactive_systems",
+    "area_label": "Interactive Systems and UX",
+    "description": "Build interactive visualization systems and improve UX/UI experiences.",
+    "matched_count": 5,
+    "member_ids": [10, 13, 17, 19, 20]
+  }
+]

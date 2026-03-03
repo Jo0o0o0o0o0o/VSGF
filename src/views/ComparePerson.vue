@@ -11,9 +11,13 @@ import {
   type RadarKey,
 } from "@/d3Viz/createRadarChart";
 import hobbyAreaRulesRaw from "@/data/hobby_area_rules.json";
+import ivis21AimingJson from "@/data/IVIS21_aming.json";
+import ivis22AimingJson from "@/data/IVIS22_aming.json";
+import ivis21AimingAreaJson from "@/data/IVIS21_aiming_area.json";
+import ivis22AimingAreaJson from "@/data/IVIS22_aiming_area.json";
 import { EMBEDDING_MODEL_ID, EMBEDDING_TEXT_BUILDER_VERSION } from "@/embeddings/config";
 import type { IvisRecord } from "@/types/ivis23";
-import { getActiveEmbeddings, getActiveRecords, makeYearStorageKey } from "@/types/dataSource";
+import { activeYear, getActiveEmbeddings, getActiveRecords, makeYearStorageKey, type DatasetYear } from "@/types/dataSource";
 import { formatHobbyLabel } from "@/utils/hobbyTagColorMap";
 import { COMPARE_PERSON_EVENT, readComparePersonId, writeComparePersonId } from "@/utils/compareSelection";
 
@@ -61,6 +65,11 @@ const areaEmbeddingErrorMessage = ref("");
 const selectedPersonAreaEmbeddingScores = ref<EmbeddingAreaDatum[]>([]);
 const AREA_EMBED_SCORE_MAX = 20;
 const AREA_EMBED_SCORE_GAMMA = 1.6;
+const aimingEmbeddingStatus = ref<"idle" | "loading" | "ready" | "error">("idle");
+const aimingEmbeddingErrorMessage = ref("");
+const selectedPersonAimingEmbeddingScores = ref<EmbeddingAreaDatum[]>([]);
+const AIMING_EMBED_SCORE_MAX = 20;
+const AIMING_EMBED_SCORE_GAMMA = 2.1;
 
 type HobbyAreaRule = {
   hobby_area: string;
@@ -71,6 +80,18 @@ type PrecomputedEmbeddingsFile = {
   model: string;
   textBuilderVersion: string;
   embeddings: Array<{ id: number; vector: number[] }>;
+};
+
+type AimingEntry = {
+  id: number;
+  alias: string;
+  aiming_raw: string;
+};
+
+type AimingAreaEntry = {
+  area_key: string;
+  area_label: string;
+  description?: string;
 };
 
 const hobbyAreaRules = hobbyAreaRulesRaw as HobbyAreaRule[];
@@ -84,20 +105,41 @@ const hobbyAreaKeys = Array.from(
 const keywordsByArea = new Map<string, string[]>(
   hobbyAreaRules.map((rule) => [rule.hobby_area.trim().toLowerCase(), rule.keywords ?? []]),
 );
-const precomputedEmbeddings = getActiveEmbeddings() as PrecomputedEmbeddingsFile | null;
-const precomputedEmbeddingsCompatible =
-  !!precomputedEmbeddings &&
-  precomputedEmbeddings.model === EMBEDDING_MODEL_ID &&
-  precomputedEmbeddings.textBuilderVersion === EMBEDDING_TEXT_BUILDER_VERSION;
-const studentEmbeddingById = new Map<number, number[]>(
-  precomputedEmbeddings?.embeddings.map((item) => [item.id, item.vector]) ?? [],
+const precomputedEmbeddings = computed(
+  () => getActiveEmbeddings() as PrecomputedEmbeddingsFile | null,
+);
+function normalizedMetaValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+const precomputedEmbeddingsCompatible = computed(
+  () =>
+    !!precomputedEmbeddings.value &&
+    normalizedMetaValue(precomputedEmbeddings.value.model) === normalizedMetaValue(EMBEDDING_MODEL_ID) &&
+    normalizedMetaValue(precomputedEmbeddings.value.textBuilderVersion) ===
+      normalizedMetaValue(EMBEDDING_TEXT_BUILDER_VERSION),
+);
+const studentEmbeddingById = computed(
+  () =>
+    new Map<number, number[]>(
+      precomputedEmbeddings.value?.embeddings.map((item) => [item.id, item.vector]) ?? [],
+    ),
 );
 const areaQueryEmbeddingCache = new Map<string, number[]>();
+const aimingAreaQueryEmbeddingCache = new Map<string, number[]>();
+const aimingStudentEmbeddingCache = new Map<number, number[]>();
 const AREA_QUERY_CACHE_KEY = makeYearStorageKey(
   `compare_area_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
 );
+const AIMING_AREA_QUERY_CACHE_KEY = makeYearStorageKey(
+  `compare_aiming_area_query_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
+);
+const AIMING_STUDENT_CACHE_KEY = makeYearStorageKey(
+  `compare_aiming_student_embeddings_${EMBEDDING_MODEL_ID.replace(/[^a-z0-9]+/gi, "_")}_${EMBEDDING_TEXT_BUILDER_VERSION}`,
+);
 let areaEmbeddingPreloadStarted = false;
+let aimingEmbeddingPreloadStarted = false;
 let areaEmbeddingTaskSeq = 0;
+let aimingEmbeddingTaskSeq = 0;
 let embeddingWorker: Worker | null = null;
 let workerRequestId = 0;
 const workerPending = new Map<
@@ -222,6 +264,18 @@ const modeDogs = computed<RadarDog[]>(() => {
 });
 
 const modeAxes = computed(() => (radarUseCategoryX.value ? radarCategoryAxes : activeAxes.value));
+const AIMING_BY_YEAR: Partial<Record<DatasetYear, AimingEntry[]>> = {
+  "21": ivis21AimingJson as AimingEntry[],
+  "22": ivis22AimingJson as AimingEntry[],
+};
+const AIMING_AREAS_BY_YEAR: Partial<Record<DatasetYear, AimingAreaEntry[]>> = {
+  "21": ivis21AimingAreaJson as AimingAreaEntry[],
+  "22": ivis22AimingAreaJson as AimingAreaEntry[],
+};
+const activeAimingRows = computed<AimingEntry[]>(() => AIMING_BY_YEAR[activeYear.value] ?? []);
+const activeAimingById = computed(() => new Map<number, AimingEntry>(activeAimingRows.value.map((row) => [row.id, row])));
+const activeAimingAreas = computed<AimingAreaEntry[]>(() => AIMING_AREAS_BY_YEAR[activeYear.value] ?? []);
+const showAimingDonut = computed(() => activeYear.value === "21" || activeYear.value === "22");
 
 function syncFromStoredSelection() {
   const selectedId = readComparePersonId();
@@ -283,6 +337,10 @@ function persistAreaQueryEmbeddingCache() {
   try {
     const queryObject = Object.fromEntries(areaQueryEmbeddingCache.entries());
     localStorage.setItem(AREA_QUERY_CACHE_KEY, JSON.stringify(queryObject));
+    const aimingQueryObject = Object.fromEntries(aimingAreaQueryEmbeddingCache.entries());
+    localStorage.setItem(AIMING_AREA_QUERY_CACHE_KEY, JSON.stringify(aimingQueryObject));
+    const aimingStudentObject = Object.fromEntries(aimingStudentEmbeddingCache.entries());
+    localStorage.setItem(AIMING_STUDENT_CACHE_KEY, JSON.stringify(aimingStudentObject));
   } catch {
     // ignore storage failures
   }
@@ -297,6 +355,24 @@ function restoreAreaQueryEmbeddingCache() {
       if (!Array.isArray(vector)) return;
       areaQueryEmbeddingCache.set(query, vector.map((v) => Number(v)));
     });
+    const rawAimingQueries = localStorage.getItem(AIMING_AREA_QUERY_CACHE_KEY);
+    if (rawAimingQueries) {
+      const parsedAimingQueries = JSON.parse(rawAimingQueries) as Record<string, number[]>;
+      Object.entries(parsedAimingQueries).forEach(([query, vector]) => {
+        if (!Array.isArray(vector)) return;
+        aimingAreaQueryEmbeddingCache.set(query, vector.map((v) => Number(v)));
+      });
+    }
+    const rawAimingStudents = localStorage.getItem(AIMING_STUDENT_CACHE_KEY);
+    if (rawAimingStudents) {
+      const parsedAimingStudents = JSON.parse(rawAimingStudents) as Record<string, number[]>;
+      Object.entries(parsedAimingStudents).forEach(([id, vector]) => {
+        if (!Array.isArray(vector)) return;
+        const numericId = Number(id);
+        if (!Number.isFinite(numericId)) return;
+        aimingStudentEmbeddingCache.set(numericId, normalizeVector(vector.map((v) => Number(v))));
+      });
+    }
   } catch {
     // ignore cache parse failures
   }
@@ -325,12 +401,48 @@ async function ensureAreaQueryEmbedding(areaKey: string) {
   return normalized;
 }
 
+function buildAimingAreaEmbeddingQuery(area: AimingAreaEntry) {
+  const label = area.area_label?.trim() || area.area_key;
+  const desc = area.description?.trim() ?? "";
+  return desc ? `${label}: ${desc}` : label;
+}
+
+async function ensureAimingAreaQueryEmbedding(area: AimingAreaEntry) {
+  const cacheKey = area.area_key;
+  if (aimingAreaQueryEmbeddingCache.has(cacheKey)) {
+    return aimingAreaQueryEmbeddingCache.get(cacheKey) ?? [];
+  }
+  const query = buildAimingAreaEmbeddingQuery(area);
+  const result = await callEmbeddingWorker<{ query: string; vector: number[] }>({
+    type: "embed-query",
+    payload: { query },
+  });
+  const normalized = normalizeVector(result.vector ?? []);
+  aimingAreaQueryEmbeddingCache.set(cacheKey, normalized);
+  persistAreaQueryEmbeddingCache();
+  return normalized;
+}
+
+async function ensureAimingStudentEmbedding(personId: number, aimingRaw: string) {
+  if (aimingStudentEmbeddingCache.has(personId)) {
+    return aimingStudentEmbeddingCache.get(personId) ?? [];
+  }
+  const result = await callEmbeddingWorker<{ query: string; vector: number[] }>({
+    type: "embed-query",
+    payload: { query: aimingRaw },
+  });
+  const normalized = normalizeVector(result.vector ?? []);
+  aimingStudentEmbeddingCache.set(personId, normalized);
+  persistAreaQueryEmbeddingCache();
+  return normalized;
+}
+
 async function startAreaEmbeddingPreload() {
   if (areaEmbeddingPreloadStarted) return;
   areaEmbeddingPreloadStarted = true;
   restoreAreaQueryEmbeddingCache();
 
-  if (!precomputedEmbeddingsCompatible) {
+  if (!precomputedEmbeddingsCompatible.value) {
     areaEmbeddingStatus.value = "error";
     areaEmbeddingErrorMessage.value =
       "Precomputed embeddings metadata does not match configured model/version.";
@@ -352,12 +464,48 @@ async function startAreaEmbeddingPreload() {
   }
 }
 
+async function startAimingEmbeddingPreload() {
+  if (aimingEmbeddingPreloadStarted) return;
+  aimingEmbeddingPreloadStarted = true;
+  restoreAreaQueryEmbeddingCache();
+  if (!showAimingDonut.value) {
+    aimingEmbeddingStatus.value = "idle";
+    return;
+  }
+  if (!activeAimingAreas.value.length) {
+    aimingEmbeddingStatus.value = "error";
+    aimingEmbeddingErrorMessage.value = "No aiming area definitions for this year.";
+    return;
+  }
+
+  aimingEmbeddingStatus.value = "loading";
+  aimingEmbeddingErrorMessage.value = "";
+  try {
+    ensureEmbeddingWorker();
+    await callEmbeddingWorker<{ ok: true }>({ type: "warmup", payload: {} });
+    await Promise.all(activeAimingAreas.value.map((area) => ensureAimingAreaQueryEmbedding(area)));
+    aimingEmbeddingStatus.value = "ready";
+  } catch (error) {
+    aimingEmbeddingStatus.value = "error";
+    aimingEmbeddingErrorMessage.value =
+      error instanceof Error ? error.message : "Failed to preload aiming embeddings.";
+  }
+}
+
 function mapAreaEmbeddingScore(raw: number, minRaw: number, maxRaw: number) {
   if (raw <= 0) return 0;
   if (maxRaw <= minRaw + 1e-9) return AREA_EMBED_SCORE_MAX;
   const normalized = Math.max(0, Math.min(1, (raw - minRaw) / (maxRaw - minRaw)));
   const contrasted = normalized ** AREA_EMBED_SCORE_GAMMA;
   return contrasted * AREA_EMBED_SCORE_MAX;
+}
+
+function mapAimingEmbeddingScore(raw: number, minRaw: number, maxRaw: number) {
+  if (raw <= 0) return 0;
+  if (maxRaw <= minRaw + 1e-9) return AIMING_EMBED_SCORE_MAX;
+  const normalized = Math.max(0, Math.min(1, (raw - minRaw) / (maxRaw - minRaw)));
+  const contrasted = normalized ** AIMING_EMBED_SCORE_GAMMA;
+  return contrasted * AIMING_EMBED_SCORE_MAX;
 }
 
 async function updateSelectedPersonAreaEmbeddingScores() {
@@ -371,7 +519,7 @@ async function updateSelectedPersonAreaEmbeddingScores() {
     selectedPersonAreaEmbeddingScores.value = [];
     return;
   }
-  if (!precomputedEmbeddingsCompatible) {
+  if (!precomputedEmbeddingsCompatible.value) {
     areaEmbeddingStatus.value = "error";
     areaEmbeddingErrorMessage.value =
       "Precomputed embeddings metadata does not match configured model/version.";
@@ -384,7 +532,7 @@ async function updateSelectedPersonAreaEmbeddingScores() {
 
   try {
     await startAreaEmbeddingPreload();
-    const studentVec = studentEmbeddingById.get(person.id);
+    const studentVec = studentEmbeddingById.value.get(person.id);
     if (!studentVec?.length) {
       throw new Error("Selected person has no precomputed embedding vector.");
     }
@@ -421,16 +569,83 @@ async function updateSelectedPersonAreaEmbeddingScores() {
   }
 }
 
+async function updateSelectedPersonAimingEmbeddingScores() {
+  const person = selectedPerson.value;
+  const seq = ++aimingEmbeddingTaskSeq;
+  if (!showAimingDonut.value) {
+    selectedPersonAimingEmbeddingScores.value = [];
+    aimingEmbeddingStatus.value = "idle";
+    aimingEmbeddingErrorMessage.value = "";
+    return;
+  }
+  if (!person) {
+    selectedPersonAimingEmbeddingScores.value = [];
+    return;
+  }
+  const aimingRaw = activeAimingById.value.get(person.id)?.aiming_raw ?? "";
+  if (!aimingRaw.trim()) {
+    selectedPersonAimingEmbeddingScores.value = [];
+    return;
+  }
+
+  aimingEmbeddingStatus.value = "loading";
+  aimingEmbeddingErrorMessage.value = "";
+
+  try {
+    await startAimingEmbeddingPreload();
+    const studentVec = await ensureAimingStudentEmbedding(person.id, aimingRaw);
+    if (!studentVec?.length) {
+      throw new Error("Selected person has no aiming embedding vector.");
+    }
+
+    const rawRows = await Promise.all(
+      activeAimingAreas.value.map(async (area) => {
+        const queryVec = await ensureAimingAreaQueryEmbedding(area);
+        const raw = queryVec.length ? Math.max(0, dot(studentVec, queryVec)) : 0;
+        return {
+          areaKey: area.area_key,
+          areaLabel: area.area_label,
+          rawScore: raw,
+        };
+      }),
+    );
+
+    if (seq !== aimingEmbeddingTaskSeq) return;
+
+    const positives = rawRows.map((row) => row.rawScore).filter((v) => v > 0);
+    const minRaw = positives.length ? Math.min(...positives) : 0;
+    const maxRaw = positives.length ? Math.max(...positives) : 0;
+    selectedPersonAimingEmbeddingScores.value = rawRows.map((row) => ({
+      ...row,
+      score: Number(mapAimingEmbeddingScore(row.rawScore, minRaw, maxRaw).toFixed(2)),
+    }));
+    aimingEmbeddingStatus.value = "ready";
+  } catch (error) {
+    if (seq !== aimingEmbeddingTaskSeq) return;
+    selectedPersonAimingEmbeddingScores.value = [];
+    aimingEmbeddingStatus.value = "error";
+    aimingEmbeddingErrorMessage.value =
+      error instanceof Error ? error.message : "Failed to compute aiming embedding scores.";
+  }
+}
+
 onMounted(() => {
   syncFromStoredSelection();
   window.addEventListener("storage", syncFromStoredSelection);
   window.addEventListener(COMPARE_PERSON_EVENT, syncFromStoredSelection);
   startAreaEmbeddingPreload();
+  startAimingEmbeddingPreload();
 });
 
 watch(selectedPerson, () => {
   updateSelectedPersonAreaEmbeddingScores();
+  updateSelectedPersonAimingEmbeddingScores();
 }, { immediate: true });
+
+watch(activeYear, () => {
+  aimingEmbeddingPreloadStarted = false;
+  updateSelectedPersonAimingEmbeddingScores();
+});
 
 onBeforeUnmount(() => {
   window.removeEventListener("storage", syncFromStoredSelection);
@@ -453,24 +668,44 @@ onBeforeUnmount(() => {
         @update-slot="setSlot"
         @toggle-focus="toggleFocus"
       />
-      <section class="panel level-1 embeddingPanel">
-        <h3>Hobby Area Embedding</h3>
-        <div class="embeddingChartWrap">
-          <EmbeddingAreaDonutChart :data="selectedPersonAreaEmbeddingScores" />
-        </div>
-        <p v-if="!selectedPerson" class="embeddingHint">
-          Select a person to view area-level embedding scores.
-        </p>
-        <p v-else-if="!selectedPerson.hobby_raw.trim()" class="embeddingHint">
-          No raw hobby answer, so embedding area scores are unavailable.
-        </p>
-        <p v-else-if="areaEmbeddingStatus === 'loading'" class="embeddingHint">
-          Loading embedding model...
-        </p>
-        <p v-else-if="areaEmbeddingStatus === 'error'" class="embeddingHint embeddingHintError">
-          Failed to load embedding scores. {{ areaEmbeddingErrorMessage }}
-        </p>
-      </section>
+      <div class="embeddingPanels">
+        <section class="panel level-1 embeddingPanel">
+          <h3>Hobby Area</h3>
+          <div class="embeddingChartWrap">
+            <EmbeddingAreaDonutChart :data="selectedPersonAreaEmbeddingScores" />
+          </div>
+          <p v-if="!selectedPerson" class="embeddingHint">
+            Select a person to view area-level scores.
+          </p>
+          <p v-else-if="!selectedPerson.hobby_raw.trim()" class="embeddingHint">
+            No raw hobby answer, so embedding area scores are unavailable.
+          </p>
+          <p v-else-if="areaEmbeddingStatus === 'loading'" class="embeddingHint">
+            Loading model...
+          </p>
+          <p v-else-if="areaEmbeddingStatus === 'error'" class="embeddingHint embeddingHintError">
+            Failed to load scores. {{ areaEmbeddingErrorMessage }}
+          </p>
+        </section>
+        <section v-if="showAimingDonut" class="panel level-1 embeddingPanel">
+          <h3>Aiming Area</h3>
+          <div class="embeddingChartWrap">
+            <EmbeddingAreaDonutChart :data="selectedPersonAimingEmbeddingScores" />
+          </div>
+          <p v-if="!selectedPerson" class="embeddingHint">
+            Select a person to view aiming-area scores.
+          </p>
+          <p v-else-if="!(activeAimingById.get(selectedPerson.id)?.aiming_raw ?? '').trim()" class="embeddingHint">
+            No raw aiming answer for this person.
+          </p>
+          <p v-else-if="aimingEmbeddingStatus === 'loading'" class="embeddingHint">
+            Loading aiming model...
+          </p>
+          <p v-else-if="aimingEmbeddingStatus === 'error'" class="embeddingHint embeddingHintError">
+            Failed to load aiming scores. {{ aimingEmbeddingErrorMessage }}
+          </p>
+        </section>
+      </div>
     </section>
 
     <section class="grid">
@@ -539,7 +774,11 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: minmax(250px, 0.9fr) 2fr;
   gap: 12px;
-  align-items: stretch;
+  align-items: start;
+}
+
+.slotsPanel {
+  align-self: start;
 }
 
 .grid {
@@ -607,6 +846,12 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 260px;
   background: transparent;
+}
+
+.embeddingPanels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .embeddingChartWrap {

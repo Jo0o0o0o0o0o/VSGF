@@ -11,6 +11,7 @@ export type EmbeddingAreaBarChartOptions = {
   width: number;
   height: number;
   yMax?: number;
+  barColor?: string;
 };
 
 export type EmbeddingAreaBarHandlers = {
@@ -84,7 +85,7 @@ export function createEmbeddingAreaBarChart(
       .attr("y", (d) => y(d.score))
       .attr("width", Math.max(2, x.bandwidth()))
       .attr("height", (d) => Math.max(0.5, innerH - y(d.score)))
-      .attr("fill", "#f59e0b")
+      .attr("fill", opt.barColor ?? "#f59e0b")
       .attr("rx", 3)
       .style("cursor", "default")
       .on("pointerenter", function (event, d) {

@@ -8,6 +8,7 @@ import {
 const props = defineProps<{
   data: EmbeddingAreaDatum[];
   maxScore?: number;
+  barColor?: string;
 }>();
 
 const wrapRef = ref<HTMLDivElement | null>(null);
@@ -34,6 +35,7 @@ function resizeAndDraw() {
     width: Math.max(10, rect.width),
     height: Math.max(10, rect.height),
     yMax: props.maxScore,
+    barColor: props.barColor,
   });
 }
 
@@ -61,7 +63,7 @@ onMounted(() => {
 });
 
 watch(
-  () => [props.data, props.maxScore] as const,
+  () => [props.data, props.maxScore, props.barColor] as const,
   async () => {
     await nextTick();
     requestAnimationFrame(resizeAndDraw);

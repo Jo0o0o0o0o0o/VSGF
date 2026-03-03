@@ -45,9 +45,20 @@ const rankedData = computed(() =>
     .sort((a, b) => b.score - a.score),
 );
 
+const stableAreaKeys = computed(() => {
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  for (const row of props.data) {
+    if (!row.areaKey || seen.has(row.areaKey)) continue;
+    seen.add(row.areaKey);
+    keys.push(row.areaKey);
+  }
+  return keys;
+});
+
 const localColorByKey = computed<Record<string, string>>(() =>
   Object.fromEntries(
-    rankedData.value.map((row, idx) => [row.areaKey, DONUT_COLORS[idx % DONUT_COLORS.length] ?? "#0ea5e9"]),
+    stableAreaKeys.value.map((areaKey, idx) => [areaKey, DONUT_COLORS[idx % DONUT_COLORS.length] ?? "#0ea5e9"]),
   ),
 );
 const mergedColorByKey = computed<Record<string, string>>(() => ({
