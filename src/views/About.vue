@@ -568,8 +568,8 @@ Abstract Tasks
           <figure class="figureCard">
             <div class="figureFrame">
               <p class="figureHint">Image reference: workflow of abstract tasks.</p>
-              <pre class="figurePre figurePreWide">Explore cohort overview -> Locate candidates by similarity -> Inspect student detail
-Browse group structures -> Compare team quality -> Assign responsibilities -> Save and iterate</pre>
+              <pre class="figurePre figurePreWide">Explore cohort overview -> Locate candidates by similarity -> Inspect student detail-> Grouping 
+Browse group structures -> Assign responsibilities -> Compare team quality -> Save and iterate</pre>
             </div>
             <figcaption>
               <strong>Figure 3. Horizontal workflow of abstract tasks across the website.</strong>
@@ -589,7 +589,7 @@ Browse group structures -> Compare team quality -> Assign responsibilities -> Sa
 
           <figure class="figureCard">
             <div class="figureFrame figureSource">
-              <p>Image reference: radar / dumbbell comparison charts.</p>
+              <p>Image reference: radar / dumbbell, variance/SD comparison charts.</p>
               <p>
                 <RouterLink
                   class="figureLink"
@@ -653,7 +653,7 @@ Browse group structures -> Compare team quality -> Assign responsibilities -> Sa
           <p><strong>Level 1 - Domain Problem</strong></p>
           <figure class="figureCard">
             <div class="figureFrame">
-              <p class="figureHint">Image reference: team formation workflow / overview interface.</p>
+              
               <pre class="figurePre figurePreWide">Overview -> Inspect cohort patterns -> Build candidate teams -> Assign roles
         -> Compare team balance -> Iterate -> Confirm groups</pre>
             </div>
