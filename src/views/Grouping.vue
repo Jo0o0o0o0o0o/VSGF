@@ -1928,9 +1928,6 @@ watch(unassignedSlotBuffer, () => {
           </button>
         </div>
         <div class="chipRow">
-          <span v-if="groupTopAimingAreaById[group.id]" class="groupAimingTag">
-            {{ groupTopAimingAreaById[group.id] }}
-          </span>
           <span
             v-for="hobby in groupHobbiesMap.get(group.id) ?? []"
             :key="`group-${group.id}-${hobby}`"
@@ -2598,21 +2595,6 @@ watch(unassignedSlotBuffer, () => {
 }
 
 .memberAimingChip {
-  min-height: 20px;
-  border-radius: 999px;
-  border: 1px solid #94a3b8;
-  padding: 2px 8px;
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  background: #ffffff;
-  color: #64748b;
-}
-
-.groupAimingTag {
   min-height: 20px;
   border-radius: 999px;
   border: 1px solid #94a3b8;
