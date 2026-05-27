@@ -1,30 +1,4 @@
-2.5 
-Test.json failed, can't stop loading.
-going to draw figma now
-------------------------------
-spotify api is not avaible because they are maintaining
-fuck
-------------------------------
-Had a good idea about dogs
-------------------------------
-Complete figma drawing
-------------------------------
-Complete one api
-------------------------------
-Another api key is always unavaliable??
-------------------------------
-Complete 2 apis
-Building whitelist for all features.To compare and combine
------------------------------
-abandon whitelist
-abandon Thedogs api(useless)
-scrape Ninjas api and save json now
-Thanks Havard Woie Alstadheim, good idea
------------------------------
- front end function are in a mess, rebuild the logic
--------------I should delete api keys--------------------
-API COMPLETE  
-tommorrow plan: try d3 to draw plots, see how long gonna take to complete this project
+
 
 
 2.6
