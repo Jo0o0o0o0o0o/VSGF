@@ -72,6 +72,7 @@ RadarChart reactive completed
 -------------------------------------------------
 
 I should add a linechart for lifespan and size to compareI should reclean json to include aiming for
+I should reclean json to include aiming for
 I should embedding
 I should use color as a dimension
 I should add arch plot
