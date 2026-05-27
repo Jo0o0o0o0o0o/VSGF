@@ -10,15 +10,17 @@ import {
   GROUPING_HYDRATED_EVENT,
   GROUPING_UPDATED_EVENT,
   setActiveDatasetYear,
+  USER_YEAR_STATE_UPDATED_EVENT,
   type DatasetYear,
 } from "@/types/dataSource";
-import { currentUser, logout } from "@/utils/authSession";
+import { currentUser, logout, waitForAuthReady } from "@/utils/authSession";
 import { restoreGroupingYearFromCloud, saveGroupingYearToCloud } from "@/utils/groupingCloudSync";
 
 const compareCount = ref(0);
 const router = useRouter();
 const userEmail = computed(() => currentUser.value?.email ?? "");
 const syncingYear = ref(false);
+const loggingOut = ref(false);
 const cloudHydrationReady = ref(false);
 
 function updateCompareCount() {
@@ -40,6 +42,7 @@ onMounted(() => {
   window.addEventListener("compare-queue-updated", updateCompareCount);
   window.addEventListener(GROUPING_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
   window.addEventListener(GROUPING_CONFIRMED_EVENT, saveCurrentYearGroupingToCloud);
+  window.addEventListener(USER_YEAR_STATE_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
 });
 
 onUnmounted(() => {
@@ -47,19 +50,20 @@ onUnmounted(() => {
   window.removeEventListener("compare-queue-updated", updateCompareCount);
   window.removeEventListener(GROUPING_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
   window.removeEventListener(GROUPING_CONFIRMED_EVENT, saveCurrentYearGroupingToCloud);
+  window.removeEventListener(USER_YEAR_STATE_UPDATED_EVENT, saveCurrentYearGroupingToCloud);
 });
 
 async function hydrateGroupingFromCloudForYear(year: DatasetYear) {
   const uid = currentUser.value?.uid;
   if (!uid) return;
-  let restored = false;
+  let hydrated = false;
   try {
-    restored = await restoreGroupingYearFromCloud(uid, year);
+    hydrated = await restoreGroupingYearFromCloud(uid, year);
   } catch (err) {
     console.warn("[year-switch] restore grouping from cloud failed", err);
-    restored = false;
+    hydrated = false;
   }
-  if (!restored) return;
+  if (!hydrated) return;
   window.dispatchEvent(new Event(GROUPING_HYDRATED_EVENT));
   window.dispatchEvent(new Event(GROUPING_UPDATED_EVENT));
   window.dispatchEvent(new Event(GROUPING_CONFIRMED_EVENT));
@@ -77,9 +81,20 @@ async function saveCurrentYearGroupingToCloud() {
 
 watch(
   [() => currentUser.value?.uid, () => activeYear.value],
-  async ([uid]) => {
+  async (_newValue, oldValue) => {
+    await waitForAuthReady();
+    const previousUid = Array.isArray(oldValue) ? oldValue[0] : undefined;
+    const readyUid = currentUser.value?.uid;
     cloudHydrationReady.value = false;
-    if (!uid) return;
+    if (!readyUid) {
+      clearYearScopedLocalStoragePreserveYear();
+      updateCompareCount();
+      return;
+    }
+    if (previousUid && previousUid !== readyUid) {
+      clearYearScopedLocalStoragePreserveYear();
+      updateCompareCount();
+    }
     await hydrateGroupingFromCloudForYear(activeYear.value);
     cloudHydrationReady.value = true;
   },
@@ -118,8 +133,23 @@ async function onChangeDatasetYear(event: Event) {
 }
 
 async function onLogout() {
+  if (loggingOut.value) return;
+  loggingOut.value = true;
+  if (currentUser.value?.uid) {
+    try {
+      await saveGroupingYearToCloud(currentUser.value.uid, activeYear.value);
+    } catch (err) {
+      console.warn("[auth] save grouping before logout failed", err);
+      window.alert("Failed to save your grouping state. Please try logging out again.");
+      loggingOut.value = false;
+      return;
+    }
+  }
   await logout();
+  clearYearScopedLocalStoragePreserveYear();
+  updateCompareCount();
   await router.replace("/auth");
+  loggingOut.value = false;
 }
 </script>
 
@@ -155,7 +185,9 @@ async function onLogout() {
         <RouterLink class="link" to="/about">About</RouterLink>
         <template v-if="currentUser">
           <span class="userEmail">{{ userEmail }}</span>
-          <button class="authBtn" type="button" @click="onLogout">Logout</button>
+          <button class="authBtn" type="button" :disabled="loggingOut" @click="onLogout">
+            {{ loggingOut ? "Saving..." : "Logout" }}
+          </button>
         </template>
         <RouterLink v-else class="link authLink" to="/auth">Login</RouterLink>
       </nav>

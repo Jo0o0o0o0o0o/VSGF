@@ -502,11 +502,6 @@ Similarity structure for hobbies and goals</pre>
             abstract analytical tasks rather than domain-specific actions. The workflow supports
             discovery, search, comparison, and summarization during team formation.
           </p>
-          <p>
-            The team formation problem is translated into abstract visualization tasks such as
-            locating suitable members, identifying student characteristics, comparing teams, and
-            summarizing balance.
-          </p>
 
           <figure class="figureCard">
             <div class="figureFrame">
@@ -527,14 +522,6 @@ Abstract Tasks
             </figcaption>
           </figure>
 
-          <p>
-            Munzner argues that domain problems must be translated into abstract tasks before
-            designing visualizations. This website follows that best practice because the team
-            formation problem is decomposed into overview exploration, candidate search, person
-            inspection, group comparison, balance evaluation, and role assignment. The site
-            structure directly reflects that task decomposition across Overview, Grouping, Group
-            Details, and Compare.
-          </p>
 
           <figure class="figureCard">
             <div class="figureFrame figureSource">
@@ -559,10 +546,7 @@ Abstract Tasks
             and <strong>discover</strong>, which helps users explore unknown patterns. The Overview
             page supports discovery because users inspect cohort-wide patterns, trait distributions,
             and overview summaries before making grouping decisions, which helps them detect
-            strengths, gaps, and outliers. The system also supports presentation when previously
-            saved grouping results are restored from Firebase and shown back to the user as known
-            team configurations, so the interface is used both to discover possible structures and
-            to present confirmed outcomes.
+            strengths, gaps, and outliers. 
           </p>
 
           <figure class="figureCard">
@@ -577,15 +561,6 @@ Browse group structures -> Assign responsibilities -> Compare team quality -> Sa
               one iterative decision process.
             </figcaption>
           </figure>
-
-          <p>
-            Munzner notes that visualization systems should support multiple search behaviors. This
-            website supports lookup, locate, browse, and explore in different views. Lookup occurs
-            when a known student is opened directly in a detail drawer. Locate occurs when
-            similarity scoring ranks candidates by embedding similarity. Browse occurs when users
-            inspect group cards, group slots, and role tables. Explore occurs when users scan the
-            overview and comparison views for broader cohort patterns.
-          </p>
 
           <figure class="figureCard">
             <div class="figureFrame figureSource">
@@ -633,22 +608,10 @@ Browse group structures -> Assign responsibilities -> Compare team quality -> Sa
           </figure>
 
           <p>
-            Munzner points out that visualization interaction also supports
-            <strong>produce</strong> tasks, where users create new analytical artifacts. This
-            website follows that best practice because users do not only consume information. They
-            produce analytical outcomes by forming teams, assigning responsibilities, and saving
-            group configurations. The result of interaction is not only insight, but also a
-            constructed team solution that can be reviewed, compared, and iterated.
+            Munzner argues that visualization interaction can support “produce” tasks, where users create analytical artifacts. This website follows this principle because users not only view information, but also produce team solutions by forming teams, assigning roles, and saving configurations. 
           </p>
         </div>
         <div v-else-if="section.id === 'validation'" class="validationText">
-          <p>
-            Munzner's four levels of validation provide a practical structure for judging whether a
-            visualization system is well designed. Rather than validating only the final interface,
-            the framework asks whether the domain problem is appropriate, whether the abstraction is
-            correct, whether the visual idiom fits the tasks, and whether the algorithms implement
-            the design effectively.
-          </p>
 
           <p><strong>Level 1 - Domain Problem</strong></p>
           <figure class="figureCard">
@@ -685,9 +648,7 @@ Browse group structures -> Assign responsibilities -> Compare team quality -> Sa
           </figure>
           <p>
             The website addresses a real decision problem: forming balanced student teams based on
-            skills, interests, and collaboration roles. This aligns with Munzner's best practice
-            that visualization design should start from a clearly defined domain problem rather than
-            a purely technical chart example.
+            skills, interests, and collaboration roles. 
           </p>
 
           <p><strong>Level 2 - Data &amp; Task Abstraction</strong></p>
@@ -729,9 +690,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           <p>
             The system transforms domain data into structured abstractions where students become
             items, skills become quantitative attributes, and textual responses are converted into
-            embedding-based similarity signals. This follows Munzner's principle that domain
-            concepts should be translated into abstract data structures and analytical tasks before
-            visualization.
+            embedding-based similarity signals. 
           </p>
 
           <p><strong>Level 3 - Visual Idiom</strong></p>
@@ -779,8 +738,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           <p>
             Visualizations are selected to match analytical tasks: overview charts support
             discovery, detail views support identification, and comparison charts such as radar or
-            dumbbell plots evaluate team balance. This reflects Munzner's guideline that visual
-            idioms should correspond to the data abstractions and tasks they support.
+            dumbbell plots evaluate team balance. 
           </p>
 
           <p><strong>Level 4 - Algorithm</strong></p>
@@ -813,68 +771,13 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           <p>
             The implementation supports the visual design through aggregation, similarity scoring,
             and persistent grouping state, enabling responsive interaction when teams are modified.
-            This satisfies Munzner's requirement that algorithms must effectively support the
-            intended visual idioms and analytical workflow.
+          
           </p>
         </div>
         <div v-else-if="section.id === 'marks-channels'" class="validationText">
-          <p>
-            In the marks and channels framework, Munzner explains that visualizations are
-            constructed from graphical marks (points, lines, and areas) combined with visual
-            channels such as position, color, and size to encode data. This website follows that
-            principle by consistently mapping data attributes to appropriate marks and channels
-            rather than using arbitrary visual styling.
-          </p>
+        
 
-          <p><strong>Position for Quantitative Comparison</strong></p>
-          <figure class="figureCard">
-            <div class="figureFrame figureSource">
-              <p>Image reference: beeswarm + radar.</p>
-              <p>
-                <RouterLink
-                  class="figureLink"
-                  to="/home"
-                  title="Open Overview. Position-based charts appear in Home.vue."
-                >
-                  Overview
-                </RouterLink>
-                and
-                <RouterLink
-                  class="figureLink"
-                  to="/compare"
-                  title="Open Comparison. Position-based comparison charts appear in Compare.vue."
-                >
-                  Comparison
-                </RouterLink>
-              </p>
-            </div>
-            <figcaption>
-              <strong>Figure 1. Position-based encodings for quantitative comparison.</strong>
-              Screenshot sources:
-              <RouterLink
-                class="figureLink"
-                to="/home"
-                title="Open Overview. Source page: Home.vue."
-              >
-                Overview
-              </RouterLink>
-              and
-              <RouterLink
-                class="figureLink"
-                to="/compare"
-                title="Open Comparison. Source page: Compare.vue."
-              >
-                Comparison
-              </RouterLink>.
-            </figcaption>
-          </figure>
-          <p>
-            Position and aligned length are used to encode important quantitative values such as
-            skill ratings, group totals, and balance differences. Charts such as heatmaps, beeswarm
-            plots, and dumbbell comparisons rely on spatial alignment along axes, which supports
-            accurate comparison across students and teams, matching Munzner's guideline that
-            position is one of the most effective channels for ordered data.
-          </p>
+        
 
           <p><strong>Appropriate Mark Types</strong></p>
           <figure class="figureCard">
@@ -921,8 +824,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           <p>
             Different mark types are used according to analytical structure. Point marks represent
             individual students in beeswarm-style views, while line marks in radar or dumbbell
-            charts emphasize relationships and profiles across multiple dimensions. This reflects
-            Munzner's principle that marks should match the structure of the data being represented.
+            charts emphasize relationships and profiles across multiple dimensions. 
           </p>
 
           <p><strong>Identity Channels for Categories</strong></p>
@@ -953,9 +855,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           </figure>
           <p>
             Color hue and spatial grouping are used to distinguish groups and individuals, while
-            magnitude comparisons rely on position-based encodings rather than color intensity. This
-            follows Munzner's guideline that color hue is most suitable for categorical identity
-            rather than quantitative comparison.
+            magnitude comparisons rely on position-based encodings rather than color intensity. 
           </p>
 
           <p><strong>Controlled Use of Size and Visual Emphasis</strong></p>
@@ -1002,20 +902,11 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           </figure>
           <p>
             Size and other lower-ranked channels are used sparingly, while most important
-            comparisons are supported by axis-based charts with explicit scales. This aligns with
-            Munzner's effectiveness principle that less accurate channels should not carry critical
-            quantitative information.
+            comparisons are supported by axis-based charts with explicit scales.
           </p>
         </div>
         <div v-else-if="section.id === 'rules-of-thumb'" class="validationText">
-          <p>
-            Munzner summarizes several practical rules of thumb for visualization design that
-            consider human perception, cognitive limits, and interaction efficiency. These
-            principles encourage simple visual representations, clear navigation between overview and
-            detail, and responsive interaction to support iterative analysis. This website follows
-            those principles well, especially in the way it structures analysis as a repeatable
-            workflow rather than a single static report.
-          </p>
+          
 
           <p><strong>Prefer Simple Visual Representations</strong></p>
           <figure class="figureCard">
@@ -1043,15 +934,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
               </RouterLink>.
             </figcaption>
           </figure>
-          <p>
-            The website mainly uses clear two-dimensional charts such as heatmaps, beeswarm plots,
-            radar, dumbbell, and comparison charts, while avoiding unnecessary 3D effects or
-            decorative distortion. This follows Munzner's guideline that simple visual
-            representations reduce perceptual distortion and improve interpretability. A practical
-            strength of this site is that even when multiple views are present, each view remains
-            visually plain enough to support analysis rather than spectacle.
-          </p>
-
+          
           <p><strong>Overview Before Detail</strong></p>
           <figure class="figureCard">
             <div class="figureFrame">
@@ -1136,10 +1019,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           </figure>
           <p>
             Spatial grouping, color cues, and selection highlighting allow users to quickly locate
-            relevant students or groups, which reflects Munzner's recommendation to design visual
-            layouts that reduce cognitive load and support efficient visual search. In this website,
-            that support is not only visual but interactive: selected people, compared groups,
-            dragged members, and active slots are all surfaced with immediate visual distinction.
+            relevant students or groups.
           </p>
 
           <p><strong>Responsive Interaction</strong></p>
@@ -1186,11 +1066,7 @@ Grouping workflow -> discover, locate, identify, compare, summarize, produce</pr
           </figure>
           <p>
             The interface updates immediately when teams are adjusted or compared, enabling repeated
-            exploration and refinement. This follows Munzner's rule that interactive visualization
-            systems should provide fast feedback to maintain analytical flow. In code terms, this is
-            supported by local persistence of grouping state, computed summaries, reusable compare
-            slots, resize-aware charts, and worker-based embedding computation that helps preserve
-            responsiveness when similarity scoring is involved.
+            exploration and refinement. 
           </p>
         </div>
         <div v-else class="placeholder"></div>

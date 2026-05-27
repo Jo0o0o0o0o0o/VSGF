@@ -103,6 +103,7 @@ export function makeYearStorageKey(suffix: string) {
 export const GROUPING_UPDATED_EVENT = "ivis-grouping-updated";
 export const GROUPING_CONFIRMED_EVENT = "ivis-grouping-confirmed";
 export const GROUPING_HYDRATED_EVENT = "ivis-grouping-hydrated";
+export const USER_YEAR_STATE_UPDATED_EVENT = "ivis-user-year-state-updated";
 
 export function clearYearScopedLocalStoragePreserveYear() {
   try {

@@ -34,7 +34,23 @@ let ro: ResizeObserver | null = null;
 
 const dataset = getActiveRecords() as IvisRecord[];
 
+const FIELD_LABELS: Record<IvisRatingKey, string> = {
+  information_visualization: "Info Viz",
+  statistical: "Stats",
+  mathematics: "Math",
+  drawing_and_artistic: "Drawing/Art",
+  computer_usage: "Comp Usage",
+  programming: "Programming",
+  computer_graphics_programming: "CG Prog",
+  human_computer_interaction_programming: "HCI Prog",
+  user_experience_evaluation: "UX Eval",
+  communication: "Comm",
+  collaboration: "Collab",
+  code_repository: "Code Repo",
+};
+
 const fieldLabel = (key: IvisRatingKey) =>
+  FIELD_LABELS[key] ??
   key
     .split("_")
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -61,7 +77,7 @@ function draw() {
   const width = Math.max(640, Math.floor(rect.width));
   const height = Math.max(260, Math.floor(rect.height));
 
-  const margin = { top: 42, right: 16, bottom: 80, left: 46 };
+  const margin = { top: 42, right: 16, bottom: 88, left: 46 };
   const innerW = Math.max(10, width - margin.left - margin.right);
   const innerH = Math.max(10, height - margin.top - margin.bottom);
 
@@ -105,16 +121,16 @@ function draw() {
     .call(d3.axisBottom(x))
     .call((g) => g.select(".domain").attr("stroke", "#94a3b8"))
     .call((g) =>
-      g
-        .selectAll<SVGTextElement, IvisRatingKey>("text")
-        .text((d) => fieldLabel(d))
-        .attr("font-size", 10)
-        .attr("fill", "#475569")
-        .attr("text-anchor", "end")
-        .attr("transform", "rotate(-23)")
-        .attr("dx", "-0.5em")
-        .attr("dy", "0.25em"),
-    )
+        g
+          .selectAll<SVGTextElement, IvisRatingKey>("text")
+          .text((d) => fieldLabel(d))
+          .attr("font-size", 9)
+          .attr("fill", "#475569")
+          .attr("text-anchor", "end")
+          .attr("transform", "rotate(-26)")
+          .attr("dx", "-0.45em")
+          .attr("dy", "0.15em"),
+     )
     .call((g) => g.selectAll("line").attr("stroke", "#cbd5e1"));
 
   root

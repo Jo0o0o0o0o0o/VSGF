@@ -18,7 +18,12 @@ import { SKILL_CATEGORIES, type SkillCategoryKey } from "@/types/skillCategory";
 import type { GroupDumbbellDatum } from "@/d3Viz/createGroupDumbbellChart";
 import type { GroupDetailDumbbellDatum } from "@/d3Viz/createGroupDetailDumbbellChart";
 import type { VarianceSdDatum } from "@/d3Viz/createVarianceSdBarChart";
-import { getActiveRecords, makeYearStorageKey, GROUPING_UPDATED_EVENT } from "@/types/dataSource";
+import {
+  getActiveRecords,
+  GROUPING_UPDATED_EVENT,
+  makeYearStorageKey,
+  USER_YEAR_STATE_UPDATED_EVENT,
+} from "@/types/dataSource";
 
 const GROUPING_STORAGE_KEY = makeYearStorageKey("grouping_v1");
 const COMPARE_GROUP_SLOTS_KEY = makeYearStorageKey("compare_group_slots_v1");
@@ -558,6 +563,7 @@ function persistCompareGroupSlots() {
   try {
     const payload = slots.value.map((slot) => slot?.id ?? null);
     localStorage.setItem(COMPARE_GROUP_SLOTS_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new Event(USER_YEAR_STATE_UPDATED_EVENT));
   } catch {
     // ignore storage failures
   }
